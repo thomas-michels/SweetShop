@@ -1,0 +1,22 @@
+version: "3.8"
+services:
+  postgres:
+    container_name: database
+    image: postgres:15.3-alpine3.18
+    restart: always
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_PASSWORD: password
+      POSTGRES_USER: user
+    volumes:
+      - pgVolume:/var/lib/postgresql/data
+    networks:
+      - network
+
+networks:
+  network:
+    external: false
+
+volumes:
+  pgVolume:
