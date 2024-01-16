@@ -1,11 +1,11 @@
-from app.core.db import DBConnection
+from psycopg import Connection
 
 
 class Repository:
 
-    def __init__(self, connection: DBConnection) -> None:
+    def __init__(self, connection: Connection) -> None:
         self._conn = connection
 
     @property
-    def conn(self) -> DBConnection:
+    def conn(self) -> Connection:
         return self._conn

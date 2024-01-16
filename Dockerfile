@@ -12,6 +12,6 @@ COPY ./main.py ./main.py
 
 EXPOSE 8000
 
-ENTRYPOINT ["uvicorn", "app.application:create_app"]
+ENTRYPOINT ["uvicorn"]
 
-CMD ["--proxy-headers", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["app.application:app", "--proxy-headers", "--host", "0.0.0.0", "--port", "8000"]

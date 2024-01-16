@@ -1,2 +1,2 @@
-from .database_pool import lifespan, get_connection
-from .base_connection import DBConnection
+from .pool import lifespan
+from .connection import get_repository
