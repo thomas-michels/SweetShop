@@ -19,6 +19,12 @@ class UsersQueriesMixin:
         id: int
     ): ...
 
+    def select_user_by_email(
+        self,
+        conn: Connection,
+        email: str
+    ): ...
+
     def select_users(
         self,
         conn: Connection

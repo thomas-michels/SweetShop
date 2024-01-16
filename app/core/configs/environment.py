@@ -26,6 +26,11 @@ class Environment(BaseSettings):
     DATABASE_MIN_CONNECTIONS: int = 1
     DATABASE_MAX_CONNECTIONS: int = 1
 
+    # SECURITY
+    SECRET_KEY: str = "test"
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
+
     class Config:
         """Load config file"""
 

@@ -66,6 +66,19 @@ class UserRepository(Repository):
         except Exception as error:
             _logger.error(f"Error on select_by_id: {str(error)}")
             raise NotFoundError(message=f"User #{id} not found")
+
+    async def select_by_email(self, email: str) -> UserInDB:
+        try:
+            raw_user = self.queries.select_user_by_email(
+                conn=self.conn,
+                email=email
+            )
+
+            return self.__build_user(raw_user=raw_user)
+
+        except Exception as error:
+            _logger.error(f"Error on select_by_email: {str(error)}")
+            raise NotFoundError(message=f"User with email {email} not found")
     
     async def select_all(self) -> List[UserInDB]:
         try:

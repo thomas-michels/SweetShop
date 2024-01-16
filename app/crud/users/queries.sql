@@ -35,6 +35,22 @@ WHERE
 	u.id = :id
 	AND is_active is true;
 
+-- name: select_user_by_email^
+SELECT
+	id,
+	first_name,
+	last_name,
+	email,
+	"password",
+	is_active,
+	created_at,
+	updated_at
+FROM
+	public.users u
+WHERE
+	u.email = :email
+	AND is_active is true;
+
 -- name: update_user_by_id<!
 UPDATE
 	public.users
