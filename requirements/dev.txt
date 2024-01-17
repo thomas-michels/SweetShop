@@ -1,4 +1,4 @@
 -r ./prod.txt
-httpx==0.24.1
+httpx==0.26.0
 pytest==7.4.4
 pytest-cov==4.1.0

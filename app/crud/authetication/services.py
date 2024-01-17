@@ -18,5 +18,5 @@ class AuthenticationServices:
             return user_in_db
 
     async def get_current_user(self, token: TokenData) -> UserInDB:
-        user_in_db = await self.__user_repository.select_by_email(email=token.email)
+        user_in_db = await self.__user_repository.select_by_id(id=token.id)
         return user_in_db

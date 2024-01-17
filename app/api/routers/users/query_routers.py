@@ -1,7 +1,8 @@
 from typing import List
 from fastapi import APIRouter, Depends, Security
-from app.api.dependencies import build_response
+from app.api.dependencies import build_response, decode_jwt
 from app.api.composers import user_composer
+from app.api.shared_schemas.token import TokenData
 from app.crud.users import UserInDB, UserServices
 
 
@@ -9,7 +10,11 @@ router = APIRouter(tags=["Users"])
 
 
 @router.get("/user/{user_id}", responses={200: {"model": UserInDB}})
-async def get_user_by_id(user_id: int, user_services: UserServices = Depends(user_composer)):
+async def get_user_by_id(
+    user_id: int,
+    token: TokenData = Security(decode_jwt, scopes=["user:get"]),
+    user_services: UserServices = Depends(user_composer)
+):
     user_in_db = await user_services.search_by_id(id=user_id)
 
     return build_response(
@@ -20,7 +25,10 @@ async def get_user_by_id(user_id: int, user_services: UserServices = Depends(use
 
 
 @router.get("/users", responses={200: {"model": List[UserInDB]}})
-async def get_users(user_services: UserServices = Depends(user_composer)):
+async def get_users(
+    token: TokenData = Security(decode_jwt, scopes=["user:get"]),
+    user_services: UserServices = Depends(user_composer)
+):
     users = await user_services.search_all()
 
     return build_response(
