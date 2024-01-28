@@ -3,6 +3,7 @@ Config Module
 """
 
 from functools import lru_cache
+
 from app.core.configs.environment import Environment
 from app.core.configs.logger import Logger
 

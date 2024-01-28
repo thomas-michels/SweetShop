@@ -1,9 +1,11 @@
 from typing import Callable, Type
+
 from fastapi import Depends, Request
 from psycopg import Connection
 
 from app.core.repositories.base_repository import Repository
-    
+
+
 def _get_connection_from_pool(request: Request):
     with request.app.state.pool.connection() as conn:
         yield conn

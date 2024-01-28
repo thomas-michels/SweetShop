@@ -1,6 +1,8 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request
 from psycopg_pool import ConnectionPool
-from contextlib import asynccontextmanager
+
 from app.core.configs import get_environment, get_logger
 
 _env = get_environment()
@@ -14,11 +16,13 @@ def start_pool() -> ConnectionPool:
             f"port={_env.DATABASE_PORT} "
             f"user={_env.DATABASE_USER} "
             f"password={_env.DATABASE_PASSWORD} "
-            f"dbname={_env.DATABASE_NAME}"),
+            f"dbname={_env.DATABASE_NAME}"
+        ),
         min_size=_env.DATABASE_MIN_CONNECTIONS,
         max_size=_env.DATABASE_MAX_CONNECTIONS,
-        name=_env.APPLICATION_NAME
+        name=_env.APPLICATION_NAME,
     )
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> None:

@@ -7,8 +7,8 @@ Create Date: 2024-01-07 23:56:02.137277
 """
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 from app.core.configs import get_environment
 
@@ -16,14 +16,15 @@ _env = get_environment()
 
 
 # revision identifiers, used by Alembic.
-revision: str = '660b9a0b3e23'
+revision: str = "660b9a0b3e23"
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.execute(f"""
+    op.execute(
+        f"""
 CREATE TABLE {_env.ENVIRONMENT}.users (
 	id serial4 NOT NULL,
 	first_name varchar(30) NOT NULL,
@@ -36,7 +37,8 @@ CREATE TABLE {_env.ENVIRONMENT}.users (
 	CONSTRAINT users_pk PRIMARY KEY (id),
 	CONSTRAINT users_un UNIQUE (email)
 );
-""")
+"""
+    )
 
 
 def downgrade() -> None:

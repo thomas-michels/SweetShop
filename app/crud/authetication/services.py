@@ -1,11 +1,11 @@
 from app.api.shared_schemas.token import TokenData
-from app.crud.users.repositories import UserRepository
 from app.crud.users.models import UserInDB
+from app.crud.users.repositories import UserRepository
+
 from .models import UserSignin
 
 
 class AuthenticationServices:
-
     def __init__(self, user_repository: UserRepository) -> None:
         self.__user_repository = user_repository
 

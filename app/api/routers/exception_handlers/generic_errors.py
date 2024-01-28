@@ -1,8 +1,13 @@
 from fastapi import Request, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
-from app.core.exceptions import UnprocessableEntity, NotFoundError, InvalidPassword
+
 from app.api.shared_schemas.responses import MessageResponse
+from app.core.exceptions import (
+    InvalidPassword,
+    NotFoundError,
+    UnprocessableEntity,
+)
 
 
 def unprocessable_entity_error_422(request: Request, exc: UnprocessableEntity):
@@ -28,7 +33,7 @@ def generic_error_400(request: Request, exc: InvalidPassword):
 
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,
-        content=jsonable_encoder(error.model_dump())
+        content=jsonable_encoder(error.model_dump()),
     )
 
 
@@ -38,5 +43,5 @@ def generic_error_500(request: Request, exc: Exception):
 
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content=jsonable_encoder(error.model_dump())
+        content=jsonable_encoder(error.model_dump()),
     )

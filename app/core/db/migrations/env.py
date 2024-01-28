@@ -3,7 +3,7 @@ import sys
 from logging.config import fileConfig
 
 from alembic import context
-from sqlalchemy import engine_from_config, pool, MetaData
+from sqlalchemy import MetaData, engine_from_config, pool
 
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[4]))
 
@@ -37,8 +37,8 @@ def run_migrations_online() -> None:
         )
 
         with context.begin_transaction():
-            context.execute(f'create schema if not exists {target_metadata.schema};')
-            context.execute(f'set search_path to {target_metadata.schema}')
+            context.execute(f"create schema if not exists {target_metadata.schema};")
+            context.execute(f"set search_path to {target_metadata.schema}")
             context.run_migrations()
 
 

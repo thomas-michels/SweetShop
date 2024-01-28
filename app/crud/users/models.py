@@ -1,7 +1,9 @@
 import re
-from pydantic import Field, BaseModel, EmailStr, SecretStr, ConfigDict
 from typing import Optional, Type
+
 from passlib.context import CryptContext
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, SecretStr
+
 from app.core.exceptions import InvalidPassword, UnprocessableEntity
 from app.core.models import DatabaseModel
 
@@ -21,13 +23,15 @@ class ConfirmPassword(BaseModel):
 
         if len(self.password.get_secret_value()) < 8:
             errors.append("Minimum size is 8 characters.")
-        
+
         if len(self.password.get_secret_value()) > 24:
             errors.append("Maximum size is 24 characters.")
 
         if not re.match(_PASSWORD_REGEX, self.password.get_secret_value()):
-            errors.append("The password must have special characters and uppercase and lowercase letters.")
-        
+            errors.append(
+                "The password must have special characters and uppercase and lowercase letters."
+            )
+
         if errors:
             raise InvalidPassword(message=" ".join(errors))
 
@@ -40,7 +44,7 @@ class User(BaseModel):
     last_name: str = Field(example="LastName")
     email: EmailStr = Field(example="email@mail.com")
 
-    model_config = ConfigDict(extra='allow')
+    model_config = ConfigDict(extra="allow")
 
     def validate_updated_fields(self, updated_user: Type["UpdateUser"]) -> bool:
         is_updated = False
