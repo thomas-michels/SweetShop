@@ -1,5 +1,5 @@
 from app.api.shared_schemas.token import TokenData
-from app.crud.users.models import UserInDB
+from app.crud.users.schemas import UserInDB
 from app.crud.users.repositories import UserRepository
 
 from .models import UserSignin

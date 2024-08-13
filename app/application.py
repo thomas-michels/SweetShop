@@ -7,7 +7,7 @@ from app.api.routers.exception_handlers import (
     not_found_error_404,
     generic_error_400,
 )
-from app.core.db import lifespan
+from app.core.db.connection import lifespan
 from app.core.exceptions import UnprocessableEntity, NotFoundError, InvalidPassword
 from app.core.configs import get_environment
 

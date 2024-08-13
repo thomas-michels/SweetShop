@@ -11,7 +11,7 @@ from app.api.shared_schemas.oauth2 import oauth2_scheme
 from app.api.shared_schemas.token import TokenData
 from app.core.configs import get_environment
 from app.crud.authetication import AuthenticationServices
-from app.crud.users.models import UserInDB
+from app.crud.users.schemas import UserInDB
 
 _env = get_environment()
 

@@ -1,20 +1,27 @@
-from typing import Callable, Type
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
+from mongoengine import connect
 
-from fastapi import Depends, Request
-from psycopg import Connection
-
-from app.core.repositories.base_repository import Repository
-
-
-def _get_connection_from_pool(request: Request):
-    with request.app.state.pool.connection() as conn:
-        yield conn
+from app.core.configs import get_environment, get_logger
 
 
-def get_repository(
-    repo_type: Type[Repository],
-) -> Callable[[Connection], Repository]:
-    def _get_repo(conn: Connection = Depends(_get_connection_from_pool)) -> Repository:
-        return repo_type(conn)
+_env = get_environment()
+_logger = get_logger(__name__)
 
-    return _get_repo
+
+def start_database():
+    connetion = connect(
+        host=_env.DATABASE_HOST
+    )
+    connetion.server_info()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> None: # type: ignore
+    _logger.info("Connecting to MongoDB")
+
+    start_database()
+
+    _logger.info("Connection established")
+
+    yield

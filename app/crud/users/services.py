@@ -1,5 +1,5 @@
 from typing import List
-from .models import User, UpdateUser, UserInDB, ConfirmPassword
+from .schemas import User, UpdateUser, UserInDB, ConfirmPassword
 from .repositories import UserRepository
 
 
@@ -22,13 +22,13 @@ class UserServices:
 
         if is_updated:
             user_in_db = await self.__repository.update(user=user_in_db)
-        
+
         return user_in_db
 
     async def search_by_id(self, id: int) -> UserInDB:
         user_in_db = await self.__repository.select_by_id(id=id)
         return user_in_db
-    
+
     async def search_all(self) -> List[UserInDB]:
         users = await self.__repository.select_all()
         return users

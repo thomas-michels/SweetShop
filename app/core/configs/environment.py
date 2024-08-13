@@ -16,15 +16,7 @@ class Environment(BaseSettings):
     APPLICATION_PORT: int = 8000
 
     # DATABASE
-    DATABASE_URL: str = "localhost:5432"
     DATABASE_HOST: str = "localhost"
-    DATABASE_PORT: int = 5432
-    DATABASE_USER: str = "user"
-    DATABASE_PASSWORD: str = "password"
-    DATABASE_NAME: str = "test"
-    ENVIRONMENT: str = "test"
-    DATABASE_MIN_CONNECTIONS: int = 1
-    DATABASE_MAX_CONNECTIONS: int = 1
 
     # SECURITY
     SECRET_KEY: str = "test"
