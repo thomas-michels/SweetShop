@@ -1,2 +1,3 @@
 from .user_composite import user_composer
 from .authentication_composite import authentication_composer
+from .product_composite import product_composer

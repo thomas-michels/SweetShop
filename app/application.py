@@ -1,6 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.routers import user_router, authentication_router
+from app.api.routers import (
+    user_router,
+    product_router,
+    authentication_router
+)
 from app.api.routers.exception_handlers import (
     unprocessable_entity_error_422,
     generic_error_500,
@@ -24,8 +28,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(user_router, prefix="/api")
 app.include_router(authentication_router, prefix="/api")
+app.include_router(user_router, prefix="/api")
+app.include_router(product_router, prefix="/api")
 
 app.add_exception_handler(UnprocessableEntity, unprocessable_entity_error_422)
 app.add_exception_handler(NotFoundError, not_found_error_404)

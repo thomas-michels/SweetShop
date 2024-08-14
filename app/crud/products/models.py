@@ -1,35 +1,27 @@
-from typing import Optional
+from mongoengine import StringField, Document, FloatField
 
-from pydantic import BaseModel, Field, model_validator
-
-from app.core.models import DatabaseModel
+from app.core.models.base_document import BaseDocument
 
 
-class Product(BaseModel):
-    name: str = Field(example="Brigadeiro")
-    unit_price: float = Field(example=1.5)
-    unit_cost: float = Field(example=0.75)
 
-    @model_validator(mode="after")
-    def validate_price_and_cost(self) -> "Product":
-        if self.unit_cost > self.unit_price:
-            raise ValueError("Unit price should be greater than unit cost")
+class ProductModel(Document, BaseDocument):
+    name = StringField(max_length=100, required=True)
+    unit_price = FloatField(min_value=0, required=True)
+    unit_cost = FloatField(min_value=0, required=True)
 
-        return self
+    meta = {
+        "collection": "products"
+    }
 
+    def update(self, **kwargs):
+        self.base_update()
+        kwargs.pop("updated_at")
+        return super().update(updated_at=self.updated_at,**kwargs)
 
-class UpdateProduct(BaseModel):
-    name: Optional[str] = Field(example="Brigadeiro")
-    unit_price: Optional[float] = Field(example=1.5)
-    unit_cost: Optional[float] = Field(example=0.75)
+    def delete(self, soft_delete: bool = True, signal_kwargs=None, **write_concern):
+        if soft_delete:
+            self.soft_delete()
+            self.save()
 
-    @model_validator(mode="after")
-    def validate_price_and_cost(self) -> "Product":
-        if self.unit_cost > self.unit_price:
-            raise ValueError("Unit price should be greater than unit cost")
-
-        return self
-
-
-class ProductInDB(Product, DatabaseModel):
-    is_active: bool = Field(example=True)
+        else:
+            return super().delete(signal_kwargs, **write_concern)

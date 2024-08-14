@@ -7,5 +7,9 @@ oauth2_scheme = OAuth2PasswordBearer(
         "user:get": "Read information about users.",
         "user:update": "Update information about users.",
         "user:delete": "Delete information about users.",
+        "product:create": "Create new products.",
+        "product:get": "Read information about products.",
+        "product:update": "Update information about products.",
+        "product:delete": "Delete information about products.",
     },
 )

@@ -1,1 +1,2 @@
-from .models import Product, ProductInDB, UpdateProduct
+from .schemas import Product, ProductInDB, UpdateProduct
+from .services import ProductServices

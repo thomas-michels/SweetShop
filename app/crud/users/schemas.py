@@ -2,7 +2,7 @@ import re
 from typing import Optional, Type
 
 from passlib.context import CryptContext
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, SecretStr
+from pydantic import BaseModel, EmailStr, Field, SecretStr
 
 from app.core.exceptions import InvalidPassword, UnprocessableEntity
 from app.core.models import DatabaseModel
@@ -43,8 +43,6 @@ class User(BaseModel):
     first_name: str = Field(example="FirstName")
     last_name: str = Field(example="LastName")
     email: EmailStr = Field(example="email@mail.com")
-
-    model_config = ConfigDict(extra="allow", from_attributes=True)
 
     def validate_updated_fields(self, updated_user: Type["UpdateUser"]) -> bool:
         is_updated = False

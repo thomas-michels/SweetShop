@@ -3,7 +3,6 @@ from mongoengine import StringField, Document
 from app.core.models.base_document import BaseDocument
 
 
-
 class UserModel(Document, BaseDocument):
     first_name = StringField(max_length=50, required=True)
     last_name = StringField(max_length=100, required=True)
