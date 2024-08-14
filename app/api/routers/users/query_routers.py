@@ -12,7 +12,7 @@ router = APIRouter(tags=["Users"])
 
 @router.get("/user/{user_id}", responses={200: {"model": UserInDB}})
 async def get_user_by_id(
-    user_id: int,
+    user_id: str,
     token: TokenData = Security(decode_jwt, scopes=["user:get"]),
     user_services: UserServices = Depends(user_composer),
 ):

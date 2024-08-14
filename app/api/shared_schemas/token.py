@@ -7,5 +7,5 @@ class Token(BaseModel):
 
 
 class TokenData(BaseModel):
-    id: int | None = None
+    id: str
     scopes: list[str] = []

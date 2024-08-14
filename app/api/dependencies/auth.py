@@ -10,6 +10,7 @@ from app.api.composers import authentication_composer
 from app.api.shared_schemas.oauth2 import oauth2_scheme
 from app.api.shared_schemas.token import TokenData
 from app.core.configs import get_environment
+from app.core.exceptions.users import NotFoundError
 from app.crud.authetication import AuthenticationServices
 from app.crud.users.schemas import UserInDB
 
@@ -39,7 +40,7 @@ async def decode_jwt(
 
     try:
         payload = jwt.decode(token, _env.SECRET_KEY, algorithms=[_env.ALGORITHM])
-        user_id: int = int(payload.get("sub"))
+        user_id: str = payload.get("sub")
         if user_id is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -68,7 +69,7 @@ async def decode_jwt(
             headers={"WWW-Authenticate": authenticate_value},
         )
 
-    except (JWTError, ValidationError):
+    except (JWTError, ValidationError, NotFoundError):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
