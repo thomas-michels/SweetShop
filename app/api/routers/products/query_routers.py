@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, Security
+from fastapi import APIRouter, Depends, Query, Security
 
 from app.api.composers import product_composer
 from app.api.dependencies import build_response, decode_jwt
@@ -25,10 +25,11 @@ async def get_product_by_id(
 
 @router.get("/products", responses={200: {"model": List[ProductInDB]}})
 async def get_products(
+    query: str = Query(default=None),
     current_user: UserInDB = Security(decode_jwt, scopes=["product:get"]),
     product_services: ProductServices = Depends(product_composer),
 ):
-    users = await product_services.search_all()
+    users = await product_services.search_all(query=query)
 
     return build_response(
         status_code=200, message="Products found with success", data=users

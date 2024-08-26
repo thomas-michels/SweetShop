@@ -5,12 +5,20 @@ from app.core.models.base_document import BaseDocument
 
 
 class ProductModel(Document, BaseDocument):
-    name = StringField(max_length=100, required=True)
+    name = StringField(max_length=100, required=True, unique=True)
+    description = StringField(max_length=255, required=True, unique=True)
     unit_price = FloatField(min_value=0, required=True)
     unit_cost = FloatField(min_value=0, required=True)
 
     meta = {
-        "collection": "products"
+        "collection": "products",
+        "indexes": [
+            {
+                "fields": ["$name"],
+                "default_language": "portuguese",
+                "weights": {"name": 10}
+            }
+        ]
     }
 
     def update(self, **kwargs):

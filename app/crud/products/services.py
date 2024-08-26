@@ -26,8 +26,8 @@ class ProductServices:
         product_in_db = await self.__repository.select_by_id(id=id)
         return product_in_db
 
-    async def search_all(self) -> List[ProductInDB]:
-        products = await self.__repository.select_all()
+    async def search_all(self, query: str) -> List[ProductInDB]:
+        products = await self.__repository.select_all(query=query)
         return products
 
     async def delete_by_id(self, id: str) -> ProductInDB:

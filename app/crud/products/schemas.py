@@ -7,6 +7,7 @@ from app.core.models import DatabaseModel
 
 class Product(BaseModel):
     name: str = Field(example="Brigadeiro")
+    description: str = Field(example="Brigadeiro de Leite Ninho")
     unit_price: float = Field(example=1.5)
     unit_cost: float = Field(example=0.75)
 
@@ -36,6 +37,7 @@ class Product(BaseModel):
 
 class UpdateProduct(BaseModel):
     name: Optional[str] = Field(example="Brigadeiro")
+    description: Optional[str] = Field(example="Brigadeiro de Leite Ninho")
     unit_price: Optional[float] = Field(example=1.5)
     unit_cost: Optional[float] = Field(example=0.75)
 

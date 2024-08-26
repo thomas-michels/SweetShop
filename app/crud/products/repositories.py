@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import List
-
+from mongoengine.errors import NotUniqueError
 from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.core.repositories.base_repository import Repository
@@ -22,10 +22,14 @@ class ProductRepository(Repository):
                 updated_at=datetime.now(),
                 **product.model_dump()
             )
+            product_model.name = product_model.name.capitalize()
 
             product_model.save()
 
             return ProductInDB.model_validate(product_model)
+
+        except NotUniqueError:
+            return await self.select_by_name(name=product.name)
 
         except Exception as error:
             _logger.error(f"Error on create_product: {str(error)}")
@@ -34,6 +38,7 @@ class ProductRepository(Repository):
     async def update(self, product: ProductInDB) -> ProductInDB:
         try:
             product_model: ProductModel = ProductModel.objects(id=product_model.id, is_active=True).first()
+            product.name = product.name.capitalize()
 
             product_model.update(**product.model_dump())
 
@@ -53,11 +58,28 @@ class ProductRepository(Repository):
             _logger.error(f"Error on select_by_id: {str(error)}")
             raise NotFoundError(message=f"Product #{id} not found")
 
-    async def select_all(self) -> List[ProductInDB]:
+    async def select_by_name(self, name: str) -> ProductInDB:
+        try:
+            name = name.capitalize()
+            product_model: ProductModel = ProductModel.objects(name=name, is_active=True).first()
+
+            return ProductInDB.model_validate(product_model)
+
+        except Exception as error:
+            _logger.error(f"Error on select_by_id: {str(error)}")
+            raise NotFoundError(message=f"Product #{id} not found")
+
+    async def select_all(self, query: str) -> List[ProductInDB]:
         try:
             products = []
 
-            for product_model in ProductModel.objects(is_active=True):
+            if query:
+                objects = ProductModel.objects(is_active=True).search_text(query)
+
+            else:
+                objects = ProductModel.objects(is_active=True)
+
+            for product_model in objects:
                 products.append(ProductInDB.model_validate(product_model))
 
             return products

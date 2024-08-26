@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from typing import List
-
+from mongoengine.errors import NotUniqueError
 from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.core.repositories.base_repository import Repository
@@ -27,6 +27,9 @@ class UserRepository(Repository):
             user_model.save()
 
             return UserInDB.model_validate(user_model)
+
+        except NotUniqueError:
+            raise UnprocessableEntity(message="Email already used!")
 
         except Exception as error:
             _logger.error(f"Error on create_user: {str(error)}")
