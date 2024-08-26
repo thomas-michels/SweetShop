@@ -5,6 +5,7 @@ from typing import Any, List, Optional, Type
 from pydantic import BaseModel, Field, ValidationError
 
 from app.core.models import DatabaseModel
+from app.crud.products.schemas import ProductInDB
 
 
 class OrderStatus(str, Enum):
@@ -44,6 +45,11 @@ class Delivery(BaseModel):
 
 class Item(BaseModel):
     product_id: str = Field()
+    quantity: int = Field(gt=0, example=1)
+
+
+class CompleteItem(BaseModel):
+    product: ProductInDB = Field()
     quantity: int = Field(gt=0, example=1)
 
 
@@ -91,3 +97,7 @@ class UpdateOrder(BaseModel):
 class OrderInDB(Order, DatabaseModel):
     value: float = Field(example=12.2)
     is_active: bool = Field(example=True, exclude=True)
+
+
+class CompleteOrder(OrderInDB):
+    items: List[CompleteItem] = Field(default=[], min_length=1)
