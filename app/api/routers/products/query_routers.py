@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, Query, Security
+from fastapi import APIRouter, Depends, Query, Security, Response
 
 from app.api.composers import product_composer
 from app.api.dependencies import build_response, decode_jwt
@@ -16,11 +16,17 @@ async def get_product_by_id(
     current_user: UserInDB = Security(decode_jwt, scopes=["product:get"]),
     product_services: ProductServices = Depends(product_composer),
 ):
-    user_in_db = await product_services.search_by_id(id=product_id)
+    product_in_db = await product_services.search_by_id(id=product_id)
 
-    return build_response(
-        status_code=200, message="Product found with success", data=user_in_db
-    )
+    if product_in_db:
+        return build_response(
+            status_code=200, message="Product found with success", data=product_in_db
+        )
+
+    else:
+        return build_response(
+            status_code=404, message=f"Product {product_id} not found", data=None
+        )
 
 
 @router.get("/products", responses={200: {"model": List[ProductInDB]}})
@@ -29,8 +35,12 @@ async def get_products(
     current_user: UserInDB = Security(decode_jwt, scopes=["product:get"]),
     product_services: ProductServices = Depends(product_composer),
 ):
-    users = await product_services.search_all(query=query)
+    products = await product_services.search_all(query=query)
 
-    return build_response(
-        status_code=200, message="Products found with success", data=users
-    )
+    if products:
+        return build_response(
+            status_code=200, message="Products found with success", data=products
+        )
+
+    else:
+        return Response(status_code=204)

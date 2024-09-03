@@ -18,9 +18,15 @@ async def create_orders(
         order=order
     )
 
-    return build_response(
-        status_code=201, message="Order created with success", data=order_in_db
-    )
+    if order_in_db:
+        return build_response(
+            status_code=201, message="Order created with success", data=order_in_db
+        )
+
+    else:
+        return build_response(
+            status_code=400, message="Some error happened on create an order", data=None
+        )
 
 
 @router.put("/order/{order_id}", responses={200: {"model": OrderInDB}})
@@ -32,9 +38,15 @@ async def update_order(
 ):
     order_in_db = await order_services.update(id=order_id, updated_order=order)
 
-    return build_response(
-        status_code=200, message="Order updated with success", data=order_in_db
-    )
+    if order_in_db:
+        return build_response(
+            status_code=200, message="Order updated with success", data=order_in_db
+        )
+
+    else:
+        return build_response(
+            status_code=400, message="Some error happened on update an order", data=None
+        )
 
 
 @router.delete("/order/{order_id}", responses={200: {"model": OrderInDB}})
@@ -45,6 +57,11 @@ async def delete_order(
 ):
     order_in_db = await order_services.delete_by_id(id=order_id)
 
-    return build_response(
-        status_code=200, message="Order deleted with success", data=order_in_db
-    )
+    if order_in_db:
+        return build_response(
+            status_code=200, message="Order deleted with success", data=order_in_db
+        )
+    else:
+        return build_response(
+            status_code=404, message=f"Order {order_id} not found", data=None
+        )

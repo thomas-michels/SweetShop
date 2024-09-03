@@ -23,9 +23,15 @@ async def create_user(
         user=user, confirm_password=confirm_password
     )
 
-    return build_response(
-        status_code=201, message="User created with success", data=user_in_db
-    )
+    if user_in_db:
+        return build_response(
+            status_code=201, message="User created with success", data=user_in_db
+        )
+
+    else:
+        return build_response(
+            status_code=400, message="Some error happened on create a user", data=None
+        )
 
 
 @router.put("/user/me", responses={200: {"model": UserInDB}})
@@ -36,9 +42,15 @@ async def update_user(
 ):
     user_in_db = await user_services.update(id=current_user.id, updated_user=user)
 
-    return build_response(
-        status_code=200, message="User updated with success", data=user_in_db
-    )
+    if user_in_db:
+        return build_response(
+            status_code=200, message="User updated with success", data=user_in_db
+        )
+
+    else:
+        return build_response(
+            status_code=400, message="Some error happened on update a user", data=None
+        )
 
 
 @router.put("/user/{user_id}", responses={200: {"model": UserInDB}})
@@ -50,9 +62,15 @@ async def update_user(
 ):
     user_in_db = await user_services.update(id=user_id, updated_user=user)
 
-    return build_response(
-        status_code=200, message="User updated with success", data=user_in_db
-    )
+    if user_in_db:
+        return build_response(
+            status_code=200, message="User updated with success", data=user_in_db
+        )
+
+    else:
+        return build_response(
+            status_code=400, message="Some error happened on update a user", data=None
+        )
 
 
 @router.delete("/user/{user_id}", responses={200: {"model": UserInDB}})
@@ -63,9 +81,15 @@ async def delete_user(
 ):
     user_in_db = await user_services.delete_by_id(id=user_id)
 
-    return build_response(
-        status_code=200, message="User deleted with success", data=user_in_db
-    )
+    if user_in_db:
+        return build_response(
+            status_code=200, message="User deleted with success", data=user_in_db
+        )
+
+    else:
+        return build_response(
+            status_code=404, message=f"User {user_id} not found", data=None
+        )
 
 
 @router.delete("/user/me", responses={200: {"model": UserInDB}})
@@ -75,6 +99,12 @@ async def delete_user(
 ):
     user_in_db = await user_services.delete_by_id(id=current_user.id)
 
-    return build_response(
-        status_code=200, message="User deleted with success", data=user_in_db
-    )
+    if user_in_db:
+        return build_response(
+            status_code=200, message="User deleted with success", data=user_in_db
+        )
+
+    else:
+        return build_response(
+            status_code=404, message=f"User {current_user.id} not found", data=None
+        )

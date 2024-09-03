@@ -1,9 +1,12 @@
 from typing import List
 
 from app.core.exceptions import NotFoundError, UnprocessableEntity
-from .schemas import CompleteItem, CompleteOrder, Order, OrderInDB, UpdateOrder
+from .schemas import CompleteItem, CompleteOrder, Order, OrderInDB, OrderStatus, UpdateOrder
 from .repositories import OrderRepository
 from app.crud.products.repositories import ProductRepository
+from app.core.configs import get_logger
+
+logger = get_logger(__name__)
 
 
 class OrderServices:
@@ -26,6 +29,10 @@ class OrderServices:
     async def update(self, id: str, updated_order: UpdateOrder) -> OrderInDB:
         order_in_db = await self.search_by_id(id=id)
 
+        if order_in_db.status == OrderStatus.DONE:
+            logger.warning(f"Order cannot be updated if is done")
+            return
+
         is_updated = order_in_db.validate_updated_fields(update_order=updated_order)
 
         if order_in_db.items:
@@ -42,8 +49,8 @@ class OrderServices:
 
         return await self.__build_complete_order(order_in_db)
 
-    async def search_all(self, query: str, user_id: str) -> List[CompleteOrder]:
-        orders = await self.__order_repository.select_all(query=query, user_id=user_id)
+    async def search_all(self, status: OrderStatus, user_id: str) -> List[CompleteOrder]:
+        orders = await self.__order_repository.select_all(status=status, user_id=user_id)
         complete_orders = []
 
         for order in orders:

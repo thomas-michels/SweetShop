@@ -18,9 +18,15 @@ async def create_products(
         product=product
     )
 
-    return build_response(
-        status_code=201, message="Product created with success", data=product_in_db
-    )
+    if product_in_db:
+        return build_response(
+            status_code=201, message="Product created with success", data=product_in_db
+        )
+
+    else:
+        return build_response(
+            status_code=400, message="Some error happened on create a product", data=None
+        )
 
 
 @router.put("/product/{product_id}", responses={200: {"model": ProductInDB}})
@@ -32,9 +38,15 @@ async def update_product(
 ):
     product_in_db = await product_services.update(id=product_id, updated_product=product)
 
-    return build_response(
-        status_code=200, message="Product updated with success", data=product_in_db
-    )
+    if product_in_db:
+        return build_response(
+            status_code=200, message="Product updated with success", data=product_in_db
+        )
+
+    else:
+        return build_response(
+            status_code=400, message="Some error happened on update a product", data=None
+        )
 
 
 @router.delete("/product/{product_id}", responses={200: {"model": ProductInDB}})
@@ -45,6 +57,12 @@ async def delete_product(
 ):
     product_in_db = await product_services.delete_by_id(id=product_id)
 
-    return build_response(
-        status_code=200, message="Product deleted with success", data=product_in_db
-    )
+    if product_in_db:
+        return build_response(
+            status_code=200, message="Product deleted with success", data=product_in_db
+        )
+
+    else:
+        return build_response(
+            status_code=404, message=f"Product {product_id} not found", data=None
+        )

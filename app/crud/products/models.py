@@ -6,7 +6,7 @@ from app.core.models.base_document import BaseDocument
 
 class ProductModel(Document, BaseDocument):
     name = StringField(max_length=100, required=True, unique=True)
-    description = StringField(max_length=255, required=True, unique=True)
+    description = StringField(max_length=255, required=True)
     unit_price = FloatField(min_value=0, required=True)
     unit_cost = FloatField(min_value=0, required=True)
 
@@ -14,9 +14,9 @@ class ProductModel(Document, BaseDocument):
         "collection": "products",
         "indexes": [
             {
-                "fields": ["$name"],
+                "fields": ["$name", "$description"],
                 "default_language": "portuguese",
-                "weights": {"name": 10}
+                "weights": {"name": 10, "description": 9}
             }
         ]
     }

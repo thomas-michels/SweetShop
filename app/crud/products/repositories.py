@@ -74,7 +74,7 @@ class ProductRepository(Repository):
             products = []
 
             if query:
-                objects = ProductModel.objects(is_active=True).search_text(query)
+                objects = ProductModel.objects(is_active=True, name__iregex=query)
 
             else:
                 objects = ProductModel.objects(is_active=True)

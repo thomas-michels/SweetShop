@@ -6,7 +6,7 @@ from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.core.repositories.base_repository import Repository
 
 from .models import OrderModel
-from .schemas import Order, OrderInDB
+from .schemas import Order, OrderInDB, OrderStatus
 
 _logger = get_logger(__name__)
 
@@ -57,15 +57,17 @@ class OrderRepository(Repository):
             _logger.error(f"Error on select_by_id: {str(error)}")
             raise NotFoundError(message=f"Order #{id} not found")
 
-    async def select_all(self, user_id: str, query: str) -> List[OrderInDB]:
+    async def select_all(self, user_id: str, status: OrderStatus) -> List[OrderInDB]:
         try:
             orders = []
 
-            if user_id:
-                objects = OrderModel.objects(is_active=True, user_id=user_id)
+            objects = OrderModel.objects(is_active=True)
 
-            else:
-                objects = OrderModel.objects(is_active=True)
+            if user_id:
+                objects = objects(user_id=user_id)
+
+            if status:
+                objects = objects(status=status.value)
 
             for order_model in objects:
                 orders.append(OrderInDB.model_validate(order_model))
