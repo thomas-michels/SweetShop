@@ -10,8 +10,8 @@ RUN pip install --upgrade pip \
 COPY ./app ./app
 COPY ./main.py ./main.py
 
-EXPOSE 8000
+EXPOSE 8080
 
 ENTRYPOINT ["uvicorn"]
 
-CMD ["app.application:app", "--proxy-headers", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["app.application:app", "--proxy-headers", "--host", "0.0.0.0", "--port", "8080"]
