@@ -16,11 +16,12 @@ class UserRepository(Repository):
     def __init__(self) -> None:
         super().__init__()
 
-    async def create(self, user: User) -> UserInDB:
+    async def create(self, user: User, password: str) -> UserInDB:
         try:
             user_model = UserModel(
                 created_at=datetime.now(),
                 updated_at=datetime.now(),
+                password=password,
                 **user.model_dump()
             )
 

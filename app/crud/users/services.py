@@ -10,9 +10,9 @@ class UserServices:
 
     async def create(self, user: User, confirm_password: ConfirmPassword) -> UserInDB:
         confirm_password.validate_password()
-        user.password = confirm_password.get_password(confirm_password.password.get_secret_value())
+        password = confirm_password.get_password(confirm_password.password.get_secret_value())
 
-        user_in_db = await self.__repository.create(user=user)
+        user_in_db = await self.__repository.create(user=user, password=password)
         return user_in_db
 
     async def update(self, id: int, updated_user: UpdateUser) -> UserInDB:
