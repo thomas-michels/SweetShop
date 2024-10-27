@@ -2,19 +2,25 @@ from datetime import datetime
 
 from typing import List
 from mongoengine.errors import NotUniqueError
-from app.core.configs import get_logger
+from app.core.configs import get_logger, get_environment
 from app.core.exceptions import NotFoundError, UnprocessableEntity
-from app.core.repositories.base_repository import Repository
+from app.core.utils.http_client import HTTPClient
 
 from .schemas import User, UserInDB
 from .models import UserModel
 
 _logger = get_logger(__name__)
+_env = get_environment()
 
 
-class UserRepository(Repository):
-    def __init__(self) -> None:
-        super().__init__()
+class UserRepository:
+    def __init__(self, access_token: str) -> None:
+        self.access_token = access_token
+        self.headers = {
+            "authorization": self.access_token,
+            "Content-Type": "application/json",
+        }
+        self.http_client = HTTPClient(headers=self.headers)
 
     async def create(self, user: User, password: str) -> UserInDB:
         try:
@@ -49,13 +55,23 @@ class UserRepository(Repository):
             raise UnprocessableEntity(message="Error on update user")
 
     async def select_by_id(self, id: str) -> UserInDB:
+        _logger.info("Getting user by ID on Management API")
         try:
-            user_model: UserModel = UserModel.objects(id=id, is_active=True).first()
+            status_code, response = self.http_client.get(
+                url=f"{_env.AUTH0_ISSUER}/api/v2/users/{id}"
+            )
 
-            return UserInDB.model_validate(user_model)
+            if status_code == 200:
+                _logger.info("User retrieved successfully.")
+                return UserInDB(**response)
+
+            else:
+                _logger.info(f"User {id} not found.")
 
         except Exception as error:
-            _logger.error(f"Error on select_by_id: {str(error)}")
+            _logger.error("Error on get_user_by_id")
+            _logger.error(str(error))
+
             raise NotFoundError(message=f"User #{id} not found")
 
     async def select_by_email(self, email: str) -> UserInDB:
