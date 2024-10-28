@@ -1,5 +1,4 @@
 from fastapi.security import SecurityScopes, HTTPAuthorizationCredentials
-from jose import jwe
 from jwt import PyJWKClient, decode
 from jwt.exceptions import PyJWKClientError, DecodeError
 from app.api.exceptions.authentication_exceptions import (
@@ -15,12 +14,6 @@ async def verify_token(
         scopes: SecurityScopes,
         token: HTTPAuthorizationCredentials
     ) -> dict:
-    decrypted_token = jwe.decrypt(
-        token.credentials,
-        _env.APP_SECRET_KEY
-    )
-
-
     jwks_client = PyJWKClient(f'{_env.AUTH0_DOMAIN}/.well-known/jwks.json')
 
     if token is None:
@@ -28,7 +21,7 @@ async def verify_token(
 
     try:
         signing_key = jwks_client.get_signing_key_from_jwt(
-            decrypted_token
+            token.credentials
         ).key
 
     except PyJWKClientError as error:

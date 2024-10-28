@@ -76,9 +76,17 @@ class UserRepository:
 
     async def select_by_email(self, email: str) -> UserInDB:
         try:
-            user_model: UserModel = UserModel.objects(email=email, is_active=True).first()
+            status_code, response = self.http_client.get(
+                url=f"{_env.AUTH0_ISSUER}/api/v2/users-by-email",
+                params={"email": email}
+            )
 
-            return UserInDB.model_validate(user_model)
+            if status_code == 200:
+                _logger.info("User retrieved successfully.")
+                return UserInDB(**response[0])
+
+            else:
+                _logger.info(f"User with email {email} not found.")
 
         except Exception as error:
             _logger.error(f"Error on select_by_email: {str(error)}")

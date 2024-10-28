@@ -57,13 +57,12 @@ oauth.register(
 )
 
 
-@app.get("/api/v1/login", tags=["Login"])
+@app.get("/login", tags=["Login"])
 async def login(request: Request):
     return await oauth.auth0.authorize_redirect(
         request=request,
         redirect_uri=request.url_for("callback")
     )
-
 
 
 @app.route("/callback", methods=["GET", "POST"])
@@ -73,7 +72,7 @@ async def callback(request: Request):
     if token:
         return build_response(
             status_code=200, message="Login successed!", data=Token(
-                access_token=token["access_token"],
+                access_token=token["id_token"],
                 expires_in=token["expires_in"],
                 token_type=token["token_type"]
             )

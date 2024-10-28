@@ -28,14 +28,14 @@ async def decode_jwt(
 
         token_data = TokenData(scopes=token_scopes, id=auth_result["sub"])
 
-        verify_scopes(
-            scopes_needed=security_scopes,
-            user_scopes=token_data.scopes,
-        )
+        # verify_scopes(
+        #     scopes_needed=security_scopes,
+        #     user_scopes=token_data.scopes,
+        # )
 
         current_user = await authetication_services.get_current_user(token=token_data)
 
-        if current_user.is_active:
+        if current_user:
             return current_user
 
         raise HTTPException(
