@@ -1,5 +1,3 @@
-from fastapi.responses import RedirectResponse
-
 from authlib.integrations.starlette_client import OAuth
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware

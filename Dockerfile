@@ -5,7 +5,8 @@ WORKDIR .
 COPY ./requirements/prod.txt ./requirements.txt
 
 RUN pip install --upgrade pip \
-    && pip install --no-cache-dir --upgrade -r /requirements.txt
+    && pip install Authlib[Starlette] httpx itsdangerous requests PyJWT \
+    && pip install --no-cache -r /requirements.txt
 
 COPY ./app ./app
 COPY ./main.py ./main.py
