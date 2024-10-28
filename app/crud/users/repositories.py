@@ -69,7 +69,7 @@ class UserRepository:
                 _logger.info(f"User {id} not found.")
 
         except Exception as error:
-            _logger.error("Error on get_user_by_id")
+            _logger.error("Error on select_by_id")
             _logger.error(str(error))
 
             raise NotFoundError(message=f"User #{id} not found")

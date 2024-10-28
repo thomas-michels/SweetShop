@@ -28,6 +28,12 @@ class Environment(BaseSettings):
     AUTH0_API_AUDIENCE: str
     AUTH0_ISSUER: str
     AUTH0_ALGORITHMS: str
+    AUTH0_CLIENT_ID: str
+    AUTH0_CLIENT_SECRET: str
+    APP_SECRET_KEY: str
+    AUTH0_MANAGEMENT_API_CLIENT_ID: str
+    AUTH0_MANAGEMENT_API_CLIENT_SECRET: str
+    AUTH0_MANAGEMENT_API_AUDIENCE: str
 
     class Config:
         """Load config file"""

@@ -1,16 +1,8 @@
-from typing import Annotated
-
-from fastapi import APIRouter, Depends, HTTPException, Security
-from fastapi.security import OAuth2PasswordRequestForm
-
-from app.api.composers import authentication_composer
+from fastapi import APIRouter, Security
 from app.api.dependencies import (
     build_response,
-    create_access_token,
     decode_jwt,
 )
-from app.api.shared_schemas.token import Token
-from app.crud.authetication import AuthenticationServices, UserSignin
 from app.crud.users import UserInDB
 
 router = APIRouter(tags=["Login"])

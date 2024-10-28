@@ -21,6 +21,7 @@ async def lifespan(app: FastAPI) -> None: # type: ignore
     _logger.info("Connecting to MongoDB")
 
     start_database()
+    app.state.access_token = None
 
     _logger.info("Connection established")
 
