@@ -9,15 +9,15 @@ from app.crud.products.schemas import ProductInDB
 
 
 class OrderStatus(str, Enum):
-    PENDING = "Pendente"
-    SCHEDULED = "Agendado"
-    IN_PREPARATION = "Em preparação"
-    DONE = "Concluído"
+    PENDING = "PENDING"
+    SCHEDULED = "SCHEDULED"
+    IN_PREPARATION = "IN_PREPARATION"
+    DONE = "DONE"
 
 
 class DeliveryType(str, Enum):
-    WITHDRWAWAL = "Retirada"
-    DELIVERY = "Entrega"
+    WITHDRWAWAL = "WITHDRWAWAL"
+    DELIVERY = "DELIVERY"
 
 
 class Address(BaseModel):
