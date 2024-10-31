@@ -1,7 +1,7 @@
 from typing import List
 
 from app.core.exceptions import NotFoundError, UnprocessableEntity
-from .schemas import CompleteItem, CompleteOrder, Order, OrderInDB, OrderStatus, UpdateOrder
+from .schemas import CompleteProduct, CompleteOrder, Order, OrderInDB, OrderStatus, UpdateOrder
 from .repositories import OrderRepository
 from app.crud.products.repositories import ProductRepository
 from app.core.configs import get_logger
@@ -35,7 +35,7 @@ class OrderServices:
 
         is_updated = order_in_db.validate_updated_fields(update_order=updated_order)
 
-        if order_in_db.items:
+        if order_in_db.products:
             value = await self.__calculate_order_value(order=order_in_db)
             order_in_db.value = value
 
@@ -49,8 +49,8 @@ class OrderServices:
 
         return await self.__build_complete_order(order_in_db)
 
-    async def search_all(self, status: OrderStatus, user_id: str) -> List[CompleteOrder]:
-        orders = await self.__order_repository.select_all(status=status, user_id=user_id)
+    async def search_all(self, status: OrderStatus, customer_id: str) -> List[CompleteOrder]:
+        orders = await self.__order_repository.select_all(status=status, customer_id=customer_id)
         complete_orders = []
 
         for order in orders:
@@ -71,34 +71,36 @@ class OrderServices:
             id=order_in_db.id,
             preparation_date=order_in_db.preparation_date,
             status=order_in_db.status,
-            user_id=order_in_db.user_id,
+            customer_id=order_in_db.customer_id,
             value=order_in_db.value,
+            tags=order_in_db.tags,
+            reason_id=order_in_db.reason_id
         )
-        complete_order.items = []
+        complete_order.products = []
 
-        for item in order_in_db.items:
+        for product in order_in_db.products:
             product_in_db = await self.__product_repository.select_by_id(
-                id=item.product_id
+                id=product.product_id
             )
 
-            complete_item = CompleteItem(
+            complete_product = CompleteProduct(
                 product=product_in_db,
-                quantity=item.quantity
+                quantity=product.quantity
             )
 
-            complete_order.items.append(complete_item)
+            complete_order.products.append(complete_product)
 
         return complete_order
 
     async def __calculate_order_value(self, order: Order) -> float:
         value = 0
-        for item in order.items:
+        for product in order.products:
             try:
-                product_in_db = await self.__product_repository.select_by_id(id=item.product_id)
+                product_in_db = await self.__product_repository.select_by_id(id=product.product_id)
 
-                value += (product_in_db.unit_price * item.quantity)
+                value += (product_in_db.unit_price * product.quantity)
 
             except NotFoundError:
-                raise UnprocessableEntity(message=f"Product {item.product_id} is invalid!")
+                raise UnprocessableEntity(message=f"Product {product.product_id} is invalid!")
 
         return value

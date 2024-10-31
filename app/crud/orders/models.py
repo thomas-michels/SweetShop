@@ -12,12 +12,14 @@ from app.crud.orders.schemas import OrderStatus
 
 
 class OrderModel(Document, BaseDocument):
-    user_id = StringField(required=True)
+    customer_id = StringField(required=True)
     status = StringField(required=True, choices=[status.value for status in OrderStatus])
-    items = ListField(DictField(), required=True, min_length=1)
+    products = ListField(DictField(), required=True, min_length=1)
+    tags = ListField(StringField(), required=False)
     delivery = DictField(required=True)
     preparation_date = DateField(required=True)
     value = FloatField(required=True)
+    reason_id = StringField(required=False)
     is_active = BooleanField(required=True, default=True)
 
     meta = {

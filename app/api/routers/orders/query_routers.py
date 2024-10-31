@@ -33,13 +33,13 @@ async def get_order_by_id(
 @router.get("/orders", responses={200: {"model": List[OrderInDB]}})
 async def get_orders(
     status: OrderStatus = Query(default=None),
-    user_id: str = Query(default=None),
+    customer_id: str = Query(default=None),
     current_user: UserInDB = Security(decode_jwt, scopes=["order:get"]),
     order_services: OrderServices = Depends(order_composer),
 ):
     orders = await order_services.search_all(
         status=status,
-        user_id=user_id
+        customer_id=customer_id
     )
 
     if orders:

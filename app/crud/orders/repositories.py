@@ -57,14 +57,14 @@ class OrderRepository(Repository):
             _logger.error(f"Error on select_by_id: {str(error)}")
             raise NotFoundError(message=f"Order #{id} not found")
 
-    async def select_all(self, user_id: str, status: OrderStatus) -> List[OrderInDB]:
+    async def select_all(self, customer_id: str, status: OrderStatus) -> List[OrderInDB]:
         try:
             orders = []
 
             objects = OrderModel.objects(is_active=True)
 
-            if user_id:
-                objects = objects(user_id=user_id)
+            if customer_id:
+                objects = objects(customer_id=customer_id)
 
             if status:
                 objects = objects(status=status.value)

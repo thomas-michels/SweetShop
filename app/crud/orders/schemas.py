@@ -43,36 +43,38 @@ class Delivery(BaseModel):
         return super().model_post_init(__context)
 
 
-class Item(BaseModel):
+class RequestedProduct(BaseModel):
     product_id: str = Field()
     quantity: int = Field(gt=0, example=1)
 
 
-class CompleteItem(BaseModel):
+class CompleteProduct(BaseModel):
     product: ProductInDB = Field()
     quantity: int = Field(gt=0, example=1)
 
 
 class Order(BaseModel):
-    user_id: str = Field(example="66bae5c2e59a0787e2c903e3")
+    customer_id: str = Field(example="66bae5c2e59a0787e2c903e3")
     status: OrderStatus = Field(default=OrderStatus.PENDING, example=OrderStatus.IN_PREPARATION)
-    items: List[Item] = Field(default=[], min_length=1)
+    products: List[RequestedProduct] = Field(default=[], min_length=1)
+    tags: List[str] = Field(default=[])
     delivery: Delivery = Field()
     preparation_date: date = Field(example=str(date.today()))
+    reason_id: str | None = Field(default=None, example="123")
 
     def validate_updated_fields(self, update_order: Type["UpdateOrder"]) -> bool:
         is_updated = False
 
-        if update_order.user_id:
-            self.user_id = update_order.user_id
+        if update_order.customer_id:
+            self.customer_id = update_order.customer_id
             is_updated = True
 
         if update_order.status:
             self.status = update_order.status
             is_updated = True
 
-        if update_order.items:
-            self.items = update_order.items
+        if update_order.products:
+            self.products = update_order.products
             is_updated = True
 
         if update_order.delivery:
@@ -83,15 +85,20 @@ class Order(BaseModel):
             self.preparation_date = update_order.preparation_date
             is_updated = True
 
+        if update_order.reason_id:
+            self.reason_id = update_order.reason_id
+            is_updated = True
+
         return is_updated
 
 
 class UpdateOrder(BaseModel):
-    user_id: Optional[str] = Field(default=None, example="66bae5c2e59a0787e2c903e3")
+    customer_id: Optional[str] = Field(default=None, example="66bae5c2e59a0787e2c903e3")
     status: Optional[OrderStatus] = Field(default=None, example=OrderStatus.IN_PREPARATION)
-    items: Optional[List[Item]] = Field(default=None, min_length=1)
+    products: Optional[List[RequestedProduct]] = Field(default=None, min_length=1)
     delivery: Optional[Delivery] = Field(default=None)
     preparation_date: Optional[date] = Field(default=None, example=str(date.today()))
+    reason_id: Optional[str] = Field(default=None, example="123")
 
 
 class OrderInDB(Order, DatabaseModel):
@@ -100,4 +107,4 @@ class OrderInDB(Order, DatabaseModel):
 
 
 class CompleteOrder(OrderInDB):
-    items: List[CompleteItem] = Field(default=[], min_length=1)
+    products: List[CompleteProduct] = Field(default=[], min_length=1)
