@@ -40,7 +40,7 @@ async def update_user(
     current_user: UserInDB = Security(decode_jwt, scopes=["user:me"]),
     user_services: UserServices = Depends(user_composer),
 ):
-    user_in_db = await user_services.update(id=current_user.id, updated_user=user)
+    user_in_db = await user_services.update(id=current_user.user_id, updated_user=user)
 
     if user_in_db:
         return build_response(
@@ -97,7 +97,7 @@ async def delete_user(
     current_user: UserInDB = Security(decode_jwt, scopes=["user:me"]),
     user_services: UserServices = Depends(user_composer),
 ):
-    user_in_db = await user_services.delete_by_id(id=current_user.id)
+    user_in_db = await user_services.delete_by_id(id=current_user.user_id)
 
     if user_in_db:
         return build_response(

@@ -7,7 +7,8 @@ from app.api.routers import (
     user_router,
     product_router,
     authentication_router,
-    order_router
+    order_router,
+    customer_router
 )
 from app.api.routers.exception_handlers import (
     unprocessable_entity_error_422,
@@ -38,6 +39,7 @@ app.include_router(authentication_router, prefix="/api")
 app.include_router(user_router, prefix="/api")
 app.include_router(product_router, prefix="/api")
 app.include_router(order_router, prefix="/api")
+app.include_router(customer_router, prefix="/api")
 
 app.add_exception_handler(UnprocessableEntity, unprocessable_entity_error_422)
 app.add_exception_handler(NotFoundError, not_found_error_404)

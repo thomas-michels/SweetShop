@@ -1,13 +1,11 @@
-from datetime import datetime
-
+import traceback
 from typing import List
-from mongoengine.errors import NotUniqueError
+from fastapi.encoders import jsonable_encoder
 from app.core.configs import get_logger, get_environment
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.core.utils.http_client import HTTPClient
 
-from .schemas import User, UserInDB
-from .models import UserModel
+from .schemas import UpdateUser, User, UserInDB
 
 _logger = get_logger(__name__)
 _env = get_environment()
@@ -23,35 +21,46 @@ class UserRepository:
         self.http_client = HTTPClient(headers=self.headers)
 
     async def create(self, user: User, password: str) -> UserInDB:
+        _logger.info("Updating user by ID on Management API")
         try:
-            user_model = UserModel(
-                created_at=datetime.now(),
-                updated_at=datetime.now(),
-                password=password,
-                **user.model_dump()
+            raw_user = user.model_dump(exclude_none=True)
+            raw_user["password"] = password
+
+            status_code, response = self.http_client.post(
+                url=f"{_env.AUTH0_ISSUER}/api/v2/users",
+                data=jsonable_encoder(raw_user)
             )
 
-            user_model.save()
+            if status_code == 200:
+                _logger.info("User updated successfully.")
+                return UserInDB(**response)
 
-            return UserInDB.model_validate(user_model)
-
-        except NotUniqueError:
-            raise UnprocessableEntity(message="Email already used!")
-
-        except Exception as error:
-            _logger.error(f"Error on create_user: {str(error)}")
-            raise UnprocessableEntity(message="Error on create new user")
-
-    async def update(self, user: UserInDB) -> UserInDB:
-        try:
-            user_model: UserModel = UserModel.objects(id=user.id, is_active=True).first()
-
-            user_model.update(**user.model_dump())
-
-            return UserInDB.model_validate(user_model)
+            else:
+                _logger.info(f"User not created.")
 
         except Exception as error:
             _logger.error(f"Error on update_user: {str(error)}")
+            _logger.error(traceback.format_exc())
+            raise UnprocessableEntity(message="Error on create new user")
+
+    async def update(self, user_id: str, user: UpdateUser) -> UserInDB:
+        _logger.info("Updating user by ID on Management API")
+        try:
+            status_code, response = self.http_client.patch(
+                url=f"{_env.AUTH0_ISSUER}/api/v2/users/{user_id}",
+                data=jsonable_encoder(user.model_dump(exclude_none=True))
+            )
+
+            if status_code == 200:
+                _logger.info("User updated successfully.")
+                return UserInDB(**response)
+
+            else:
+                _logger.info(f"User {user_id} not updated.")
+
+        except Exception as error:
+            _logger.error(f"Error on update_user: {str(error)}")
+            _logger.error(traceback.format_exc())
             raise UnprocessableEntity(message="Error on update user")
 
     async def select_by_id(self, id: str) -> UserInDB:
@@ -96,22 +105,38 @@ class UserRepository:
         try:
             users = []
 
-            for user_model in UserModel.objects(is_active=True):
-                users.append(UserInDB.model_validate(user_model))
+            status_code, response = self.http_client.get(
+                url=f"{_env.AUTH0_ISSUER}/api/v2/users"
+            )
+
+            if status_code == 200:
+                _logger.info("Users retrieved successfully.")
+                for raw_user in response:
+                    users.append(UserInDB(**raw_user))
 
             return users
 
         except Exception as error:
             _logger.error(f"Error on select_all: {str(error)}")
-            raise NotFoundError(message=f"Users not found")
+            return []
 
     async def delete_by_id(self, id: str) -> UserInDB:
+        _logger.info("Deleting a user by ID on Management API")
         try:
-            user_model: UserModel = UserModel.objects(id=id, is_active=True).first()
-            user_model.delete()
+            status_code, response = self.http_client.delete(
+                url=f"{_env.AUTH0_ISSUER}/api/v2/users/{id}"
+            )
 
-            return UserInDB.model_validate(user_model)
+            if status_code == 204:
+                _logger.info("User deleted successfully.")
+                return True
+
+            else:
+                _logger.info(f"User {id} not deleted.")
+                return False
 
         except Exception as error:
-            _logger.error(f"Error on delete_by_id: {str(error)}")
-            raise NotFoundError(message=f"User #{id} not found")
+            _logger.error("Error on delete_user_by_id")
+            _logger.error(str(error))
+            _logger.error(traceback.format_exc())
+            return False

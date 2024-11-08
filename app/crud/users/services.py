@@ -18,10 +18,11 @@ class UserServices:
     async def update(self, id: int, updated_user: UpdateUser) -> UserInDB:
         user_in_db = await self.search_by_id(id=id)
 
-        is_updated = user_in_db.validate_updated_fields(updated_user=updated_user)
-
-        if is_updated:
-            user_in_db = await self.__repository.update(user=user_in_db)
+        if user_in_db:
+            user_in_db = await self.__repository.update(
+                user_id=user_in_db.user_id,
+                user=updated_user
+            )
 
         return user_in_db
 

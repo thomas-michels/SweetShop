@@ -1,8 +1,7 @@
 import re
 from datetime import datetime
-from typing import List
 from passlib.context import CryptContext
-from pydantic import BaseModel, EmailStr, Field, SecretStr
+from pydantic import BaseModel, Field, SecretStr
 from app.core.exceptions import InvalidPassword, UnprocessableEntity
 
 _pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
