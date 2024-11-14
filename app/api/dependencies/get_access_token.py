@@ -14,26 +14,20 @@ async def get_access_token(request: Request) -> str:
     stored_access_token = request.app.state.access_token
 
     if stored_access_token and datetime.now() < stored_access_token["expires_at"]:
-        logger.info("Getting cached access token")
-        token = stored_access_token["access_token"]
+        logger.info("Using cached access token")
+        return f"Bearer {stored_access_token['access_token']}"
 
-    else:
-        logger.info("Generating new access token")
-        access_token = generate_new_access_token()
+    logger.info("Validating new access token from request headers")
+    access_token = generate_new_access_token()
 
-        expires_at = datetime.now() + timedelta(seconds=access_token.get("expires_in", 0))
 
-        access_token["expires_at"] = expires_at
+    expires_at = datetime.now() + timedelta(seconds=access_token.get("expires_in", 3600))
+    access_token["expires_at"] = expires_at
 
-        request.app.state.access_token = access_token
 
-        token = access_token['access_token']
+    request.app.state.access_token = access_token
 
-    if token:
-        return f"Bearer {token}"
-
-    logger.error(f"Failed to get an access token. stored_access_token: {stored_access_token}")
-    raise InternalErrorException(detail="Internal authentication error!")
+    return f"Bearer {access_token['access_token']}"
 
 
 def generate_new_access_token() -> dict:
@@ -46,7 +40,7 @@ def generate_new_access_token() -> dict:
         "grant_type": "client_credentials",
         "client_id": _env.AUTH0_MANAGEMENT_API_CLIENT_ID,
         "client_secret": _env.AUTH0_MANAGEMENT_API_CLIENT_SECRET,
-        "audience": _env.AUTH0_MANAGEMENT_API_AUDIENCE
+        "audience": f"https://{_env.AUTH0_MANAGEMENT_API_AUDIENCE}/api/v2/"
     }
 
     http_client = HTTPClient(headers=headers)
