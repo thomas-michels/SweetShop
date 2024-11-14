@@ -67,7 +67,7 @@ class UserRepository:
         _logger.info("Getting user by ID on Management API")
         try:
             status_code, response = self.http_client.get(
-                url=f"{_env.AUTH0_ISSUER}/api/v2/users/{id}"
+                url=f"{_env.AUTH0_DOMAIN}/api/v2/users/{id}"
             )
 
             if status_code == 200:

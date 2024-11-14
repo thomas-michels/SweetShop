@@ -36,7 +36,7 @@ async def verify_token(
             signing_key,
             algorithms=_env.AUTH0_ALGORITHMS,
             audience=_env.AUTH0_API_AUDIENCE,
-            issuer=_env.AUTH0_ISSUER,
+            issuer=f"{_env.AUTH0_DOMAIN}/"
         )
     except Exception as error:
         raise UnauthorizedException(str(error))
