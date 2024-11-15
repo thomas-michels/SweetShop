@@ -1,14 +1,15 @@
 import re
 from datetime import datetime
 from passlib.context import CryptContext
-from pydantic import BaseModel, Field, SecretStr
+from pydantic import Field, SecretStr
 from app.core.exceptions import InvalidPassword, UnprocessableEntity
+from app.core.models.base_schema import GenericModel
 
 _pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 _PASSWORD_REGEX = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()\-=_+{};:\'"\\|,.<>?]).+$'
 
 
-class ConfirmPassword(BaseModel):
+class ConfirmPassword(GenericModel):
     password: SecretStr = Field(example="abc@1234#", exclude=True)
     repeat_password: SecretStr = Field(example="abc@1234#", exclude=True)
 
@@ -36,7 +37,7 @@ class ConfirmPassword(BaseModel):
         return _pwd_context.hash(password)
 
 
-class User(BaseModel):
+class User(GenericModel):
     email: str = Field(example="test@test.com")
     name: str = Field(example="test")
     nickname: str = Field(example="test")
@@ -52,7 +53,7 @@ class UserInDB(User):
     updated_at: datetime = Field(example=str(datetime.now()))
 
 
-class UpdateUser(BaseModel):
+class UpdateUser(GenericModel):
     blocked: bool | None = Field(default=None, example=True)
     email: str | None = Field(default=None, example="test@test.com")
     name: str | None= Field(default=None, example="test")

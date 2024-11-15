@@ -1,11 +1,12 @@
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from app.core.models import DatabaseModel
+from app.core.models.base_schema import GenericModel
 
 
-class Customer(BaseModel):
+class Customer(GenericModel):
     name: str = Field(example="Ted Mosby")
 
     def validate_updated_fields(self, update_customer: "UpdateCustomer") -> bool:
@@ -17,7 +18,7 @@ class Customer(BaseModel):
 
         return is_updated
 
-class UpdateCustomer(BaseModel):
+class UpdateCustomer(GenericModel):
     name: Optional[str] = Field(example="Ted Mosby")
 
 

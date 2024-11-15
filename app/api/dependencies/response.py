@@ -18,5 +18,6 @@ def build_response(
         raw_response = MessageResponse(message=message)
 
     return JSONResponse(
-        content=jsonable_encoder(raw_response.model_dump()), status_code=status_code
+        content=jsonable_encoder(raw_response.model_dump(by_alias=True, exclude_none=True)),
+        status_code=status_code
     )

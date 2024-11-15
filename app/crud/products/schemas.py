@@ -1,11 +1,12 @@
 from typing import Optional
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import Field, model_validator
 
 from app.core.models import DatabaseModel
+from app.core.models.base_schema import GenericModel
 
 
-class Product(BaseModel):
+class Product(GenericModel):
     name: str = Field(example="Brigadeiro")
     description: str = Field(example="Brigadeiro de Leite Ninho")
     unit_price: float = Field(example=1.5)
@@ -35,7 +36,7 @@ class Product(BaseModel):
 
         return is_updated
 
-class UpdateProduct(BaseModel):
+class UpdateProduct(GenericModel):
     name: Optional[str] = Field(example="Brigadeiro")
     description: Optional[str] = Field(example="Brigadeiro de Leite Ninho")
     unit_price: Optional[float] = Field(example=1.5)
