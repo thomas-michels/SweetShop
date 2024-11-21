@@ -29,7 +29,7 @@ class CustomerRepository(Repository):
             return CustomerInDB.model_validate(customer_model)
 
         except NotUniqueError:
-            return await self.select_by_name(name=Customer.name)
+            return await self.select_by_name(name=customer.name)
 
         except Exception as error:
             _logger.error(f"Error on create_customer: {str(error)}")

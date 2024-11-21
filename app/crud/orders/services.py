@@ -1,6 +1,8 @@
 from typing import List
 
 from app.core.exceptions import NotFoundError, UnprocessableEntity
+from app.crud.customers.repositories import CustomerRepository
+from app.crud.tags.repositories import TagRepository
 from .schemas import CompleteProduct, CompleteOrder, Order, OrderInDB, OrderStatus, UpdateOrder
 from .repositories import OrderRepository
 from app.crud.products.repositories import ProductRepository
@@ -14,13 +16,26 @@ class OrderServices:
     def __init__(
         self,
         order_repository: OrderRepository,
-        product_repository: ProductRepository
+        product_repository: ProductRepository,
+        tag_repository: TagRepository,
+        customer_repository: CustomerRepository,
     ) -> None:
         self.__order_repository = order_repository
         self.__product_repository = product_repository
+        self.__tag_repository = tag_repository
+        self.__customer_repository = customer_repository
 
     async def create(self, order: Order) -> OrderInDB:
         value = await self.__calculate_order_value(order)
+
+        if order.customer_id is not None:
+            await self.__customer_repository.select_by_id(id=order.customer_id)
+
+        for product in order.products:
+            await self.__product_repository.select_by_id(id=product.product_id)
+
+        for tag in order.tags:
+            await self.__tag_repository.select_by_id(id=tag)
 
         order_in_db = await self.__order_repository.create(order=order, value=value)
 
@@ -28,6 +43,8 @@ class OrderServices:
 
     async def update(self, id: str, updated_order: UpdateOrder) -> OrderInDB:
         order_in_db = await self.search_by_id(id=id)
+
+        # TODO adicionar validação de products, customers, tags
 
         if order_in_db.status == OrderStatus.DONE:
             logger.warning(f"Order cannot be updated if is done")
@@ -71,12 +88,13 @@ class OrderServices:
             id=order_in_db.id,
             preparation_date=order_in_db.preparation_date,
             status=order_in_db.status,
-            customer_id=order_in_db.customer_id,
             value=order_in_db.value,
-            tags=order_in_db.tags,
             reason_id=order_in_db.reason_id
         )
         complete_order.products = []
+
+        if order_in_db.customer_id is not None:
+            complete_order.customer = await self.__customer_repository.select_by_id(id=order_in_db.customer_id)
 
         for product in order_in_db.products:
             product_in_db = await self.__product_repository.select_by_id(
@@ -89,6 +107,13 @@ class OrderServices:
             )
 
             complete_order.products.append(complete_product)
+
+        complete_order.tags = []
+
+        for tag in order_in_db.tags:
+            tag_in_db = await self.__tag_repository.select_by_id(id=tag)
+
+            complete_order.tags.append(tag_in_db)
 
         return complete_order
 

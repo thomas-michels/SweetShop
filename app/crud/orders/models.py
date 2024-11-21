@@ -8,12 +8,13 @@ from mongoengine import (
     DateField
 )
 from app.core.models.base_document import BaseDocument
-from app.crud.orders.schemas import OrderStatus
+from app.crud.orders.schemas import OrderStatus, PaymentStatus
 
 
 class OrderModel(Document, BaseDocument):
-    customer_id = StringField(required=True)
+    customer_id = StringField(required=False)
     status = StringField(required=True, choices=[status.value for status in OrderStatus])
+    payment_status = StringField(required=True, choices=[status.value for status in PaymentStatus])
     products = ListField(DictField(), required=True, min_length=1)
     tags = ListField(StringField(), required=False)
     delivery = DictField(required=True)

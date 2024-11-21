@@ -47,7 +47,7 @@ class UserRepository:
         _logger.info("Updating user by ID on Management API")
         try:
             status_code, response = self.http_client.patch(
-                url=f"{_env.AUTH0_ISSUER}/api/v2/users/{user_id}",
+                url=f"{_env.AUTH0_DOMAIN}/api/v2/users/{user_id}",
                 data=jsonable_encoder(user.model_dump(exclude_none=True))
             )
 
@@ -86,7 +86,7 @@ class UserRepository:
     async def select_by_email(self, email: str) -> UserInDB:
         try:
             status_code, response = self.http_client.get(
-                url=f"{_env.AUTH0_ISSUER}/api/v2/users-by-email",
+                url=f"{_env.AUTH0_DOMAIN}/api/v2/users-by-email",
                 params={"email": email}
             )
 
@@ -106,7 +106,7 @@ class UserRepository:
             users = []
 
             status_code, response = self.http_client.get(
-                url=f"{_env.AUTH0_ISSUER}/api/v2/users"
+                url=f"{_env.AUTH0_DOMAIN}/api/v2/users"
             )
 
             if status_code == 200:
@@ -124,7 +124,7 @@ class UserRepository:
         _logger.info("Deleting a user by ID on Management API")
         try:
             status_code, response = self.http_client.delete(
-                url=f"{_env.AUTH0_ISSUER}/api/v2/users/{id}"
+                url=f"{_env.AUTH0_DOMAIN}/api/v2/users/{id}"
             )
 
             if status_code == 204:

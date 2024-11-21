@@ -6,7 +6,9 @@ from pydantic import Field, ValidationError
 
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
+from app.crud.customers.schemas import CustomerInDB
 from app.crud.products.schemas import ProductInDB
+from app.crud.tags.schemas import TagInDB
 
 
 class OrderStatus(str, Enum):
@@ -14,6 +16,11 @@ class OrderStatus(str, Enum):
     SCHEDULED = "SCHEDULED"
     IN_PREPARATION = "IN_PREPARATION"
     DONE = "DONE"
+
+class PaymentStatus(str, Enum):
+    PAID = "PAID"
+    PENDING = "PENDING"
+    PARTIALLY_PAID = "PARTIALLY_PAID"
 
 
 class DeliveryType(str, Enum):
@@ -55,8 +62,9 @@ class CompleteProduct(GenericModel):
 
 
 class Order(GenericModel):
-    customer_id: str = Field(example="66bae5c2e59a0787e2c903e3")
+    customer_id: str | None = Field(default=None, example="66bae5c2e59a0787e2c903e3")
     status: OrderStatus = Field(default=OrderStatus.PENDING, example=OrderStatus.IN_PREPARATION)
+    payment_status: PaymentStatus = Field(default=PaymentStatus.PENDING, example=PaymentStatus.PENDING)
     products: List[RequestedProduct] = Field(default=[], min_length=1)
     tags: List[str] = Field(default=[])
     delivery: Delivery = Field()
@@ -72,6 +80,10 @@ class Order(GenericModel):
 
         if update_order.status:
             self.status = update_order.status
+            is_updated = True
+
+        if update_order.payment_status:
+            self.payment_status = update_order.payment_status
             is_updated = True
 
         if update_order.products:
@@ -96,6 +108,7 @@ class Order(GenericModel):
 class UpdateOrder(GenericModel):
     customer_id: Optional[str] = Field(default=None, example="66bae5c2e59a0787e2c903e3")
     status: Optional[OrderStatus] = Field(default=None, example=OrderStatus.IN_PREPARATION)
+    payment_status: Optional[PaymentStatus] = Field(default=None, example=PaymentStatus.PENDING)
     products: Optional[List[RequestedProduct]] = Field(default=None, min_length=1)
     delivery: Optional[Delivery] = Field(default=None)
     preparation_date: Optional[date] = Field(default=None, example=str(date.today()))
@@ -108,4 +121,6 @@ class OrderInDB(Order, DatabaseModel):
 
 
 class CompleteOrder(OrderInDB):
+    customer: CustomerInDB | None = Field(default=None)
     products: List[CompleteProduct] = Field(default=[], min_length=1)
+    tags: List[TagInDB] = Field(default=[])

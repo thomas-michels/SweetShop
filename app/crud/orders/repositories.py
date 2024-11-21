@@ -17,7 +17,7 @@ class OrderRepository(Repository):
 
     async def create(self, order: Order, value: float) -> OrderInDB:
         try:
-            json = jsonable_encoder(order)
+            json = jsonable_encoder(order.model_dump())
 
             order_model = OrderModel(
                 value=value,
