@@ -74,31 +74,35 @@ class Order(GenericModel):
     def validate_updated_fields(self, update_order: Type["UpdateOrder"]) -> bool:
         is_updated = False
 
-        if update_order.customer_id:
+        if update_order.customer_id is not None:
             self.customer_id = update_order.customer_id
             is_updated = True
 
-        if update_order.status:
+        if update_order.status is not None:
             self.status = update_order.status
             is_updated = True
 
-        if update_order.payment_status:
+        if update_order.payment_status is not None:
             self.payment_status = update_order.payment_status
             is_updated = True
 
-        if update_order.products:
+        if update_order.products is not None:
             self.products = update_order.products
             is_updated = True
 
-        if update_order.delivery:
+        if update_order.tags is not None:
+            self.tags = update_order.tags
+            is_updated = True
+
+        if update_order.delivery is not None:
             self.delivery = update_order.delivery
             is_updated = True
 
-        if update_order.preparation_date:
+        if update_order.preparation_date is not None:
             self.preparation_date = update_order.preparation_date
             is_updated = True
 
-        if update_order.reason_id:
+        if update_order.reason_id is not None:
             self.reason_id = update_order.reason_id
             is_updated = True
 
@@ -113,6 +117,7 @@ class UpdateOrder(GenericModel):
     delivery: Optional[Delivery] = Field(default=None)
     preparation_date: Optional[date] = Field(default=None, example=str(date.today()))
     reason_id: Optional[str] = Field(default=None, example="123")
+    tags: Optional[List[str]] = Field(default=None)
 
 
 class OrderInDB(Order, DatabaseModel):

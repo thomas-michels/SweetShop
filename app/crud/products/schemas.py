@@ -22,15 +22,15 @@ class Product(GenericModel):
     def validate_updated_fields(self, update_product: "UpdateProduct") -> bool:
         is_updated = False
 
-        if update_product.name:
+        if update_product.name is not None:
             self.name = update_product.name
             is_updated = True
 
-        if update_product.unit_cost:
+        if update_product.unit_cost is not None:
             self.unit_cost = update_product.unit_cost
             is_updated = True
 
-        if update_product.unit_price:
+        if update_product.unit_price is not None:
             self.unit_price = update_product.unit_price
             is_updated = True
 

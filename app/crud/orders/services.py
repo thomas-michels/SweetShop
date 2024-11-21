@@ -3,7 +3,7 @@ from typing import List
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.crud.customers.repositories import CustomerRepository
 from app.crud.tags.repositories import TagRepository
-from .schemas import CompleteProduct, CompleteOrder, Order, OrderInDB, OrderStatus, UpdateOrder
+from .schemas import CompleteProduct, CompleteOrder, Order, OrderInDB, OrderStatus, RequestedProduct, UpdateOrder
 from .repositories import OrderRepository
 from app.crud.products.repositories import ProductRepository
 from app.core.configs import get_logger
@@ -25,8 +25,8 @@ class OrderServices:
         self.__tag_repository = tag_repository
         self.__customer_repository = customer_repository
 
-    async def create(self, order: Order) -> OrderInDB:
-        value = await self.__calculate_order_value(order)
+    async def create(self, order: Order) -> CompleteOrder:
+        value = await self.__calculate_order_value(order.products)
 
         if order.customer_id is not None:
             await self.__customer_repository.select_by_id(id=order.customer_id)
@@ -39,27 +39,38 @@ class OrderServices:
 
         order_in_db = await self.__order_repository.create(order=order, value=value)
 
-        return order_in_db
+        return await self.__build_complete_order(order_in_db)
 
-    async def update(self, id: str, updated_order: UpdateOrder) -> OrderInDB:
+    async def update(self, id: str, updated_order: UpdateOrder) -> CompleteOrder:
         order_in_db = await self.search_by_id(id=id)
-
-        # TODO adicionar validação de products, customers, tags
 
         if order_in_db.status == OrderStatus.DONE:
             logger.warning(f"Order cannot be updated if is done")
             return
 
-        is_updated = order_in_db.validate_updated_fields(update_order=updated_order)
+        if updated_order.customer_id is not None:
+            await self.__customer_repository.select_by_id(id=updated_order.customer_id)
 
-        if order_in_db.products:
-            value = await self.__calculate_order_value(order=order_in_db)
+        if updated_order.products is not None:
+            for product in updated_order.products:
+                await self.__product_repository.select_by_id(id=product.product_id)
+
+            value = await self.__calculate_order_value(updated_order.products)
             order_in_db.value = value
 
-        if is_updated:
-            order_in_db = await self.__order_repository.update(order=order_in_db)
+        if updated_order.tags is not None:
+            for tag in updated_order.tags:
+                await self.__tag_repository.select_by_id(id=tag)
 
-        return order_in_db
+        is_updated = order_in_db.validate_updated_fields(update_order=updated_order)
+
+        if is_updated:
+            order_in_db = await self.__order_repository.update(
+                order_id=order_in_db.id,
+                order=updated_order.model_dump(exclude_none=True)
+            )
+
+        return await self.__build_complete_order(order_in_db)
 
     async def search_by_id(self, id: str) -> CompleteOrder:
         order_in_db = await self.__order_repository.select_by_id(id=id)
@@ -75,9 +86,9 @@ class OrderServices:
 
         return complete_orders
 
-    async def delete_by_id(self, id: str) -> OrderInDB:
+    async def delete_by_id(self, id: str) -> CompleteOrder:
         order_in_db = await self.__order_repository.delete_by_id(id=id)
-        return order_in_db
+        return await self.__build_complete_order(order_in_db)
 
     async def __build_complete_order(self, order_in_db: OrderInDB) -> CompleteOrder:
         complete_order = CompleteOrder(
@@ -117,9 +128,9 @@ class OrderServices:
 
         return complete_order
 
-    async def __calculate_order_value(self, order: Order) -> float:
+    async def __calculate_order_value(self, products: List[RequestedProduct]) -> float:
         value = 0
-        for product in order.products:
+        for product in products:
             try:
                 product_in_db = await self.__product_repository.select_by_id(id=product.product_id)
 

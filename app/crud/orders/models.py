@@ -1,3 +1,4 @@
+from datetime import datetime
 from mongoengine import (
     Document,
     StringField,
@@ -29,8 +30,11 @@ class OrderModel(Document, BaseDocument):
 
     def update(self, **kwargs):
         self.base_update()
-        kwargs.pop("updated_at")
-        return super().update(updated_at=self.updated_at,**kwargs)
+        if kwargs.get("updated_at"):
+            kwargs.pop("updated_at")
+            return super().update(updated_at=self.updated_at,**kwargs)
+
+        return super().update(updated_at=datetime.now(), **kwargs)
 
     def delete(self, soft_delete: bool = True, signal_kwargs=None, **write_concern):
         if soft_delete:

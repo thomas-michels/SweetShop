@@ -34,14 +34,14 @@ class OrderRepository(Repository):
             _logger.error(f"Error on create_order: {str(error)}")
             raise UnprocessableEntity(message="Error on create new order")
 
-    async def update(self, order: OrderInDB) -> OrderInDB:
+    async def update(self, order_id: str, order: dict) -> OrderInDB:
         try:
-            order_model: OrderModel = OrderModel.objects(id=order.id, is_active=True).first()
+            order_model: OrderModel = OrderModel.objects(id=order_id, is_active=True).first()
 
-            order_model.update(**order.model_dump())
+            order_model.update(**order)
             order_model.save()
 
-            return await self.select_by_id(id=order.id)
+            return await self.select_by_id(id=order_id)
 
         except Exception as error:
             _logger.error(f"Error on update_order: {str(error)}")

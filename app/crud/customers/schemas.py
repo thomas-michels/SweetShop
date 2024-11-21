@@ -12,7 +12,7 @@ class Customer(GenericModel):
     def validate_updated_fields(self, update_customer: "UpdateCustomer") -> bool:
         is_updated = False
 
-        if update_customer.name:
+        if update_customer.name is not None:
             self.name = update_customer.name
             is_updated = True
 

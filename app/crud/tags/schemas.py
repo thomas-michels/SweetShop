@@ -18,11 +18,11 @@ class Tag(GenericModel):
     def validate_updated_fields(self, update_tag: "UpdateTag") -> bool:
         is_updated = False
 
-        if update_tag.name:
+        if update_tag.name is not None:
             self.name = update_tag.name
             is_updated = True
 
-        if update_tag.styling:
+        if update_tag.styling is not None:
             self.styling = update_tag.styling
             is_updated = True
 
