@@ -126,6 +126,6 @@ class OrderInDB(Order, DatabaseModel):
 
 
 class CompleteOrder(OrderInDB):
-    customer: CustomerInDB | None = Field(default=None)
-    products: List[CompleteProduct] = Field(default=[], min_length=1)
-    tags: List[TagInDB] = Field(default=[])
+    customer: CustomerInDB | str | None = Field(default=None)
+    products: List[CompleteProduct] | List[RequestedProduct] = Field(default=[], min_length=1)
+    tags: List[TagInDB] | List[str] = Field(default=[])

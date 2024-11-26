@@ -34,12 +34,14 @@ async def get_order_by_id(
 async def get_orders(
     status: OrderStatus = Query(default=None),
     customer_id: str = Query(default=None),
+    expand: List[str] = Query(default=[]),
     current_user: UserInDB = Security(decode_jwt, scopes=["order:get"]),
     order_services: OrderServices = Depends(order_composer),
 ):
     orders = await order_services.search_all(
         status=status,
-        customer_id=customer_id
+        customer_id=customer_id,
+        expand=expand
     )
 
     if orders:

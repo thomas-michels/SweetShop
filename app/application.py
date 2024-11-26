@@ -9,7 +9,8 @@ from app.api.routers import (
     authentication_router,
     order_router,
     customer_router,
-    tag_router
+    tag_router,
+    organization_router
 )
 from app.api.routers.exception_handlers import (
     unprocessable_entity_error_422,
@@ -37,6 +38,7 @@ app.add_middleware(
 app.add_middleware(SessionMiddleware, secret_key=_env.APP_SECRET_KEY)
 
 app.include_router(authentication_router, prefix="/api")
+app.include_router(organization_router, prefix="/api")
 app.include_router(user_router, prefix="/api")
 app.include_router(product_router, prefix="/api")
 app.include_router(order_router, prefix="/api")

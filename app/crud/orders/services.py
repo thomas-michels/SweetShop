@@ -77,12 +77,12 @@ class OrderServices:
 
         return await self.__build_complete_order(order_in_db)
 
-    async def search_all(self, status: OrderStatus, customer_id: str) -> List[CompleteOrder]:
+    async def search_all(self, status: OrderStatus, customer_id: str, expand: List[str]) -> List[CompleteOrder]:
         orders = await self.__order_repository.select_all(status=status, customer_id=customer_id)
         complete_orders = []
 
         for order in orders:
-            complete_orders.append(await self.__build_complete_order(order))
+            complete_orders.append(await self.__build_complete_order(order_in_db=order, expand=expand))
 
         return complete_orders
 
@@ -90,41 +90,45 @@ class OrderServices:
         order_in_db = await self.__order_repository.delete_by_id(id=id)
         return await self.__build_complete_order(order_in_db)
 
-    async def __build_complete_order(self, order_in_db: OrderInDB) -> CompleteOrder:
+    async def __build_complete_order(self, order_in_db: OrderInDB, expand: List[str] = []) -> CompleteOrder:
         complete_order = CompleteOrder(
+            id=order_in_db.id,
+            customer=order_in_db.customer_id,
+            status=order_in_db.status,
+            payment_status=order_in_db.payment_status,
+            products=order_in_db.products,
+            tags=order_in_db.tags,
+            delivery=order_in_db.delivery,
+            preparation_date=order_in_db.preparation_date,
+            reason_id=order_in_db.reason_id,
+            value=order_in_db.value,
             is_active=order_in_db.is_active,
             created_at=order_in_db.created_at,
             updated_at=order_in_db.updated_at,
-            delivery=order_in_db.delivery,
-            id=order_in_db.id,
-            preparation_date=order_in_db.preparation_date,
-            status=order_in_db.status,
-            value=order_in_db.value,
-            reason_id=order_in_db.reason_id
         )
-        complete_order.products = []
 
-        if order_in_db.customer_id is not None:
-            complete_order.customer = await self.__customer_repository.select_by_id(id=order_in_db.customer_id)
+        if "customer" in expand:
+            if order_in_db.customer_id is not None:
+                complete_order.customer = await self.__customer_repository.select_by_id(id=order_in_db.customer_id)
 
-        for product in order_in_db.products:
-            product_in_db = await self.__product_repository.select_by_id(
-                id=product.product_id
-            )
+        if "products" in expand:
+            for product in order_in_db.products:
+                product_in_db = await self.__product_repository.select_by_id(
+                    id=product.product_id
+                )
 
-            complete_product = CompleteProduct(
-                product=product_in_db,
-                quantity=product.quantity
-            )
+                complete_product = CompleteProduct(
+                    product=product_in_db,
+                    quantity=product.quantity
+                )
 
-            complete_order.products.append(complete_product)
+                complete_order.products.append(complete_product)
 
-        complete_order.tags = []
+        if "tags" in expand:
+            for tag in order_in_db.tags:
+                tag_in_db = await self.__tag_repository.select_by_id(id=tag)
 
-        for tag in order_in_db.tags:
-            tag_in_db = await self.__tag_repository.select_by_id(id=tag)
-
-            complete_order.tags.append(tag_in_db)
+                complete_order.tags.append(tag_in_db)
 
         return complete_order
 
