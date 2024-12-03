@@ -106,22 +106,41 @@ class OrganizationServices:
 
     async def remove_user(self, organization_id: str, user_making_request: str, user_id: str) -> bool:
         organization_in_db = await self.search_by_id(id=organization_id)
-
+        user_in_db_making_request = await self.__user_repository.select_by_id(id=user_making_request)
         user_in_db = await self.__user_repository.select_by_id(id=user_id)
 
-        if not user_in_db or not organization_in_db:
+        if not (organization_in_db and user_in_db_making_request and user_in_db):
             return False
 
-        if user_in_db.app_metadata.get("organizations") and organization_id in user_in_db.app_metadata["organizations"]:
-            current_role = RoleEnum(user_in_db.app_metadata["organizations"])
+        user_making_request_role = RoleEnum(organization_in_db.users.get(user_making_request)) if organization_in_db.users.get(user_making_request) else None
 
-            if current_role in [RoleEnum.OWNER, RoleEnum.ADMIN]:
+        if user_making_request_role and user_making_request_role not in {RoleEnum.OWNER, RoleEnum.ADMIN}:
+            raise UnauthorizedException(detail="You cannot remove users!")
+
+        user_organizations = user_in_db.app_metadata.get("organizations", {})
+        current_role = RoleEnum(user_organizations.get(organization_id)) if organization_id in user_organizations else None
+
+        if current_role:
+            if current_role == RoleEnum.OWNER:
+                raise UnauthorizedException(detail="You cannot remove the owner of the organization!")
+
+            if current_role == RoleEnum.ADMIN and user_making_request_role not in [RoleEnum.OWNER]:
+                raise UnauthorizedException(detail="You cannot remove this user!")
+
+            if current_role == RoleEnum.MANAGER and user_making_request_role not in [RoleEnum.OWNER, RoleEnum.ADMIN]:
                 raise UnauthorizedException(detail="You cannot remove this user!")
 
         user_in_db.app_metadata["organizations"].pop(organization_in_db.id)
 
+        organization_in_db.users.pop(user_in_db.user_id)
+
         user = UpdateUser(app_metadata=user_in_db.app_metadata)
 
         await self.__user_repository.update(user_id=user_id, user=user)
+
+        await self.__organization_repository.update(
+            organization_id=organization_id,
+            organization=organization_in_db.model_dump()
+        )
 
         return True
