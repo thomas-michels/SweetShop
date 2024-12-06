@@ -5,3 +5,4 @@ from .orders import order_router
 from .customers import customer_router
 from .tags import tag_router
 from .organizations import organization_router
+from .financial import financial_router

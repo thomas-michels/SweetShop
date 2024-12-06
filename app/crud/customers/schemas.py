@@ -24,3 +24,4 @@ class UpdateCustomer(GenericModel):
 
 class CustomerInDB(Customer, DatabaseModel):
     is_active: bool = Field(example=True, exclude=True)
+    organization_id: str = Field(example="org_123")

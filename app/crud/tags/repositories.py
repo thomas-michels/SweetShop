@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import List
 from mongoengine.errors import NotUniqueError
 from app.core.configs import get_logger
@@ -14,12 +13,12 @@ _logger = get_logger(__name__)
 class TagRepository(Repository):
     def __init__(self, organization_id: str) -> None:
         super().__init__()
-        self.organization_id = organization_id
+        self.__organization_id = organization_id
 
     async def create(self, tag: Tag, system_tag: bool = False) -> TagInDB:
         try:
             tag_model = TagModel(
-                organization_id=self.organization_id,
+                organization_id=self.__organization_id,
                 system_tag=system_tag,
                 **tag.model_dump()
             )
@@ -38,7 +37,11 @@ class TagRepository(Repository):
 
     async def update(self, tag: TagInDB) -> TagInDB:
         try:
-            tag_model: TagModel = TagModel.objects(id=tag.id, system_tag=False).first()
+            tag_model: TagModel = TagModel.objects(
+                id=tag.id,
+                system_tag=False,
+                organization_id=self.__organization_id
+            ).first()
             tag.name = tag.name.capitalize()
 
             tag_model.update(**tag.model_dump())
@@ -51,7 +54,10 @@ class TagRepository(Repository):
 
     async def select_by_id(self, id: str) -> TagInDB:
         try:
-            tag_model: TagModel = TagModel.objects(id=id).first()
+            tag_model: TagModel = TagModel.objects(
+                id=id,
+                organization_id=self.__organization_id
+            ).first()
 
             return TagInDB.model_validate(tag_model)
 
@@ -62,7 +68,10 @@ class TagRepository(Repository):
     async def select_by_name(self, name: str) -> TagInDB:
         try:
             name = name.capitalize()
-            Tag_model: TagModel = TagModel.objects(name=name).first()
+            Tag_model: TagModel = TagModel.objects(
+                name=name,
+                organization_id=self.__organization_id
+            ).first()
 
             return TagInDB.model_validate(Tag_model)
 
@@ -75,10 +84,13 @@ class TagRepository(Repository):
             tags = []
 
             if query:
-                objects = TagModel.objects(name__iregex=query)
+                objects = TagModel.objects(
+                    name__iregex=query,
+                    organization_id=self.__organization_id
+                )
 
             else:
-                objects = TagModel.objects()
+                objects = TagModel.objects(organization_id=self.__organization_id)
 
             for tag_model in objects:
                 tags.append(TagInDB.model_validate(tag_model))
@@ -91,7 +103,11 @@ class TagRepository(Repository):
 
     async def delete_by_id(self, id: str) -> TagInDB:
         try:
-            tag_model: TagModel = TagModel.objects(id=id, system_tag=False).first()
+            tag_model: TagModel = TagModel.objects(
+                id=id,
+                system_tag=False,
+                organization_id=self.__organization_id
+            ).first()
             tag_model.delete()
 
             return TagInDB.model_validate(tag_model)

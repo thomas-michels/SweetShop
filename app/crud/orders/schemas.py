@@ -121,6 +121,7 @@ class UpdateOrder(GenericModel):
 
 
 class OrderInDB(Order, DatabaseModel):
+    organization_id: str = Field(example="66bae5c2e59a0787e2c903e3")
     value: float = Field(example=12.2)
     is_active: bool = Field(example=True, exclude=True)
 

@@ -13,6 +13,7 @@ from app.crud.orders.schemas import OrderStatus, PaymentStatus
 
 
 class OrderModel(Document, BaseDocument):
+    organization_id = StringField(required=True)
     customer_id = StringField(required=False)
     status = StringField(required=True, choices=[status.value for status in OrderStatus])
     payment_status = StringField(required=True, choices=[status.value for status in PaymentStatus])

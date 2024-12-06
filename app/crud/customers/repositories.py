@@ -12,14 +12,16 @@ _logger = get_logger(__name__)
 
 
 class CustomerRepository(Repository):
-    def __init__(self) -> None:
+    def __init__(self, organization_id: str) -> None:
         super().__init__()
+        self.__organization_id = organization_id
 
     async def create(self, customer: Customer) -> CustomerInDB:
         try:
             customer_model = CustomerModel(
                 created_at=datetime.now(),
                 updated_at=datetime.now(),
+                organization_id=self.__organization_id,
                 **customer.model_dump()
             )
             customer_model.name = customer_model.name.capitalize()
@@ -37,7 +39,11 @@ class CustomerRepository(Repository):
 
     async def update(self, customer: CustomerInDB) -> CustomerInDB:
         try:
-            customer_model: CustomerModel = CustomerModel.objects(id=customer.id, is_active=True).first()
+            customer_model: CustomerModel = CustomerModel.objects(
+                id=customer.id,
+                is_active=True,
+                organization_id=self.__organization_id
+            ).first()
             customer.name = customer.name.capitalize()
 
             customer_model.update(**customer.model_dump())
@@ -50,7 +56,11 @@ class CustomerRepository(Repository):
 
     async def select_by_id(self, id: str) -> CustomerInDB:
         try:
-            customer_model: CustomerModel = CustomerModel.objects(id=id, is_active=True).first()
+            customer_model: CustomerModel = CustomerModel.objects(
+                id=id,
+                is_active=True,
+                organization_id=self.__organization_id
+            ).first()
 
             return CustomerInDB.model_validate(customer_model)
 
@@ -61,7 +71,11 @@ class CustomerRepository(Repository):
     async def select_by_name(self, name: str) -> CustomerInDB:
         try:
             name = name.capitalize()
-            Customer_model: CustomerModel = CustomerModel.objects(name=name, is_active=True).first()
+            Customer_model: CustomerModel = CustomerModel.objects(
+                name=name,
+                is_active=True,
+                organization_id=self.__organization_id
+            ).first()
 
             return CustomerInDB.model_validate(Customer_model)
 
@@ -74,10 +88,17 @@ class CustomerRepository(Repository):
             customers = []
 
             if query:
-                objects = CustomerModel.objects(is_active=True, name__iregex=query)
+                objects = CustomerModel.objects(
+                    is_active=True,
+                    name__iregex=query,
+                    organization_id=self.__organization_id
+                )
 
             else:
-                objects = CustomerModel.objects(is_active=True)
+                objects = CustomerModel.objects(
+                    is_active=True,
+                    organization_id=self.__organization_id
+                )
 
             for customer_model in objects:
                 customers.append(CustomerInDB.model_validate(customer_model))
@@ -90,7 +111,11 @@ class CustomerRepository(Repository):
 
     async def delete_by_id(self, id: str) -> CustomerInDB:
         try:
-            customer_model: CustomerModel = CustomerModel.objects(id=id, is_active=True).first()
+            customer_model: CustomerModel = CustomerModel.objects(
+                id=id,
+                is_active=True,
+                organization_id=self.__organization_id
+            ).first()
             customer_model.delete()
 
             return CustomerInDB.model_validate(customer_model)

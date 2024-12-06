@@ -12,8 +12,9 @@ _logger = get_logger(__name__)
 
 
 class OrderRepository(Repository):
-    def __init__(self) -> None:
+    def __init__(self, organization_id: str) -> None:
         super().__init__()
+        self.__organization_id = organization_id
 
     async def create(self, order: Order, value: float) -> OrderInDB:
         try:
@@ -21,6 +22,7 @@ class OrderRepository(Repository):
 
             order_model = OrderModel(
                 value=value,
+                organization_id=self.__organization_id,
                 created_at=datetime.now(),
                 updated_at=datetime.now(),
                 **json
@@ -36,7 +38,11 @@ class OrderRepository(Repository):
 
     async def update(self, order_id: str, order: dict) -> OrderInDB:
         try:
-            order_model: OrderModel = OrderModel.objects(id=order_id, is_active=True).first()
+            order_model: OrderModel = OrderModel.objects(
+                id=order_id,
+                is_active=True,
+                organization_id=self.__organization_id
+            ).first()
 
             order_model.update(**order)
             order_model.save()
@@ -49,7 +55,11 @@ class OrderRepository(Repository):
 
     async def select_by_id(self, id: str) -> OrderInDB:
         try:
-            order_model: OrderModel = OrderModel.objects(id=id, is_active=True).first()
+            order_model: OrderModel = OrderModel.objects(
+                id=id,
+                is_active=True,
+                organization_id=self.__organization_id
+            ).first()
 
             return OrderInDB.model_validate(order_model)
 
@@ -61,7 +71,10 @@ class OrderRepository(Repository):
         try:
             orders = []
 
-            objects = OrderModel.objects(is_active=True)
+            objects = OrderModel.objects(
+                is_active=True,
+                organization_id=self.__organization_id
+            )
 
             if customer_id:
                 objects = objects(customer_id=customer_id)
@@ -80,7 +93,11 @@ class OrderRepository(Repository):
 
     async def delete_by_id(self, id: str) -> OrderInDB:
         try:
-            order_model: OrderModel = OrderModel.objects(id=id, is_active=True).first()
+            order_model: OrderModel = OrderModel.objects(
+                id=id,
+                is_active=True,
+                organization_id=self.__organization_id
+            ).first()
             order_model.delete()
 
             return OrderInDB.model_validate(order_model)

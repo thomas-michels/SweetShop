@@ -12,14 +12,16 @@ _logger = get_logger(__name__)
 
 
 class ProductRepository(Repository):
-    def __init__(self) -> None:
+    def __init__(self, organization_id: str) -> None:
         super().__init__()
+        self.__organization_id = organization_id
 
     async def create(self, product: Product) -> ProductInDB:
         try:
             product_model = ProductModel(
                 created_at=datetime.now(),
                 updated_at=datetime.now(),
+                organization_id=self.__organization_id,
                 **product.model_dump()
             )
             product_model.name = product_model.name.capitalize()
@@ -37,7 +39,11 @@ class ProductRepository(Repository):
 
     async def update(self, product: ProductInDB) -> ProductInDB:
         try:
-            product_model: ProductModel = ProductModel.objects(id=product_model.id, is_active=True).first()
+            product_model: ProductModel = ProductModel.objects(
+                id=product_model.id,
+                is_active=True,
+                organization_id=self.__organization_id
+            ).first()
             product.name = product.name.capitalize()
 
             product_model.update(**product.model_dump())
@@ -50,7 +56,11 @@ class ProductRepository(Repository):
 
     async def select_by_id(self, id: str) -> ProductInDB:
         try:
-            product_model: ProductModel = ProductModel.objects(id=id, is_active=True).first()
+            product_model: ProductModel = ProductModel.objects(
+                id=id,
+                is_active=True,
+                organization_id=self.__organization_id
+            ).first()
 
             return ProductInDB.model_validate(product_model)
 
@@ -61,7 +71,11 @@ class ProductRepository(Repository):
     async def select_by_name(self, name: str) -> ProductInDB:
         try:
             name = name.capitalize()
-            product_model: ProductModel = ProductModel.objects(name=name, is_active=True).first()
+            product_model: ProductModel = ProductModel.objects(
+                name=name,
+                is_active=True,
+                organization_id=self.__organization_id
+            ).first()
 
             return ProductInDB.model_validate(product_model)
 
@@ -74,10 +88,17 @@ class ProductRepository(Repository):
             products = []
 
             if query:
-                objects = ProductModel.objects(is_active=True, name__iregex=query)
+                objects = ProductModel.objects(
+                    is_active=True,
+                    name__iregex=query,
+                    organization_id=self.__organization_id
+                )
 
             else:
-                objects = ProductModel.objects(is_active=True)
+                objects = ProductModel.objects(
+                    is_active=True,
+                    organization_id=self.__organization_id
+                )
 
             for product_model in objects:
                 products.append(ProductInDB.model_validate(product_model))
@@ -90,7 +111,11 @@ class ProductRepository(Repository):
 
     async def delete_by_id(self, id: str) -> ProductInDB:
         try:
-            product_model: ProductModel = ProductModel.objects(id=id, is_active=True).first()
+            product_model: ProductModel = ProductModel.objects(
+                id=id,
+                is_active=True,
+                organization_id=self.__organization_id
+            ).first()
             product_model.delete()
 
             return ProductInDB.model_validate(product_model)

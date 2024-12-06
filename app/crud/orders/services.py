@@ -93,6 +93,7 @@ class OrderServices:
     async def __build_complete_order(self, order_in_db: OrderInDB, expand: List[str] = []) -> CompleteOrder:
         complete_order = CompleteOrder(
             id=order_in_db.id,
+            organization_id=order_in_db.organization_id,
             customer=order_in_db.customer_id,
             status=order_in_db.status,
             payment_status=order_in_db.payment_status,
