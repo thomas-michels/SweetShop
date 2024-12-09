@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import datetime
 from enum import Enum
 from typing import Any, List, Optional, Type
 
@@ -16,6 +16,7 @@ class OrderStatus(str, Enum):
     SCHEDULED = "SCHEDULED"
     IN_PREPARATION = "IN_PREPARATION"
     DONE = "DONE"
+
 
 class PaymentStatus(str, Enum):
     PAID = "PAID"
@@ -68,7 +69,7 @@ class Order(GenericModel):
     products: List[RequestedProduct] = Field(default=[], min_length=1)
     tags: List[str] = Field(default=[])
     delivery: Delivery = Field()
-    preparation_date: date = Field(example=str(date.today()))
+    preparation_date: datetime = Field(example=str(datetime.now()))
     reason_id: str | None = Field(default=None, example="123")
 
     def validate_updated_fields(self, update_order: Type["UpdateOrder"]) -> bool:
@@ -115,7 +116,7 @@ class UpdateOrder(GenericModel):
     payment_status: Optional[PaymentStatus] = Field(default=None, example=PaymentStatus.PENDING)
     products: Optional[List[RequestedProduct]] = Field(default=None, min_length=1)
     delivery: Optional[Delivery] = Field(default=None)
-    preparation_date: Optional[date] = Field(default=None, example=str(date.today()))
+    preparation_date: Optional[datetime] = Field(default=None, example=str(datetime.now()))
     reason_id: Optional[str] = Field(default=None, example="123")
     tags: Optional[List[str]] = Field(default=None)
 

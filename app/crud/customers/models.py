@@ -1,12 +1,15 @@
-from mongoengine import StringField, Document
+from mongoengine import StringField, Document, ListField, DictField
 
 from app.core.models.base_document import BaseDocument
 
 
-
 class CustomerModel(Document, BaseDocument):
     organization_id = StringField(required=True)
-    name = StringField(max_length=100, required=True, unique=True)
+    name = StringField(max_length=100, required=True)
+    ddd = StringField(max_length=3, required=False)
+    phone_number = StringField(max_length=9, required=False)
+    addresses = ListField(DictField())
+    tags = ListField(StringField(), required=False)
 
     meta = {
         "collection": "customers"

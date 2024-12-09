@@ -13,10 +13,14 @@ router = APIRouter(tags=["Customers"])
 @router.get("/customer/{customer_id}", responses={200: {"model": CustomerInDB}})
 async def get_customer_by_id(
     customer_id: str,
+    expand: List[str] = Query(default=[]),
     current_user: UserInDB = Security(decode_jwt, scopes=["customer:get"]),
     customer_services: CustomerServices = Depends(customer_composer),
 ):
-    customer_in_db = await customer_services.search_by_id(id=customer_id)
+    customer_in_db = await customer_services.search_by_id(
+        id=customer_id,
+        expand=expand
+    )
 
     if customer_in_db:
         return build_response(
@@ -32,10 +36,14 @@ async def get_customer_by_id(
 @router.get("/customers", responses={200: {"model": List[CustomerInDB]}})
 async def get_customers(
     query: str = Query(default=None),
+    expand: List[str] = Query(default=[]),
     current_customer: UserInDB = Security(decode_jwt, scopes=["customer:get"]),
     customer_services: CustomerServices = Depends(customer_composer),
 ):
-    customers = await customer_services.search_all(query=query)
+    customers = await customer_services.search_all(
+        query=query,
+        expand=expand
+    )
 
     if customers:
         return build_response(

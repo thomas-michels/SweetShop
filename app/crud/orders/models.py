@@ -6,7 +6,7 @@ from mongoengine import (
     FloatField,
     BooleanField,
     DictField,
-    DateField
+    DateTimeField
 )
 from app.core.models.base_document import BaseDocument
 from app.crud.orders.schemas import OrderStatus, PaymentStatus
@@ -20,7 +20,7 @@ class OrderModel(Document, BaseDocument):
     products = ListField(DictField(), required=True, min_length=1)
     tags = ListField(StringField(), required=False)
     delivery = DictField(required=True)
-    preparation_date = DateField(required=True)
+    preparation_date = DateTimeField(required=True)
     value = FloatField(required=True)
     reason_id = StringField(required=False)
     is_active = BooleanField(required=True, default=True)
