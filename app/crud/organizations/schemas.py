@@ -5,6 +5,7 @@ from pydantic import Field
 
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
+from app.crud.shared_schemas.address import Address
 
 
 class RoleEnum(str, Enum):
@@ -13,13 +14,6 @@ class RoleEnum(str, Enum):
     MANAGER = "MANAGER"
     MEMBER = "MEMBER"
     CLIENT = "CLIENT"
-
-
-class Address(GenericModel):
-    street: str = Field(example="Rua de Testes")
-    number: str = Field(example="123")
-    neighborhood: str = Field(example="Bairro")
-    city: str = Field(example="Blumenau")
 
 
 class Organization(GenericModel):

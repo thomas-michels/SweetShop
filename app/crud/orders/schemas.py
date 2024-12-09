@@ -8,6 +8,7 @@ from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
 from app.crud.customers.schemas import CustomerInDB
 from app.crud.products.schemas import ProductInDB
+from app.crud.shared_schemas.address import Address
 from app.crud.tags.schemas import TagInDB
 
 
@@ -25,19 +26,12 @@ class PaymentStatus(str, Enum):
 
 
 class DeliveryType(str, Enum):
-    WITHDRWAWAL = "WITHDRWAWAL"
+    WITHDRAWAL = "WITHDRAWAL"
     DELIVERY = "DELIVERY"
 
 
-class Address(GenericModel):
-    street: str = Field(example="Rua de Testes")
-    number: str = Field(example="123")
-    neighborhood: str = Field(example="Bairro")
-    city: str = Field(example="Blumenau")
-
-
 class Delivery(GenericModel):
-    type: DeliveryType = Field(default=DeliveryType.WITHDRWAWAL, example=DeliveryType.WITHDRWAWAL)
+    type: DeliveryType = Field(default=DeliveryType.WITHDRAWAL, example=DeliveryType.WITHDRAWAL)
     delivery_at: datetime | None = Field(default=None, example=str(datetime.now()))
     address: Address | None = Field(default=None)
 
@@ -48,6 +42,9 @@ class Delivery(GenericModel):
 
             if not self.address:
                 raise ValidationError("Address must be set")
+        else:
+            if self.delivery_at or self.address:
+                raise ValidationError("delivery_at and address must be none when type is WITHDRAWAL")
 
         return super().model_post_init(__context)
 

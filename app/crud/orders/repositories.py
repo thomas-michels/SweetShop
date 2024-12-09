@@ -18,14 +18,12 @@ class OrderRepository(Repository):
 
     async def create(self, order: Order, value: float) -> OrderInDB:
         try:
-            json = jsonable_encoder(order.model_dump())
-
             order_model = OrderModel(
                 value=value,
                 organization_id=self.__organization_id,
                 created_at=datetime.now(),
                 updated_at=datetime.now(),
-                **json
+                **order.model_dump()
             )
 
             order_model.save()

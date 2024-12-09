@@ -4,18 +4,13 @@ from pydantic import Field
 
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
+from app.crud.shared_schemas.address import Address
 from app.crud.tags.schemas import TagInDB
-
-class Address(GenericModel):
-    street: str = Field(example="Rua de Testes")
-    number: str = Field(example="123")
-    neighborhood: str = Field(example="Bairro")
-    city: str = Field(example="Blumenau")
 
 
 class Customer(GenericModel):
     name: str = Field(example="Ted Mosby")
-    ddd: str | None = Field(example="047", max_length=3)
+    ddd: str | None = Field(default=None, example="047", max_length=3)
     phone_number: str | None = Field(default=None, max_length=9)
     addresses: List[Address] = Field(default=[])
     tags: List[str] = Field(default=[])
