@@ -29,7 +29,7 @@ async def create_orders(
         )
 
 
-@router.put("/order/{order_id}", responses={200: {"model": OrderInDB}})
+@router.put("/orders/{order_id}", responses={200: {"model": OrderInDB}})
 async def update_order(
     order_id: str,
     order: UpdateOrder,
@@ -49,7 +49,7 @@ async def update_order(
         )
 
 
-@router.delete("/order/{order_id}", responses={200: {"model": OrderInDB}})
+@router.delete("/orders/{order_id}", responses={200: {"model": OrderInDB}})
 async def delete_order(
     order_id: str,
     current_user: UserInDB = Security(decode_jwt, scopes=["order:delete"]),

@@ -10,7 +10,7 @@ from app.crud.customers import CustomerServices, CustomerInDB
 router = APIRouter(tags=["Customers"])
 
 
-@router.get("/customer/{customer_id}", responses={200: {"model": CustomerInDB}})
+@router.get("/customers/{customer_id}", responses={200: {"model": CustomerInDB}})
 async def get_customer_by_id(
     customer_id: str,
     expand: List[str] = Query(default=[]),

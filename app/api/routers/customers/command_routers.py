@@ -32,7 +32,7 @@ async def create_customer(
         )
 
 
-@router.put("/customer/{customer_id}", responses={200: {"model": CustomerInDB}})
+@router.put("/customers/{customer_id}", responses={200: {"model": CustomerInDB}})
 async def update_customer(
     customer_id: str,
     customer: UpdateCustomer,
@@ -52,7 +52,7 @@ async def update_customer(
         )
 
 
-@router.delete("/customer/{customer_id}", responses={200: {"model": CustomerInDB}})
+@router.delete("/customers/{customer_id}", responses={200: {"model": CustomerInDB}})
 async def delete_customer(
     customer_id: str,
     current_user: UserInDB = Security(decode_jwt, scopes=["customer:create"]),

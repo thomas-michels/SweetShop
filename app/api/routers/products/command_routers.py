@@ -29,7 +29,7 @@ async def create_products(
         )
 
 
-@router.put("/product/{product_id}", responses={200: {"model": ProductInDB}})
+@router.put("/products/{product_id}", responses={200: {"model": ProductInDB}})
 async def update_product(
     product_id: str,
     product: UpdateProduct,
@@ -49,7 +49,7 @@ async def update_product(
         )
 
 
-@router.delete("/product/{product_id}", responses={200: {"model": ProductInDB}})
+@router.delete("/products/{product_id}", responses={200: {"model": ProductInDB}})
 async def delete_product(
     product_id: str,
     current_user: UserInDB = Security(decode_jwt, scopes=["product:delete"]),
