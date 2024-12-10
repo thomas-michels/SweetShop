@@ -21,7 +21,9 @@ class OrderModel(Document, BaseDocument):
     tags = ListField(StringField(), required=False)
     delivery = DictField(required=True)
     preparation_date = DateTimeField(required=True)
+    additional = FloatField(default=0, required=False)
     value = FloatField(required=True)
+    description = StringField(required=False)
     reason_id = StringField(required=False)
     is_active = BooleanField(required=True, default=True)
 

@@ -26,7 +26,11 @@ class OrderServices:
         self.__customer_repository = customer_repository
 
     async def create(self, order: Order) -> CompleteOrder:
-        value = await self.__calculate_order_value(order.products)
+        value = await self.__calculate_order_value(
+            products=order.products,
+            additional=order.additional,
+            delivery_value=order.delivery.value if order.delivery.value else 0
+        )
 
         if order.customer_id is not None:
             await self.__customer_repository.select_by_id(id=order.customer_id)
@@ -55,19 +59,30 @@ class OrderServices:
             for product in updated_order.products:
                 await self.__product_repository.select_by_id(id=product.product_id)
 
-            value = await self.__calculate_order_value(updated_order.products)
-            order_in_db.value = value
-
         if updated_order.tags is not None:
             for tag in updated_order.tags:
                 await self.__tag_repository.select_by_id(id=tag)
 
+        delivery_value = order_in_db.delivery.value if order_in_db.delivery.value is not None else 0
+
+        if updated_order.delivery and updated_order.delivery.value is not None:
+            delivery_value = updated_order.delivery.value
+
+        value = await self.__calculate_order_value(
+            products=updated_order.products if updated_order.products is not None else order_in_db.products,
+            additional=updated_order.additional if updated_order.additional is not None else order_in_db.additional,
+            delivery_value=delivery_value
+        )
+
         is_updated = order_in_db.validate_updated_fields(update_order=updated_order)
 
         if is_updated:
+            updated_fields = updated_order.model_dump(exclude_none=True)
+            updated_fields["value"] = value
+
             order_in_db = await self.__order_repository.update(
                 order_id=order_in_db.id,
-                order=updated_order.model_dump(exclude_none=True)
+                order=updated_fields
             )
 
         return await self.__build_complete_order(order_in_db)
@@ -94,6 +109,7 @@ class OrderServices:
         complete_order = CompleteOrder(
             id=order_in_db.id,
             organization_id=order_in_db.organization_id,
+            customer_id=order_in_db.customer_id,
             customer=order_in_db.customer_id,
             status=order_in_db.status,
             payment_status=order_in_db.payment_status,
@@ -103,6 +119,8 @@ class OrderServices:
             preparation_date=order_in_db.preparation_date,
             reason_id=order_in_db.reason_id,
             value=order_in_db.value,
+            description=order_in_db.description,
+            additional=order_in_db.additional,
             is_active=order_in_db.is_active,
             created_at=order_in_db.created_at,
             updated_at=order_in_db.updated_at,
@@ -113,6 +131,8 @@ class OrderServices:
                 complete_order.customer = await self.__customer_repository.select_by_id(id=order_in_db.customer_id)
 
         if "products" in expand:
+            complete_order.products = []
+
             for product in order_in_db.products:
                 product_in_db = await self.__product_repository.select_by_id(
                     id=product.product_id
@@ -126,6 +146,8 @@ class OrderServices:
                 complete_order.products.append(complete_product)
 
         if "tags" in expand:
+            complete_order.tags = []
+
             for tag in order_in_db.tags:
                 tag_in_db = await self.__tag_repository.select_by_id(id=tag)
 
@@ -133,8 +155,9 @@ class OrderServices:
 
         return complete_order
 
-    async def __calculate_order_value(self, products: List[RequestedProduct]) -> float:
-        value = 0
+    async def __calculate_order_value(self, products: List[RequestedProduct], delivery_value: float, additional: float) -> float:
+        value = delivery_value + additional
+
         for product in products:
             try:
                 product_in_db = await self.__product_repository.select_by_id(id=product.product_id)

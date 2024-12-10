@@ -34,6 +34,7 @@ class Delivery(GenericModel):
     type: DeliveryType = Field(default=DeliveryType.WITHDRAWAL, example=DeliveryType.WITHDRAWAL)
     delivery_at: datetime | None = Field(default=None, example=str(datetime.now()))
     address: Address | None = Field(default=None)
+    value: float | None = Field(default=None)
 
     def model_post_init(self, __context: Any) -> None:
         if self.type == DeliveryType.DELIVERY:
@@ -42,8 +43,12 @@ class Delivery(GenericModel):
 
             if not self.address:
                 raise ValidationError("Address must be set")
+
+            if not self.value:
+                raise ValidationError("Value must be set")
+
         else:
-            if self.delivery_at or self.address:
+            if self.delivery_at or self.address or self.value:
                 raise ValidationError("delivery_at and address must be none when type is WITHDRAWAL")
 
         return super().model_post_init(__context)
@@ -67,6 +72,8 @@ class Order(GenericModel):
     tags: List[str] = Field(default=[])
     delivery: Delivery = Field()
     preparation_date: datetime = Field(example=str(datetime.now()))
+    description: str | None = Field(default=None, example="Description")
+    additional: float = Field(example=12.2)
     reason_id: str | None = Field(default=None, example="123")
 
     def validate_updated_fields(self, update_order: Type["UpdateOrder"]) -> bool:
@@ -104,6 +111,14 @@ class Order(GenericModel):
             self.reason_id = update_order.reason_id
             is_updated = True
 
+        if update_order.description is not None:
+            self.description = update_order.description
+            is_updated = True
+
+        if update_order.additional is not None:
+            self.additional = update_order.additional
+            is_updated = True
+
         return is_updated
 
 
@@ -114,6 +129,8 @@ class UpdateOrder(GenericModel):
     products: Optional[List[RequestedProduct]] = Field(default=None, min_length=1)
     delivery: Optional[Delivery] = Field(default=None)
     preparation_date: Optional[datetime] = Field(default=None, example=str(datetime.now()))
+    description: Optional[str] = Field(default=None, example="Description")
+    additional: Optional[float] = Field(default=None, example=12.2)
     reason_id: Optional[str] = Field(default=None, example="123")
     tags: Optional[List[str]] = Field(default=None)
 
