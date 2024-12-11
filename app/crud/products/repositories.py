@@ -27,6 +27,7 @@ class ProductRepository(Repository):
             product_model.name = product_model.name.capitalize()
 
             product_model.save()
+            _logger.info(f"Product {product.name} saved for organization {self.__organization_id}")
 
             return ProductInDB.model_validate(product_model)
 
@@ -81,7 +82,7 @@ class ProductRepository(Repository):
 
         except Exception as error:
             _logger.error(f"Error on select_by_id: {str(error)}")
-            raise NotFoundError(message=f"Product #{id} not found")
+            raise NotFoundError(message=f"Product with name {name} not found")
 
     async def select_all(self, query: str) -> List[ProductInDB]:
         try:
