@@ -18,6 +18,8 @@ class RoleEnum(str, Enum):
 
 class Organization(GenericModel):
     name: str = Field(example="org_123", max_length=100)
+    ddd: str | None = Field(default=None, example="047", max_length=3, pattern=r"^\d+$")
+    phone_number: str | None = Field(default=None, max_length=9, pattern=r"^\d+$")
     address: Address = Field()
 
     def validate_updated_fields(self, update_organization: Type["UpdateOrganization"]) -> bool:
@@ -25,6 +27,14 @@ class Organization(GenericModel):
 
         if update_organization.name is not None:
             self.name = update_organization.name
+            is_updated = True
+
+        if update_organization.ddd is not None:
+            self.ddd = update_organization.ddd
+            is_updated = True
+
+        if update_organization.phone_number is not None:
+            self.phone_number = update_organization.phone_number
             is_updated = True
 
         if update_organization.address is not None:
@@ -36,6 +46,8 @@ class Organization(GenericModel):
 
 class UpdateOrganization(GenericModel):
     name: Optional[str] = Field(default=None, example="org_123", max_length=100)
+    ddd: Optional[str] = Field(default=None, example="047", max_length=3, pattern=r"^\d+$")
+    phone_number: Optional[str] = Field(default=None, max_length=9, pattern=r"^\d+$")
     address: Optional[Address] = Field(default=None)
 
 

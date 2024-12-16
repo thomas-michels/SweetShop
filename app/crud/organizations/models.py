@@ -9,6 +9,8 @@ from app.core.models.base_document import BaseDocument
 
 class OrganizationModel(Document, BaseDocument):
     name = StringField(required=True, unique=True)
+    ddd = StringField(max_length=3, required=False)
+    phone_number = StringField(max_length=9, required=False)
     address = DictField(required=True)
     users = DictField(null=True)
 

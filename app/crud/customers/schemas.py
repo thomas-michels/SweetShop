@@ -10,8 +10,8 @@ from app.crud.tags.schemas import TagInDB
 
 class Customer(GenericModel):
     name: str = Field(example="Ted Mosby")
-    ddd: str | None = Field(default=None, example="047", max_length=3)
-    phone_number: str | None = Field(default=None, max_length=9)
+    ddd: str | None = Field(default=None, example="047", max_length=3, pattern=r"^\d+$")
+    phone_number: str | None = Field(default=None, max_length=9, pattern=r"^\d+$")
     addresses: List[Address] = Field(default=[])
     tags: List[str] = Field(default=[])
 
@@ -42,8 +42,8 @@ class Customer(GenericModel):
 
 class UpdateCustomer(GenericModel):
     name: Optional[str] = Field(default=None, example="Ted Mosby")
-    ddd: Optional[str] = Field(default=None, example="047", max_length=3)
-    phone_number: Optional[str] = Field(default=None, max_length=9)
+    ddd: Optional[str] = Field(default=None, example="047", max_length=3, pattern=r"^\d+$")
+    phone_number: Optional[str] = Field(default=None, max_length=9, pattern=r"^\d+$")
     addresses: Optional[List[Address]] = Field(default=None)
     tags: Optional[List[str]] = Field(default=None)
 

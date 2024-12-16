@@ -31,6 +31,7 @@ class CustomerRepository(Repository):
             return CustomerInDB.model_validate(customer_model)
 
         except NotUniqueError:
+            _logger.warning(f"Customer {customer.name} is not unique")
             return await self.select_by_name(name=customer.name)
 
         except Exception as error:
@@ -71,17 +72,17 @@ class CustomerRepository(Repository):
     async def select_by_name(self, name: str) -> CustomerInDB:
         try:
             name = name.capitalize()
-            Customer_model: CustomerModel = CustomerModel.objects(
+            customer_model: CustomerModel = CustomerModel.objects(
                 name=name,
                 is_active=True,
                 organization_id=self.__organization_id
             ).first()
 
-            return CustomerInDB.model_validate(Customer_model)
+            return CustomerInDB.model_validate(customer_model)
 
         except Exception as error:
-            _logger.error(f"Error on select_by_id: {str(error)}")
-            raise NotFoundError(message=f"Customer #{id} not found")
+            _logger.error(f"Error on select_by_name: {str(error)}")
+            raise NotFoundError(message=f"Customer with {name} not found")
 
     async def select_all(self, query: str) -> List[CustomerInDB]:
         try:

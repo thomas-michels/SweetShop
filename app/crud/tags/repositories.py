@@ -29,6 +29,7 @@ class TagRepository(Repository):
             return TagInDB.model_validate(tag_model)
 
         except NotUniqueError:
+            _logger.warning(f"Tag with name {tag.name} is not unique")
             return await self.select_by_name(name=tag.name)
 
         except Exception as error:
@@ -68,16 +69,16 @@ class TagRepository(Repository):
     async def select_by_name(self, name: str) -> TagInDB:
         try:
             name = name.capitalize()
-            Tag_model: TagModel = TagModel.objects(
+            tag_model: TagModel = TagModel.objects(
                 name=name,
                 organization_id=self.__organization_id
             ).first()
 
-            return TagInDB.model_validate(Tag_model)
+            return TagInDB.model_validate(tag_model)
 
         except Exception as error:
-            _logger.error(f"Error on select_by_id: {str(error)}")
-            raise NotFoundError(message=f"Tag #{id} not found")
+            _logger.error(f"Error on select_by_name: {str(error)}")
+            raise NotFoundError(message=f"Tag with name {name} not found")
 
     async def select_all(self, query: str) -> List[TagInDB]:
         try:

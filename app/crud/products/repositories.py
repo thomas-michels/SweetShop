@@ -14,24 +14,25 @@ _logger = get_logger(__name__)
 class ProductRepository(Repository):
     def __init__(self, organization_id: str) -> None:
         super().__init__()
-        self.__organization_id = organization_id
+        self.organization_id = organization_id
 
     async def create(self, product: Product) -> ProductInDB:
         try:
             product_model = ProductModel(
                 created_at=datetime.now(),
                 updated_at=datetime.now(),
-                organization_id=self.__organization_id,
+                organization_id=self.organization_id,
                 **product.model_dump()
             )
             product_model.name = product_model.name.capitalize()
 
             product_model.save()
-            _logger.info(f"Product {product.name} saved for organization {self.__organization_id}")
+            _logger.info(f"Product {product.name} saved for organization {self.organization_id}")
 
             return ProductInDB.model_validate(product_model)
 
         except NotUniqueError:
+            _logger.warning(f"Product with name {product.name} is not unique")
             return await self.select_by_name(name=product.name)
 
         except Exception as error:
@@ -43,7 +44,7 @@ class ProductRepository(Repository):
             product_model: ProductModel = ProductModel.objects(
                 id=product_model.id,
                 is_active=True,
-                organization_id=self.__organization_id
+                organization_id=self.organization_id
             ).first()
             product.name = product.name.capitalize()
 
@@ -60,7 +61,7 @@ class ProductRepository(Repository):
             product_model: ProductModel = ProductModel.objects(
                 id=id,
                 is_active=True,
-                organization_id=self.__organization_id
+                organization_id=self.organization_id
             ).first()
 
             return ProductInDB.model_validate(product_model)
@@ -75,13 +76,13 @@ class ProductRepository(Repository):
             product_model: ProductModel = ProductModel.objects(
                 name=name,
                 is_active=True,
-                organization_id=self.__organization_id
+                organization_id=self.organization_id
             ).first()
 
             return ProductInDB.model_validate(product_model)
 
         except Exception as error:
-            _logger.error(f"Error on select_by_id: {str(error)}")
+            _logger.error(f"Error on select_by_name: {str(error)}")
             raise NotFoundError(message=f"Product with name {name} not found")
 
     async def select_all(self, query: str) -> List[ProductInDB]:
@@ -92,13 +93,13 @@ class ProductRepository(Repository):
                 objects = ProductModel.objects(
                     is_active=True,
                     name__iregex=query,
-                    organization_id=self.__organization_id
+                    organization_id=self.organization_id
                 )
 
             else:
                 objects = ProductModel.objects(
                     is_active=True,
-                    organization_id=self.__organization_id
+                    organization_id=self.organization_id
                 )
 
             for product_model in objects:
@@ -115,7 +116,7 @@ class ProductRepository(Repository):
             product_model: ProductModel = ProductModel.objects(
                 id=id,
                 is_active=True,
-                organization_id=self.__organization_id
+                organization_id=self.organization_id
             ).first()
             product_model.delete()
 
