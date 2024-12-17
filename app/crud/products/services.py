@@ -15,7 +15,7 @@ class ProductServices:
     async def update(self, id: str, updated_product: UpdateProduct) -> ProductInDB:
         product_in_db = await self.search_by_id(id=id)
 
-        is_updated = product_in_db.validate_updated_fields(updated_product=updated_product)
+        is_updated = product_in_db.validate_updated_fields(update_product=updated_product)
 
         if is_updated:
             product_in_db = await self.__repository.update(product=product_in_db)

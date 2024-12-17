@@ -30,7 +30,7 @@ class Tag(GenericModel):
 
 
 class UpdateTag(GenericModel):
-    name: Optional[str] = Field(example="Ted Mosby")
+    name: Optional[str] = Field(default=None, example="Ted Mosby")
     styling: Optional[Styling] = Field(default=None)
 
 

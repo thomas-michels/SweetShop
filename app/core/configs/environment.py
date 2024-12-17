@@ -14,6 +14,8 @@ class Environment(BaseSettings):
     APPLICATION_NAME: str = "Sweet Shop API"
     APPLICATION_HOST: str = "localhost"
     APPLICATION_PORT: int = 8000
+    ENVIRONMENT: str = "local"
+    RELEASE: str = "0.0.1"
 
     # DATABASE
     DATABASE_HOST: str = "localhost"
@@ -34,6 +36,9 @@ class Environment(BaseSettings):
     AUTH0_MANAGEMENT_API_CLIENT_ID: str
     AUTH0_MANAGEMENT_API_CLIENT_SECRET: str
     AUTH0_MANAGEMENT_API_AUDIENCE: str
+
+    # SENTRY
+    SENTRY_DSN: str = None
 
     class Config:
         """Load config file"""

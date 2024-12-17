@@ -42,7 +42,7 @@ class ProductRepository(Repository):
     async def update(self, product: ProductInDB) -> ProductInDB:
         try:
             product_model: ProductModel = ProductModel.objects(
-                id=product_model.id,
+                id=product.id,
                 is_active=True,
                 organization_id=self.organization_id
             ).first()

@@ -1,3 +1,4 @@
+import sentry_sdk
 from authlib.integrations.starlette_client import OAuth
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -27,7 +28,23 @@ from app.core.configs import get_environment
 _env = get_environment()
 
 
-app = FastAPI(title=_env.APPLICATION_NAME, lifespan=lifespan)
+sentry_sdk.init(
+    dsn=_env.SENTRY_DSN,
+    traces_sample_rate=1.0,
+    server_name=_env.APPLICATION_NAME,
+    release=_env.RELEASE,
+    environment=_env.ENVIRONMENT,
+    _experiments={
+        "continuous_profiling_auto_start": True,
+    },
+)
+
+
+app = FastAPI(
+    title=_env.APPLICATION_NAME,
+    lifespan=lifespan,
+    version=_env.RELEASE
+)
 
 app.add_middleware(
     CORSMiddleware,

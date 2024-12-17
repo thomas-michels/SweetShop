@@ -37,15 +37,16 @@ class Product(GenericModel):
         return is_updated
 
 class UpdateProduct(GenericModel):
-    name: Optional[str] = Field(example="Brigadeiro")
-    description: Optional[str] = Field(example="Brigadeiro de Leite Ninho")
-    unit_price: Optional[float] = Field(example=1.5)
-    unit_cost: Optional[float] = Field(example=0.75)
+    name: Optional[str] = Field(default=None, example="Brigadeiro")
+    description: Optional[str] = Field(default=None, example="Brigadeiro de Leite Ninho")
+    unit_price: Optional[float] = Field(default=None, example=1.5)
+    unit_cost: Optional[float] = Field(default=None, example=0.75)
 
     @model_validator(mode="after")
     def validate_price_and_cost(self) -> "Product":
-        if self.unit_cost > self.unit_price:
-            raise ValueError("Unit price should be greater than unit cost")
+        if self.unit_cost and self.unit_price:
+            if self.unit_cost > self.unit_price:
+                raise ValueError("Unit price should be greater than unit cost")
 
         return self
 
