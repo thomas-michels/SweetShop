@@ -38,7 +38,7 @@ class Environment(BaseSettings):
     AUTH0_MANAGEMENT_API_AUDIENCE: str
 
     # SENTRY
-    SENTRY_DSN: str = None
+    SENTRY_DSN: str | None = None
 
     class Config:
         """Load config file"""
