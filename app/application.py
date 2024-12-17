@@ -82,6 +82,11 @@ oauth.register(
 )
 
 
+@app.get("/")
+async def root_path(request: Request):
+    return build_response(status_code=200, message="I'm alive!", data=None)
+
+
 @app.get("/login", tags=["Login"])
 async def login(request: Request):
     return await oauth.auth0.authorize_redirect(
