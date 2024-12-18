@@ -5,7 +5,7 @@ from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.core.repositories.base_repository import Repository
 
 from .models import TagModel
-from .schemas import Tag, TagInDB
+from .schemas import Tag, TagInDB, Styling
 
 _logger = get_logger(__name__)
 
@@ -26,7 +26,7 @@ class TagRepository(Repository):
 
             tag_model.save()
 
-            return TagInDB.model_validate(tag_model)
+            return self.__build_tag(tag_model=tag_model)
 
         except NotUniqueError:
             _logger.warning(f"Tag with name {tag.name} is not unique")
@@ -60,7 +60,7 @@ class TagRepository(Repository):
                 organization_id=self.__organization_id
             ).first()
 
-            return TagInDB.model_validate(tag_model)
+            return self.__build_tag(tag_model=tag_model)
 
         except Exception as error:
             _logger.error(f"Error on select_by_id: {str(error)}")
@@ -74,7 +74,7 @@ class TagRepository(Repository):
                 organization_id=self.__organization_id
             ).first()
 
-            return TagInDB.model_validate(tag_model)
+            return self.__build_tag(tag_model=tag_model)
 
         except Exception as error:
             _logger.error(f"Error on select_by_name: {str(error)}")
@@ -91,10 +91,12 @@ class TagRepository(Repository):
                 )
 
             else:
-                objects = TagModel.objects(organization_id=self.__organization_id)
+                objects = TagModel.objects(organization_id=self.__organization_id).order_by("name")
 
             for tag_model in objects:
-                tags.append(TagInDB.model_validate(tag_model))
+                tag_in_db = self.__build_tag(tag_model)
+
+                tags.append(tag_in_db)
 
             return tags
 
@@ -111,8 +113,21 @@ class TagRepository(Repository):
             ).first()
             tag_model.delete()
 
-            return TagInDB.model_validate(tag_model)
+            return self.__build_tag(tag_model=tag_model)
 
         except Exception as error:
             _logger.error(f"Error on delete_by_id: {str(error)}")
             raise NotFoundError(message=f"Tag #{id} not found")
+
+    def __build_tag(self, tag_model: TagModel) -> TagInDB:
+        tag_in_db = TagInDB(
+            id=tag_model.id,
+            name=tag_model.name,
+            organization_id=tag_model.organization_id,
+            system_tag=tag_model.system_tag
+        )
+
+        if tag_model.styling:
+            tag_in_db.styling = Styling(**dict(tag_model.styling))
+
+        return tag_in_db

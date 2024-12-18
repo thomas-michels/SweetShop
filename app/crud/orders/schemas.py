@@ -73,7 +73,7 @@ class Order(GenericModel):
     delivery: Delivery = Field()
     preparation_date: datetime = Field(example=str(datetime.now()))
     description: str | None = Field(default=None, example="Description")
-    additional: float = Field(example=12.2)
+    additional: float = Field(default=0, example=12.2)
     reason_id: str | None = Field(default=None, example="123")
 
     def validate_updated_fields(self, update_order: Type["UpdateOrder"]) -> bool:

@@ -64,7 +64,7 @@ class OrganizationRepository(Repository):
 
             objects = OrganizationModel.objects(is_active=True)
 
-            for organization_model in objects:
+            for organization_model in objects.order_by("name"):
                 organizations.append(OrganizationInDB.model_validate(organization_model))
 
             return organizations

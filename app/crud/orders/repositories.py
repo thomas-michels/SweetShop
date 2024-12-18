@@ -80,7 +80,7 @@ class OrderRepository(Repository):
             if status:
                 objects = objects(status=status.value)
 
-            for order_model in objects:
+            for order_model in objects.order_by("-preparation_date"):
                 orders.append(OrderInDB.model_validate(order_model))
 
             return orders

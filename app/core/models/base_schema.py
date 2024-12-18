@@ -20,5 +20,6 @@ class GenericModel(BaseModel):
     model_config = ConfigDict(
         populate_by_name=True,
         alias_generator=convert_field_to_camel_case,
-        json_encoders = {datetime: convert_datetime_to_realworld}
+        json_encoders = {datetime: convert_datetime_to_realworld},
+        from_attributes=True
     )

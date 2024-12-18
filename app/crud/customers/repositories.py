@@ -101,7 +101,7 @@ class CustomerRepository(Repository):
                     organization_id=self.__organization_id
                 )
 
-            for customer_model in objects:
+            for customer_model in objects.order_by("name"):
                 customers.append(CustomerInDB.model_validate(customer_model))
 
             return customers

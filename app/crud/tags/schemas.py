@@ -8,7 +8,7 @@ from app.core.models.base_schema import GenericModel
 class Styling(GenericModel):
     font_color: str = Field(example="#000000")
     primary_color: str = Field(example="#000000")
-    secundary_color: str = Field(example="#111111")
+    secondary_color: str = Field(example="#111111")
 
 
 class Tag(GenericModel):

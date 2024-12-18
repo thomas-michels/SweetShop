@@ -102,7 +102,7 @@ class ProductRepository(Repository):
                     organization_id=self.organization_id
                 )
 
-            for product_model in objects:
+            for product_model in objects.order_by("name"):
                 products.append(ProductInDB.model_validate(product_model))
 
             return products
