@@ -26,6 +26,10 @@ class Product(GenericModel):
             self.name = update_product.name
             is_updated = True
 
+        if update_product.description is not None:
+            self.description = update_product.description
+            is_updated = True
+
         if update_product.unit_cost is not None:
             self.unit_cost = update_product.unit_cost
             is_updated = True
