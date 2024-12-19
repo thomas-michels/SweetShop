@@ -29,7 +29,7 @@ class OrderServices:
         value = await self.__calculate_order_value(
             products=order.products,
             additional=order.additional,
-            delivery_value=order.delivery.value if order.delivery.value else 0
+            delivery_value=order.delivery.delivery_value if order.delivery.delivery_value else 0
         )
 
         if order.customer_id is not None:
@@ -63,10 +63,10 @@ class OrderServices:
             for tag in updated_order.tags:
                 await self.__tag_repository.select_by_id(id=tag)
 
-        delivery_value = order_in_db.delivery.value if order_in_db.delivery.value is not None else 0
+        delivery_value = order_in_db.delivery.delivery_value if order_in_db.delivery.delivery_value is not None else 0
 
-        if updated_order.delivery and updated_order.delivery.value is not None:
-            delivery_value = updated_order.delivery.value
+        if updated_order.delivery and updated_order.delivery.delivery_value is not None:
+            delivery_value = updated_order.delivery.delivery_value
 
         value = await self.__calculate_order_value(
             products=updated_order.products if updated_order.products is not None else order_in_db.products,
