@@ -1,8 +1,8 @@
 from datetime import datetime
 from enum import Enum
-from typing import Any, List, Optional, Type
+from typing import List, Optional, Type
 
-from pydantic import Field, ValidationError
+from pydantic import Field, model_validator
 
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
@@ -34,24 +34,23 @@ class Delivery(GenericModel):
     type: DeliveryType = Field(default=DeliveryType.WITHDRAWAL, example=DeliveryType.WITHDRAWAL)
     delivery_at: datetime | None = Field(default=None, example=str(datetime.now()))
     address: Address | None = Field(default=None)
-    value: float | None = Field(default=None)
+    delivery_value: float | None = Field(default=None)
 
-    def model_post_init(self, __context: Any) -> None:
+    @model_validator(mode="after")
+    def validate_model(self) -> "Delivery":
         if self.type == DeliveryType.DELIVERY:
             if not self.delivery_at:
-                raise ValidationError("Delivery_at must be set")
-
+                raise ValueError("`delivery_at` must be set for DELIVERY type")
             if not self.address:
-                raise ValidationError("Address must be set")
+                raise ValueError("`address` must be set for DELIVERY type")
+            if not self.delivery_value:
+                raise ValueError("`delivery_value` must be set for DELIVERY type")
 
-            if not self.value:
-                raise ValidationError("Value must be set")
+        else:  # WITHDRAWAL
+            if self.delivery_at or self.address or self.delivery_value:
+                raise ValueError("`delivery_at`, `address`, and `delivery_value` must be None when type is WITHDRAWAL")
 
-        else:
-            if self.delivery_at or self.address or self.value:
-                raise ValidationError("delivery_at and address must be none when type is WITHDRAWAL")
-
-        return super().model_post_init(__context)
+        return self
 
 
 class RequestedProduct(GenericModel):

@@ -8,6 +8,9 @@ from app.core.exceptions import (
     NotFoundError,
     UnprocessableEntity,
 )
+from app.core.configs import get_logger
+
+_logger = get_logger(__name__)
 
 
 def unprocessable_entity_error_422(request: Request, exc: UnprocessableEntity):
@@ -39,6 +42,8 @@ def generic_error_400(request: Request, exc: InvalidPassword):
 
 def generic_error_500(request: Request, exc: Exception):
     """Internal error"""
+    _logger.error(f"Internal error - {str(exc)} - URL: {request.url.path}")
+
     error = MessageResponse(message="An unexpected error happen")
 
     return JSONResponse(
