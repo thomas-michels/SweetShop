@@ -60,8 +60,10 @@ class OrderServices:
                 await self.__product_repository.select_by_id(id=product.product_id)
 
         if updated_order.tags is not None:
-            for tag in updated_order.tags:
-                await self.__tag_repository.select_by_id(id=tag)
+            temp_tags = updated_order.tags
+            for tag in temp_tags:
+                if not await self.__tag_repository.select_by_id(id=tag, raise_404=False):
+                    updated_order.tags.remove(tag)
 
         delivery_value = order_in_db.delivery.delivery_value if order_in_db.delivery.delivery_value is not None else 0
 

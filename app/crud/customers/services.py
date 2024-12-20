@@ -28,8 +28,10 @@ class CustomerServices:
         is_updated = customer_in_db.validate_updated_fields(update_customer=updated_customer)
 
         if updated_customer.tags is not None:
-            for tag in updated_customer.tags:
-                await self.__tag_repository.select_by_id(id=tag)
+            temp_tags = updated_customer.tags
+            for tag in temp_tags:
+                if not await self.__tag_repository.select_by_id(id=tag, raise_404=False):
+                    updated_customer.tags.remove(tag)
 
         if is_updated:
             customer_in_db = await self.__repository.update(customer=customer_in_db)
