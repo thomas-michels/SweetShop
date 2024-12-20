@@ -128,30 +128,42 @@ class OrderServices:
 
         if "customer" in expand:
             if order_in_db.customer_id is not None:
-                complete_order.customer = await self.__customer_repository.select_by_id(id=order_in_db.customer_id)
+                customer = await self.__customer_repository.select_by_id(
+                    id=order_in_db.customer_id,
+                    raise_404=False
+                )
+
+                if not customer:
+                    complete_order.customer = customer
 
         if "products" in expand:
             complete_order.products = []
 
             for product in order_in_db.products:
                 product_in_db = await self.__product_repository.select_by_id(
-                    id=product.product_id
+                    id=product.product_id,
+                    raise_404=False
                 )
 
-                complete_product = CompleteProduct(
-                    product=product_in_db,
-                    quantity=product.quantity
-                )
+                if product_in_db:
+                    complete_product = CompleteProduct(
+                        product=product_in_db,
+                        quantity=product.quantity
+                    )
 
-                complete_order.products.append(complete_product)
+                    complete_order.products.append(complete_product)
 
         if "tags" in expand:
             complete_order.tags = []
 
             for tag in order_in_db.tags:
-                tag_in_db = await self.__tag_repository.select_by_id(id=tag)
+                tag_in_db = await self.__tag_repository.select_by_id(
+                    id=tag,
+                    raise_404=False
+                )
 
-                complete_order.tags.append(tag_in_db)
+                if tag_in_db:
+                    complete_order.tags.append(tag_in_db)
 
         return complete_order
 

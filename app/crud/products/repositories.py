@@ -56,7 +56,7 @@ class ProductRepository(Repository):
             _logger.error(f"Error on update_product: {str(error)}")
             raise UnprocessableEntity(message="Error on update product")
 
-    async def select_by_id(self, id: str) -> ProductInDB:
+    async def select_by_id(self, id: str, raise_404: bool = True) -> ProductInDB:
         try:
             product_model: ProductModel = ProductModel.objects(
                 id=id,
@@ -68,7 +68,8 @@ class ProductRepository(Repository):
 
         except Exception as error:
             _logger.error(f"Error on select_by_id: {str(error)}")
-            raise NotFoundError(message=f"Product #{id} not found")
+            if raise_404:
+                raise NotFoundError(message=f"Product #{id} not found")
 
     async def select_by_name(self, name: str) -> ProductInDB:
         try:

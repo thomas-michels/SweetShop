@@ -55,7 +55,7 @@ class CustomerRepository(Repository):
             _logger.error(f"Error on update_customer: {str(error)}")
             raise UnprocessableEntity(message="Error on update Customer")
 
-    async def select_by_id(self, id: str) -> CustomerInDB:
+    async def select_by_id(self, id: str, raise_404: bool = True) -> CustomerInDB:
         try:
             customer_model: CustomerModel = CustomerModel.objects(
                 id=id,
@@ -67,7 +67,8 @@ class CustomerRepository(Repository):
 
         except Exception as error:
             _logger.error(f"Error on select_by_id: {str(error)}")
-            raise NotFoundError(message=f"Customer #{id} not found")
+            if raise_404:
+                raise NotFoundError(message=f"Customer #{id} not found")
 
     async def select_by_name(self, name: str) -> CustomerInDB:
         try:

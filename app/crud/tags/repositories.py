@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List
 from mongoengine.errors import NotUniqueError
 from app.core.configs import get_logger
@@ -20,6 +21,8 @@ class TagRepository(Repository):
             tag_model = TagModel(
                 organization_id=self.__organization_id,
                 system_tag=system_tag,
+                created_at=datetime.now(),
+                updated_at=datetime.now(),
                 **tag.model_dump()
             )
             tag_model.name = tag_model.name.capitalize()
@@ -41,6 +44,7 @@ class TagRepository(Repository):
             tag_model: TagModel = TagModel.objects(
                 id=tag.id,
                 system_tag=False,
+                is_active=True,
                 organization_id=self.__organization_id
             ).first()
             tag.name = tag.name.capitalize()
@@ -53,10 +57,11 @@ class TagRepository(Repository):
             _logger.error(f"Error on update_tag: {str(error)}")
             raise UnprocessableEntity(message="Error on update Tag")
 
-    async def select_by_id(self, id: str) -> TagInDB:
+    async def select_by_id(self, id: str, raise_404: bool = True) -> TagInDB:
         try:
             tag_model: TagModel = TagModel.objects(
                 id=id,
+                is_active=True,
                 organization_id=self.__organization_id
             ).first()
 
@@ -64,13 +69,15 @@ class TagRepository(Repository):
 
         except Exception as error:
             _logger.error(f"Error on select_by_id: {str(error)}")
-            raise NotFoundError(message=f"Tag #{id} not found")
+            if raise_404:
+                raise NotFoundError(message=f"Tag #{id} not found")
 
     async def select_by_name(self, name: str) -> TagInDB:
         try:
             name = name.capitalize()
             tag_model: TagModel = TagModel.objects(
                 name=name,
+                is_active=True,
                 organization_id=self.__organization_id
             ).first()
 
@@ -87,13 +94,17 @@ class TagRepository(Repository):
             if query:
                 objects = TagModel.objects(
                     name__iregex=query,
+                    is_active=True,
                     organization_id=self.__organization_id
                 )
 
             else:
-                objects = TagModel.objects(organization_id=self.__organization_id).order_by("name")
+                objects = TagModel.objects(
+                    organization_id=self.__organization_id,
+                    is_active=True
+                )
 
-            for tag_model in objects:
+            for tag_model in objects.order_by("name"):
                 tag_in_db = self.__build_tag(tag_model)
 
                 tags.append(tag_in_db)
@@ -109,6 +120,7 @@ class TagRepository(Repository):
             tag_model: TagModel = TagModel.objects(
                 id=id,
                 system_tag=False,
+                is_active=True,
                 organization_id=self.__organization_id
             ).first()
             tag_model.delete()

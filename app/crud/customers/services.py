@@ -60,8 +60,12 @@ class CustomerServices:
             complete_customer.tags = []
 
             for tag in customer_in_db.tags:
-                tag_in_db = await self.__tag_repository.select_by_id(id=tag)
+                tag_in_db = await self.__tag_repository.select_by_id(
+                    id=tag,
+                    raise_404=False
+                )
 
-                complete_customer.tags.append(tag_in_db)
+                if tag_in_db:
+                    complete_customer.tags.append(tag_in_db)
 
         return complete_customer
