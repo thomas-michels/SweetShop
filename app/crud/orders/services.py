@@ -1,9 +1,10 @@
 from typing import List
 
+from app.api.exceptions.authentication_exceptions import BadRequestException
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.crud.customers.repositories import CustomerRepository
 from app.crud.tags.repositories import TagRepository
-from .schemas import CompleteProduct, CompleteOrder, Order, OrderInDB, OrderStatus, RequestedProduct, UpdateOrder
+from .schemas import CompleteProduct, CompleteOrder, DeliveryType, Order, OrderInDB, OrderStatus, RequestedProduct, UpdateOrder
 from .repositories import OrderRepository
 from app.crud.products.repositories import ProductRepository
 from app.core.configs import get_logger
@@ -64,6 +65,10 @@ class OrderServices:
             for tag in temp_tags:
                 if not await self.__tag_repository.select_by_id(id=tag, raise_404=False):
                     updated_order.tags.remove(tag)
+
+        if order_in_db.delivery.type == DeliveryType.DELIVERY and updated_order.delivery.type == DeliveryType.WITHDRAWAL:
+            updated_order.delivery.delivery_value = 0
+            updated_order.delivery.address = None
 
         delivery_value = order_in_db.delivery.delivery_value if order_in_db.delivery.delivery_value is not None else 0
 
