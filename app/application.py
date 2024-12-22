@@ -12,7 +12,8 @@ from app.api.routers import (
     customer_router,
     tag_router,
     organization_router,
-    financial_router
+    financial_router,
+    fast_order_router
 )
 from app.api.routers.exception_handlers import (
     unprocessable_entity_error_422,
@@ -60,6 +61,7 @@ app.include_router(organization_router, prefix="/api")
 app.include_router(user_router, prefix="/api")
 app.include_router(product_router, prefix="/api")
 app.include_router(order_router, prefix="/api")
+app.include_router(fast_order_router, prefix="/api")
 app.include_router(financial_router, prefix="/api")
 app.include_router(customer_router, prefix="/api")
 app.include_router(tag_router, prefix="/api")

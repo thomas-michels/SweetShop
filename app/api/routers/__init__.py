@@ -6,3 +6,4 @@ from .customers import customer_router
 from .tags import tag_router
 from .organizations import organization_router
 from .financial import financial_router
+from .fast_orders import fast_order_router

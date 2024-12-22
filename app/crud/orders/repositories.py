@@ -1,6 +1,5 @@
 from datetime import datetime
 from typing import List
-from fastapi.encoders import jsonable_encoder
 from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.core.repositories.base_repository import Repository
@@ -21,6 +20,7 @@ class OrderRepository(Repository):
             order_model = OrderModel(
                 value=value,
                 organization_id=self.__organization_id,
+                is_fast_order=False,
                 created_at=datetime.now(),
                 updated_at=datetime.now(),
                 **order.model_dump()
@@ -39,6 +39,7 @@ class OrderRepository(Repository):
             order_model: OrderModel = OrderModel.objects(
                 id=order_id,
                 is_active=True,
+                is_fast_order=False,
                 organization_id=self.__organization_id
             ).first()
 
@@ -56,6 +57,7 @@ class OrderRepository(Repository):
             order_model: OrderModel = OrderModel.objects(
                 id=id,
                 is_active=True,
+                is_fast_order=False,
                 organization_id=self.__organization_id
             ).first()
 
@@ -71,6 +73,7 @@ class OrderRepository(Repository):
 
             objects = OrderModel.objects(
                 is_active=True,
+                is_fast_order=False,
                 organization_id=self.__organization_id
             )
 
@@ -94,6 +97,7 @@ class OrderRepository(Repository):
             order_model: OrderModel = OrderModel.objects(
                 id=id,
                 is_active=True,
+                is_fast_order=False,
                 organization_id=self.__organization_id
             ).first()
             order_model.delete()

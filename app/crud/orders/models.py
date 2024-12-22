@@ -25,6 +25,7 @@ class OrderModel(Document, BaseDocument):
     value = FloatField(required=True)
     description = StringField(required=False)
     reason_id = StringField(required=False)
+    is_fast_order = BooleanField(required=False, default=False)
     is_active = BooleanField(required=True, default=True)
 
     meta = {

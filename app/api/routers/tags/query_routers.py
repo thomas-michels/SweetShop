@@ -35,11 +35,11 @@ async def get_tags(
     current_tags: UserInDB = Security(decode_jwt, scopes=["tags:get"]),
     tags_services: TagServices = Depends(tag_composer),
 ):
-    tagss = await tags_services.search_all(query=query)
+    tags = await tags_services.search_all(query=query)
 
-    if tagss:
+    if tags:
         return build_response(
-            status_code=200, message="Tags found with success", data=tagss
+            status_code=200, message="Tags found with success", data=tags
         )
 
     else:

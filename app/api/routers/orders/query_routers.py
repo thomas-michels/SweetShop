@@ -17,11 +17,11 @@ async def get_order_by_id(
     current_user: UserInDB = Security(decode_jwt, scopes=["order:get"]),
     order_services: OrderServices = Depends(order_composer),
 ):
-    user_in_db = await order_services.search_by_id(id=order_id)
+    order_in_db = await order_services.search_by_id(id=order_id)
 
-    if user_in_db:
+    if order_in_db:
         return build_response(
-            status_code=200, message="Order found with success", data=user_in_db
+            status_code=200, message="Order found with success", data=order_in_db
         )
 
     else:

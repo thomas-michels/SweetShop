@@ -1,13 +1,12 @@
 from typing import List
 
-from app.api.exceptions.authentication_exceptions import BadRequestException
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.crud.customers.repositories import CustomerRepository
 from app.crud.tags.repositories import TagRepository
+from app.core.configs import get_logger
+from app.crud.products.repositories import ProductRepository
 from .schemas import CompleteProduct, CompleteOrder, DeliveryType, Order, OrderInDB, OrderStatus, RequestedProduct, UpdateOrder
 from .repositories import OrderRepository
-from app.crud.products.repositories import ProductRepository
-from app.core.configs import get_logger
 
 logger = get_logger(__name__)
 

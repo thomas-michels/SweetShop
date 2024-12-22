@@ -75,6 +75,18 @@ class Order(GenericModel):
     additional: float = Field(default=0, example=12.2)
     reason_id: str | None = Field(default=None, example="123")
 
+    @model_validator(mode="after")
+    def validate_model(self) -> "Order":
+        product_ids = [str(product.product_id) for product in self.products]
+
+        if len(product_ids) != len(set(product_ids)):
+            raise ValueError("Products must contain unique items.")
+
+        if len(self.tags) != len(set(self.tags)):
+            raise ValueError("Tags must contain unique items.")
+
+        return self
+
     def validate_updated_fields(self, update_order: Type["UpdateOrder"]) -> bool:
         is_updated = False
 
