@@ -1,7 +1,6 @@
-from mongoengine import StringField, Document, DateField, FloatField
+from mongoengine import StringField, Document, DateField, FloatField, ListField, DictField
 
 from app.core.models.base_document import BaseDocument
-
 
 
 class ExpenseModel(Document, BaseDocument):
@@ -9,6 +8,7 @@ class ExpenseModel(Document, BaseDocument):
     name = StringField(max_length=120, required=True)
     expense_date = DateField(required=True)
     total_paid = FloatField(required=True)
+    payment_details = ListField(DictField(), required=False)
 
     meta = {
         "collection": "expenses"

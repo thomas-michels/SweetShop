@@ -15,9 +15,10 @@ class ExpenseRepository(Repository):
         super().__init__()
         self.organization_id = organization_id
 
-    async def create(self, expense: Expense) -> ExpenseInDB:
+    async def create(self, expense: Expense, total_paid: float) -> ExpenseInDB:
         try:
             expense_model = ExpenseModel(
+                total_paid=total_paid,
                 created_at=datetime.now(),
                 updated_at=datetime.now(),
                 organization_id=self.organization_id,
@@ -45,7 +46,7 @@ class ExpenseRepository(Repository):
 
             expense_model.update(**expense.model_dump())
 
-            return ExpenseInDB.model_validate(expense_model)
+            return await self.select_by_id(id=expense.id)
 
         except Exception as error:
             _logger.error(f"Error on update_expense: {str(error)}")

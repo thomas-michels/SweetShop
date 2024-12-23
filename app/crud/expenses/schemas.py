@@ -1,15 +1,16 @@
-from typing import Optional
+from typing import List, Optional
 from datetime import date
-from pydantic import Field, model_validator
+from pydantic import Field
 
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
+from app.crud.shared_schemas.payment import Payment
 
 
 class Expense(GenericModel):
     name: str = Field(example="Brasil Atacadista")
     expense_date: date = Field(example=str(date.today()))
-    total_paid: float = Field(gt=0, example=150)
+    payment_details: List[Payment] = Field(default=[])
 
     def validate_updated_fields(self, update_expense: "UpdateExpense") -> bool:
         is_updated = False
@@ -22,8 +23,8 @@ class Expense(GenericModel):
             self.expense_date = update_expense.expense_date
             is_updated = True
 
-        if update_expense.total_paid is not None:
-            self.total_paid = update_expense.total_paid
+        if update_expense.payment_details is not None:
+            self.payment_details = update_expense.payment_details
             is_updated = True
 
         return is_updated
@@ -32,17 +33,10 @@ class Expense(GenericModel):
 class UpdateExpense(GenericModel):
     name: Optional[str] = Field(default=None, example="Brasil Atacadista")
     expense_date: Optional[date] = Field(default=None, example=str(date.today()))
-    total_paid: Optional[float] = Field(default=None, example=150)
-
-    @model_validator(mode="after")
-    def validate_total_paid(self) -> "UpdateExpense":
-        if self.total_paid is not None:
-            if self.total_paid < 0:
-                raise ValueError("Total paid should be greater than zero")
-
-        return self
+    payment_details: Optional[List[Payment]] = Field(default=None)
 
 
 class ExpenseInDB(Expense, DatabaseModel):
     organization_id: str = Field(example="org_123")
     is_active: bool = Field(example=True, exclude=True)
+    total_paid: float = Field(gt=0, example=150)
