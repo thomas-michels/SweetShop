@@ -9,6 +9,7 @@ from app.core.models.base_schema import GenericModel
 from app.crud.customers.schemas import CustomerInDB
 from app.crud.products.schemas import ProductInDB
 from app.crud.shared_schemas.address import Address
+from app.crud.shared_schemas.payment import Payment, PaymentStatus
 from app.crud.tags.schemas import TagInDB
 
 
@@ -17,12 +18,6 @@ class OrderStatus(str, Enum):
     SCHEDULED = "SCHEDULED"
     IN_PREPARATION = "IN_PREPARATION"
     DONE = "DONE"
-
-
-class PaymentStatus(str, Enum):
-    PAID = "PAID"
-    PENDING = "PENDING"
-    PARTIALLY_PAID = "PARTIALLY_PAID"
 
 
 class DeliveryType(str, Enum):
@@ -72,9 +67,6 @@ class Order(GenericModel):
     status: OrderStatus = Field(
         default=OrderStatus.PENDING, example=OrderStatus.IN_PREPARATION
     )
-    payment_status: PaymentStatus = Field(
-        default=PaymentStatus.PENDING, example=PaymentStatus.PENDING
-    )
     products: List[RequestedProduct] = Field(default=[], min_length=1)
     tags: List[str] = Field(default=[])
     delivery: Delivery = Field()
@@ -82,6 +74,7 @@ class Order(GenericModel):
     description: str | None = Field(default=None, example="Description")
     additional: float = Field(default=0, example=12.2)
     reason_id: str | None = Field(default=None, example="123")
+    payment_details: List[Payment] = Field(default=[])
 
     @model_validator(mode="after")
     def validate_model(self) -> "Order":
@@ -104,10 +97,6 @@ class Order(GenericModel):
 
         if update_order.status is not None:
             self.status = update_order.status
-            is_updated = True
-
-        if update_order.payment_status is not None:
-            self.payment_status = update_order.payment_status
             is_updated = True
 
         if update_order.products is not None:
@@ -138,6 +127,10 @@ class Order(GenericModel):
             self.additional = update_order.additional
             is_updated = True
 
+        if update_order.payment_details is not None:
+            self.payment_details = update_order.payment_details
+            is_updated = True
+
         return is_updated
 
 
@@ -146,9 +139,7 @@ class UpdateOrder(GenericModel):
     status: Optional[OrderStatus] = Field(
         default=None, example=OrderStatus.IN_PREPARATION
     )
-    payment_status: Optional[PaymentStatus] = Field(
-        default=None, example=PaymentStatus.PENDING
-    )
+    payment_details: Optional[List[Payment]] = Field(default=None)
     products: Optional[List[RequestedProduct]] = Field(default=None, min_length=1)
     delivery: Optional[Delivery] = Field(default=None)
     preparation_date: Optional[datetime] = Field(
@@ -164,6 +155,9 @@ class OrderInDB(Order, DatabaseModel):
     organization_id: str = Field(example="66bae5c2e59a0787e2c903e3")
     total_amount: float = Field(example=12.2)
     is_active: bool = Field(example=True, exclude=True)
+    payment_status: PaymentStatus = Field(
+        default=PaymentStatus.PENDING, example=PaymentStatus.PENDING
+    )
 
 
 class CompleteOrder(OrderInDB):

@@ -23,10 +23,12 @@ class FastOrderRepository(Repository):
         super().__init__()
         self.__organization_id = organization_id
 
-    async def create(self, fast_order: FastOrder, total_amount: float) -> FastOrderInDB:
+    async def create(self, fast_order: FastOrder, total_amount: float, payment_status: PaymentStatus) -> FastOrderInDB:
         try:
             order_model = self.__build_order_model(
-                fast_order=fast_order, total_amount=total_amount
+                fast_order=fast_order,
+                total_amount=total_amount,
+                payment_status=payment_status
             )
 
             order_model.save()
@@ -49,9 +51,6 @@ class FastOrderRepository(Repository):
             for field, total_amount in fast_order.items():
                 if hasattr(order_model, field):
                     setattr(order_model, field, total_amount)
-
-                elif field == "day":
-                    order_model.preparation_date = total_amount
 
             order_model.save()
 
@@ -115,13 +114,14 @@ class FastOrderRepository(Repository):
             raise NotFoundError(message=f"FastOrder #{id} not found")
 
     def __build_order_model(
-        self, fast_order: FastOrder, total_amount: float
+        self, fast_order: FastOrder, total_amount: float, payment_status: PaymentStatus
     ) -> OrderModel:
         order_model = OrderModel(
             total_amount=total_amount,
             organization_id=self.__organization_id,
             status=OrderStatus.DONE,
-            payment_status=PaymentStatus.PAID,
+            payment_status=payment_status,
+            payment_details=[payment.model_dump() for payment in fast_order.payment_details],
             products=[product.model_dump() for product in fast_order.products],
             tags=[],
             delivery=Delivery(type=DeliveryType.WITHDRAWAL).model_dump(),
@@ -139,6 +139,7 @@ class FastOrderRepository(Repository):
             description=order_model.description,
             preparation_date=order_model.preparation_date,
             organization_id=order_model.organization_id,
+            payment_details=order_model.payment_details,
             total_amount=order_model.total_amount,
             products=order_model.products,
             is_active=order_model.is_active,

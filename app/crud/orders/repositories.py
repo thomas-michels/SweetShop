@@ -4,6 +4,7 @@ from typing import List
 from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.core.repositories.base_repository import Repository
+from app.crud.shared_schemas.payment import PaymentStatus
 
 from .models import OrderModel
 from .schemas import Order, OrderInDB, OrderStatus
@@ -16,11 +17,12 @@ class OrderRepository(Repository):
         super().__init__()
         self.__organization_id = organization_id
 
-    async def create(self, order: Order, total_amount: float) -> OrderInDB:
+    async def create(self, order: Order, total_amount: float, payment_status: PaymentStatus) -> OrderInDB:
         try:
             order_model = OrderModel(
                 total_amount=total_amount,
                 organization_id=self.__organization_id,
+                payment_status=payment_status,
                 is_fast_order=False,
                 created_at=datetime.now(),
                 updated_at=datetime.now(),

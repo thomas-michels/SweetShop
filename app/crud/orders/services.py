@@ -4,6 +4,7 @@ from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.crud.customers.repositories import CustomerRepository
 from app.crud.products.repositories import ProductRepository
+from app.crud.shared_schemas.payment import Payment, PaymentStatus
 from app.crud.tags.repositories import TagRepository
 
 from .repositories import OrderRepository
@@ -28,12 +29,6 @@ class OrderServices:
         self.__customer_repository = customer_repository
 
     async def create(self, order: Order) -> CompleteOrder:
-        total_amount = await self.__calculate_order_total_amount(
-            products=order.products,
-            additional=order.additional,
-            delivery_value=order.delivery.delivery_value if order.delivery.delivery_value else 0
-        )
-
         if order.customer_id is not None:
             await self.__customer_repository.select_by_id(id=order.customer_id)
 
@@ -43,7 +38,22 @@ class OrderServices:
         for tag in order.tags:
             await self.__tag_repository.select_by_id(id=tag)
 
-        order_in_db = await self.__order_repository.create(order=order, total_amount=total_amount)
+        total_amount = await self.__calculate_order_total_amount(
+            products=order.products,
+            additional=order.additional,
+            delivery_value=order.delivery.delivery_value if order.delivery.delivery_value else 0
+        )
+
+        payment_status = self.__calculate_payment_status(
+            total_amount=total_amount,
+            payment_details=order.payment_details
+        )
+
+        order_in_db = await self.__order_repository.create(
+            order=order,
+            total_amount=total_amount,
+            payment_status=payment_status
+        )
 
         return await self.__build_complete_order(order_in_db)
 
@@ -88,6 +98,12 @@ class OrderServices:
             updated_fields = updated_order.model_dump(exclude_none=True)
             updated_fields["total_amount"] = total_amount
 
+            if updated_order.payment_details is not None:
+                updated_fields["payment_status"] = self.__calculate_payment_status(
+                    total_amount=total_amount,
+                    payment_details=updated_order.payment_details
+                )
+
             order_in_db = await self.__order_repository.update(
                 order_id=order_in_db.id,
                 order=updated_fields
@@ -121,6 +137,7 @@ class OrderServices:
             customer=order_in_db.customer_id,
             status=order_in_db.status,
             payment_status=order_in_db.payment_status,
+            payment_details=order_in_db.payment_details,
             products=order_in_db.products,
             tags=order_in_db.tags,
             delivery=order_in_db.delivery,
@@ -188,3 +205,18 @@ class OrderServices:
                 raise UnprocessableEntity(message=f"Product {product.product_id} is invalid!")
 
         return total_amount
+
+    def __calculate_payment_status(self, total_amount: float, payment_details: List[Payment]) -> PaymentStatus:
+        if payment_details:
+            total_paid = 0
+
+            for payment in payment_details:
+                total_paid += payment.amount
+
+            if total_amount == total_paid:
+                return PaymentStatus.PAID
+
+            else:
+                return PaymentStatus.PARTIALLY_PAID
+
+        return PaymentStatus.PENDING

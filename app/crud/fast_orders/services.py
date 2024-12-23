@@ -5,7 +5,7 @@ from app.api.exceptions.authentication_exceptions import BadRequestException
 from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.crud.products.repositories import ProductRepository
-
+from app.crud.shared_schemas.payment import Payment, PaymentStatus
 from .repositories import FastOrderRepository
 from .schemas import (
     CompleteFastOrder,
@@ -37,15 +37,22 @@ class FastOrderServices:
                 detail="You cannot create two fast orders for the same day"
             )
 
+        for product in fast_order.products:
+            await self.__product_repository.select_by_id(id=product.product_id)
+
         total_amount = await self.__calculate_fast_order_total_amount(
             products=fast_order.products
         )
 
-        for product in fast_order.products:
-            await self.__product_repository.select_by_id(id=product.product_id)
+        payment_status = self.__calculate_payment_status(
+            total_amount=total_amount,
+            payment_details=fast_order.payment_details
+        )
 
         fast_order_in_db = await self.__fast_order_repository.create(
-            fast_order=fast_order, total_amount=total_amount
+            fast_order=fast_order,
+            total_amount=total_amount,
+            payment_status=payment_status
         )
 
         return await self.__build_complete_fast_order(fast_order_in_db)
@@ -82,6 +89,12 @@ class FastOrderServices:
         if is_updated:
             updated_fields = updated_fast_order.model_dump(exclude_none=True)
             updated_fields["total_amount"] = total_amount
+
+            if updated_fast_order.payment_details is not None:
+                updated_fields["payment_status"] = self.__calculate_payment_status(
+                    total_amount=total_amount,
+                    payment_details=updated_fast_order.payment_details
+                )
 
             fast_order_in_db = await self.__fast_order_repository.update(
                 fast_order_id=fast_order_in_db.id, fast_order=updated_fields
@@ -120,6 +133,7 @@ class FastOrderServices:
             id=fast_order_in_db.id,
             organization_id=fast_order_in_db.organization_id,
             products=fast_order_in_db.products,
+            payment_details=fast_order_in_db.payment_details,
             total_amount=fast_order_in_db.total_amount,
             preparation_date=fast_order_in_db.preparation_date,
             description=fast_order_in_db.description,
@@ -164,3 +178,18 @@ class FastOrderServices:
                 )
 
         return total_amount
+
+    def __calculate_payment_status(self, total_amount: float, payment_details: List[Payment]) -> PaymentStatus:
+        if payment_details:
+            total_paid = 0
+
+            for payment in payment_details:
+                total_paid += payment.amount
+
+            if total_amount == total_paid:
+                return PaymentStatus.PAID
+
+            else:
+                return PaymentStatus.PARTIALLY_PAID
+
+        return PaymentStatus.PENDING
