@@ -8,7 +8,7 @@ from app.crud.fast_orders import FastOrder, UpdateFastOrder, CompleteFastOrder, 
 router = APIRouter(tags=["Fast Orders"])
 
 
-@router.post("/fast/orders", responses={201: {"model": CompleteFastOrder}})
+@router.post("/fast-orders", responses={201: {"model": CompleteFastOrder}})
 async def create_fast_orders(
     fast_order: FastOrder,
     current_user: UserInDB = Security(decode_jwt, scopes=["fast_order:create"]),
@@ -29,7 +29,7 @@ async def create_fast_orders(
         )
 
 
-@router.put("/fast/orders/{fast_order_id}", responses={200: {"model": CompleteFastOrder}})
+@router.put("/fast-orders/{fast_order_id}", responses={200: {"model": CompleteFastOrder}})
 async def update_fast_order(
     fast_order_id: str,
     fast_order: UpdateFastOrder,
@@ -49,7 +49,7 @@ async def update_fast_order(
         )
 
 
-@router.delete("/fast/orders/{fast_order_id}", responses={200: {"model": CompleteFastOrder}})
+@router.delete("/fast-orders/{fast_order_id}", responses={200: {"model": CompleteFastOrder}})
 async def delete_fast_order(
     fast_order_id: str,
     current_user: UserInDB = Security(decode_jwt, scopes=["fast_order:delete"]),

@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import List
+
 from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.core.repositories.base_repository import Repository
@@ -15,15 +16,15 @@ class OrderRepository(Repository):
         super().__init__()
         self.__organization_id = organization_id
 
-    async def create(self, order: Order, value: float) -> OrderInDB:
+    async def create(self, order: Order, total_amount: float) -> OrderInDB:
         try:
             order_model = OrderModel(
-                value=value,
+                total_amount=total_amount,
                 organization_id=self.__organization_id,
                 is_fast_order=False,
                 created_at=datetime.now(),
                 updated_at=datetime.now(),
-                **order.model_dump()
+                **order.model_dump(),
             )
 
             order_model.save()
@@ -40,7 +41,7 @@ class OrderRepository(Repository):
                 id=order_id,
                 is_active=True,
                 is_fast_order=False,
-                organization_id=self.__organization_id
+                organization_id=self.__organization_id,
             ).first()
 
             order_model.update(**order)
@@ -58,7 +59,7 @@ class OrderRepository(Repository):
                 id=id,
                 is_active=True,
                 is_fast_order=False,
-                organization_id=self.__organization_id
+                organization_id=self.__organization_id,
             ).first()
 
             return OrderInDB.model_validate(order_model)
@@ -67,21 +68,23 @@ class OrderRepository(Repository):
             _logger.error(f"Error on select_by_id: {str(error)}")
             raise NotFoundError(message=f"Order #{id} not found")
 
-    async def select_all(self, customer_id: str, status: OrderStatus) -> List[OrderInDB]:
+    async def select_all(
+        self, customer_id: str, status: OrderStatus
+    ) -> List[OrderInDB]:
         try:
             orders = []
 
             objects = OrderModel.objects(
                 is_active=True,
                 is_fast_order=False,
-                organization_id=self.__organization_id
+                organization_id=self.__organization_id,
             )
 
             if customer_id:
                 objects = objects(customer_id=customer_id)
 
             if status:
-                objects = objects(status=status.value)
+                objects = objects(status=status.total_amount)
 
             for order_model in objects.order_by("-preparation_date"):
                 orders.append(OrderInDB.model_validate(order_model))
@@ -98,7 +101,7 @@ class OrderRepository(Repository):
                 id=id,
                 is_active=True,
                 is_fast_order=False,
-                organization_id=self.__organization_id
+                organization_id=self.__organization_id,
             ).first()
             order_model.delete()
 

@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import datetime
 from typing import List, Optional, Type
 
 from pydantic import Field, model_validator
@@ -20,7 +20,7 @@ class CompleteProduct(GenericModel):
 
 class FastOrder(GenericModel):
     products: List[RequestedProduct] = Field(default=[], min_length=1)
-    day: date = Field(example=str(datetime.now().date()))
+    preparation_date: datetime = Field(example=str(datetime.now()))
     description: str | None = Field(default=None, example="Description")
 
     @model_validator(mode="after")
@@ -39,8 +39,8 @@ class FastOrder(GenericModel):
             self.description = update_fast_order.description
             is_updated = True
 
-        if update_fast_order.day is not None:
-            self.day = update_fast_order.day
+        if update_fast_order.preparation_date is not None:
+            self.preparation_date = update_fast_order.preparation_date
             is_updated = True
 
         if update_fast_order.products is not None:
@@ -52,13 +52,13 @@ class FastOrder(GenericModel):
 
 class UpdateFastOrder(GenericModel):
     products: Optional[List[RequestedProduct]] = Field(default=None, min_length=1)
-    day: Optional[date] = Field(default=None, example=str(datetime.now().date()))
+    preparation_date: Optional[datetime] = Field(default=None, example=str(datetime.now()))
     description: Optional[str] = Field(default=None, example="Description")
 
 
 class FastOrderInDB(FastOrder, DatabaseModel):
     organization_id: str = Field(example="66bae5c2e59a0787e2c903e3")
-    value: float = Field(example=12.2)
+    total_amount: float = Field(example=12.2)
     is_active: bool = Field(example=True, exclude=True)
 
 

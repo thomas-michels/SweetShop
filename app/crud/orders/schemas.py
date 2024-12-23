@@ -31,7 +31,9 @@ class DeliveryType(str, Enum):
 
 
 class Delivery(GenericModel):
-    type: DeliveryType = Field(default=DeliveryType.WITHDRAWAL, example=DeliveryType.WITHDRAWAL)
+    type: DeliveryType = Field(
+        default=DeliveryType.WITHDRAWAL, example=DeliveryType.WITHDRAWAL
+    )
     delivery_at: datetime | None = Field(default=None, example=str(datetime.now()))
     address: Address | None = Field(default=None)
     delivery_value: float | None = Field(default=None)
@@ -48,7 +50,9 @@ class Delivery(GenericModel):
 
         else:  # WITHDRAWAL
             if self.delivery_at or self.address or self.delivery_value:
-                raise ValueError("`delivery_at`, `address`, and `delivery_value` must be None when type is WITHDRAWAL")
+                raise ValueError(
+                    "`delivery_at`, `address`, and `delivery_value` must be None when type is WITHDRAWAL"
+                )
 
         return self
 
@@ -65,8 +69,12 @@ class CompleteProduct(GenericModel):
 
 class Order(GenericModel):
     customer_id: str | None = Field(default=None, example="66bae5c2e59a0787e2c903e3")
-    status: OrderStatus = Field(default=OrderStatus.PENDING, example=OrderStatus.IN_PREPARATION)
-    payment_status: PaymentStatus = Field(default=PaymentStatus.PENDING, example=PaymentStatus.PENDING)
+    status: OrderStatus = Field(
+        default=OrderStatus.PENDING, example=OrderStatus.IN_PREPARATION
+    )
+    payment_status: PaymentStatus = Field(
+        default=PaymentStatus.PENDING, example=PaymentStatus.PENDING
+    )
     products: List[RequestedProduct] = Field(default=[], min_length=1)
     tags: List[str] = Field(default=[])
     delivery: Delivery = Field()
@@ -135,11 +143,17 @@ class Order(GenericModel):
 
 class UpdateOrder(GenericModel):
     customer_id: Optional[str] = Field(default=None, example="66bae5c2e59a0787e2c903e3")
-    status: Optional[OrderStatus] = Field(default=None, example=OrderStatus.IN_PREPARATION)
-    payment_status: Optional[PaymentStatus] = Field(default=None, example=PaymentStatus.PENDING)
+    status: Optional[OrderStatus] = Field(
+        default=None, example=OrderStatus.IN_PREPARATION
+    )
+    payment_status: Optional[PaymentStatus] = Field(
+        default=None, example=PaymentStatus.PENDING
+    )
     products: Optional[List[RequestedProduct]] = Field(default=None, min_length=1)
     delivery: Optional[Delivery] = Field(default=None)
-    preparation_date: Optional[datetime] = Field(default=None, example=str(datetime.now()))
+    preparation_date: Optional[datetime] = Field(
+        default=None, example=str(datetime.now())
+    )
     description: Optional[str] = Field(default=None, example="Description")
     additional: Optional[float] = Field(default=None, example=12.2)
     reason_id: Optional[str] = Field(default=None, example="123")
@@ -148,11 +162,13 @@ class UpdateOrder(GenericModel):
 
 class OrderInDB(Order, DatabaseModel):
     organization_id: str = Field(example="66bae5c2e59a0787e2c903e3")
-    value: float = Field(example=12.2)
+    total_amount: float = Field(example=12.2)
     is_active: bool = Field(example=True, exclude=True)
 
 
 class CompleteOrder(OrderInDB):
     customer: CustomerInDB | str | None = Field(default=None)
-    products: List[CompleteProduct] | List[RequestedProduct] = Field(default=[], min_length=1)
+    products: List[CompleteProduct] | List[RequestedProduct] = Field(
+        default=[], min_length=1
+    )
     tags: List[TagInDB] | List[str] = Field(default=[])
