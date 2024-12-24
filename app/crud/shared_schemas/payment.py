@@ -1,5 +1,5 @@
+from datetime import datetime
 from enum import Enum
-
 from pydantic import Field
 
 from app.core.models.base_schema import GenericModel
@@ -20,4 +20,5 @@ class PaymentMethod(str, Enum):
 
 class Payment(GenericModel):
     method: PaymentMethod = Field(example=PaymentMethod.CASH)
+    payment_date: datetime = Field(example=str(datetime.now()))
     amount: float = Field(example=10, gt=0)
