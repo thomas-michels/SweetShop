@@ -1,6 +1,6 @@
 from typing import List, Optional
-from datetime import date
-from pydantic import Field
+from datetime import datetime
+from pydantic import Field, model_validator
 
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
@@ -9,8 +9,19 @@ from app.crud.shared_schemas.payment import Payment
 
 class Expense(GenericModel):
     name: str = Field(example="Brasil Atacadista")
-    expense_date: date = Field(example=str(date.today()))
+    expense_date: datetime = Field(example=str(datetime.now()))
     payment_details: List[Payment] = Field(default=[])
+
+    @model_validator(mode="after")
+    def validate_model(self) -> "Expense":
+        if self.expense_date.second != 0:
+            self.expense_date = datetime(
+                year=self.expense_date.year,
+                month=self.expense_date.month,
+                day=self.expense_date.day,
+            )
+
+        return self
 
     def validate_updated_fields(self, update_expense: "UpdateExpense") -> bool:
         is_updated = False
@@ -32,8 +43,19 @@ class Expense(GenericModel):
 
 class UpdateExpense(GenericModel):
     name: Optional[str] = Field(default=None, example="Brasil Atacadista")
-    expense_date: Optional[date] = Field(default=None, example=str(date.today()))
+    expense_date: Optional[datetime] = Field(default=None, example=str(datetime.now()))
     payment_details: Optional[List[Payment]] = Field(default=None)
+
+    @model_validator(mode="after")
+    def validate_model(self) -> "Expense":
+        if self.expense_date is not None and self.expense_date.second != 0:
+            self.expense_date = datetime(
+                year=self.expense_date.year,
+                month=self.expense_date.month,
+                day=self.expense_date.day,
+            )
+
+        return self
 
 
 class ExpenseInDB(Expense, DatabaseModel):
