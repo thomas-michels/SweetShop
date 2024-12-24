@@ -32,6 +32,13 @@ class FastOrder(GenericModel):
         if len(product_ids) != len(set(product_ids)):
             raise ValueError("Products must contain unique items.")
 
+        if self.preparation_date.second != 0:
+            self.preparation_date = datetime(
+                year=self.preparation_date.year,
+                month=self.preparation_date.month,
+                day=self.preparation_date.day,
+            )
+
         return self
 
     def validate_updated_fields(self, update_fast_order: Type["UpdateFastOrder"]) -> bool:
@@ -61,6 +68,17 @@ class UpdateFastOrder(GenericModel):
     preparation_date: Optional[datetime] = Field(default=None, example=str(datetime.now()))
     description: Optional[str] = Field(default=None, example="Description")
     payment_details: Optional[List[Payment]] = Field(default=None)
+
+    @model_validator(mode="after")
+    def validate_model(self) -> "FastOrder":
+        if self.preparation_date.second is not None and self.preparation_date.second != 0:
+            self.preparation_date = datetime(
+                year=self.preparation_date.year,
+                month=self.preparation_date.month,
+                day=self.preparation_date.day,
+            )
+
+        return self
 
 
 class FastOrderInDB(FastOrder, DatabaseModel):
