@@ -31,10 +31,6 @@ class ProductRepository(Repository):
 
             return ProductInDB.model_validate(product_model)
 
-        except NotUniqueError:
-            _logger.warning(f"Product with name {product.name} is not unique")
-            return await self.select_by_name(name=product.name)
-
         except Exception as error:
             _logger.error(f"Error on create_product: {str(error)}")
             raise UnprocessableEntity(message="Error on create new product")
@@ -70,21 +66,6 @@ class ProductRepository(Repository):
             _logger.error(f"Error on select_by_id: {str(error)}")
             if raise_404:
                 raise NotFoundError(message=f"Product #{id} not found")
-
-    async def select_by_name(self, name: str) -> ProductInDB:
-        try:
-            name = name.capitalize()
-            product_model: ProductModel = ProductModel.objects(
-                name=name,
-                is_active=True,
-                organization_id=self.organization_id
-            ).first()
-
-            return ProductInDB.model_validate(product_model)
-
-        except Exception as error:
-            _logger.error(f"Error on select_by_name: {str(error)}")
-            raise NotFoundError(message=f"Product with name {name} not found")
 
     async def select_all(self, query: str) -> List[ProductInDB]:
         try:

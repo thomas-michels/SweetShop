@@ -4,7 +4,7 @@ from app.core.models.base_document import BaseDocument
 
 
 class TagModel(Document, BaseDocument):
-    name = StringField(max_length=100, required=True, unique=True)
+    name = StringField(max_length=100, required=True, unique_with="organization_id")
     styling = DictField(required=False)
     organization_id = StringField(required=True)
     system_tag = BooleanField(default=False, required=True)
