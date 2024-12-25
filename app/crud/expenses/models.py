@@ -1,4 +1,4 @@
-from mongoengine import StringField, Document, DateField, FloatField, ListField, DictField
+from mongoengine import StringField, Document, DateTimeField, FloatField, ListField, DictField
 
 from app.core.models.base_document import BaseDocument
 
@@ -6,7 +6,7 @@ from app.core.models.base_document import BaseDocument
 class ExpenseModel(Document, BaseDocument):
     organization_id = StringField(required=True)
     name = StringField(max_length=120, required=True)
-    expense_date = DateField(required=True)
+    expense_date = DateTimeField(required=True)
     total_paid = FloatField(required=True)
     payment_details = ListField(DictField(), required=False)
 
