@@ -71,6 +71,11 @@ class UpdateFastOrder(GenericModel):
 
     @model_validator(mode="after")
     def validate_model(self) -> "FastOrder":
+        product_ids = [str(product.product_id) for product in self.products]
+
+        if len(product_ids) != len(set(product_ids)):
+            raise ValueError("Products must contain unique items.")
+
         if self.preparation_date.second is not None and self.preparation_date.second != 0:
             self.preparation_date = datetime(
                 year=self.preparation_date.year,
