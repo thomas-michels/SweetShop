@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional, Type
 
-from pydantic import Field, model_validator, PositiveFloat
+from pydantic import Field, model_validator
 
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
@@ -23,8 +23,8 @@ class FastOrder(GenericModel):
     products: List[RequestedProduct] = Field(default=[], min_length=1)
     preparation_date: datetime = Field(example=str(datetime.now()))
     description: str | None = Field(default=None, example="Description")
-    additional: PositiveFloat = Field(default=0, example=12.2)
-    discount: PositiveFloat = Field(default=0, example=12.2)
+    additional: float = Field(default=0, ge=0, example=12.2)
+    discount: float| None = Field(default=0, ge=0, example=12.2)
     payment_details: List[Payment] = Field(default=[])
 
     @model_validator(mode="after")
@@ -43,7 +43,9 @@ class FastOrder(GenericModel):
 
         return self
 
-    def validate_updated_fields(self, update_fast_order: Type["UpdateFastOrder"]) -> bool:
+    def validate_updated_fields(
+        self, update_fast_order: Type["UpdateFastOrder"]
+    ) -> bool:
         is_updated = False
 
         if update_fast_order.description is not None:
@@ -78,20 +80,33 @@ class FastOrder(GenericModel):
 
 class UpdateFastOrder(GenericModel):
     products: Optional[List[RequestedProduct]] = Field(default=None, min_length=1)
-    preparation_date: Optional[datetime] = Field(default=None, example=str(datetime.now()))
+    preparation_date: Optional[datetime] = Field(
+        default=None, example=str(datetime.now())
+    )
     description: Optional[str] = Field(default=None, example="Description")
-    additional: Optional[PositiveFloat] = Field(default=None, example=12.2)
-    discount: Optional[PositiveFloat] = Field(default=None, example=12.2)
+    additional: Optional[float] = Field(default=None, example=12.2)
+    discount: Optional[float] = Field(default=None, example=12.2)
     payment_details: Optional[List[Payment]] = Field(default=None)
 
     @model_validator(mode="after")
     def validate_model(self) -> "FastOrder":
         product_ids = [str(product.product_id) for product in self.products]
 
+        if self.additional is not None:
+            if self.additional < 0:
+                raise ValueError("Additional must be grater than zero")
+
+        if self.discount is not None:
+            if self.discount < 0:
+                raise ValueError("Discount must be grater than zero")
+
         if len(product_ids) != len(set(product_ids)):
             raise ValueError("Products must contain unique items.")
 
-        if self.preparation_date.second is not None and self.preparation_date.second != 0:
+        if (
+            self.preparation_date.second is not None
+            and self.preparation_date.second != 0
+        ):
             self.preparation_date = datetime(
                 year=self.preparation_date.year,
                 month=self.preparation_date.month,
@@ -108,4 +123,6 @@ class FastOrderInDB(FastOrder, DatabaseModel):
 
 
 class CompleteFastOrder(FastOrderInDB):
-    products: List[CompleteProduct] | List[RequestedProduct] = Field(default=[], min_length=1)
+    products: List[CompleteProduct] | List[RequestedProduct] = Field(
+        default=[], min_length=1
+    )

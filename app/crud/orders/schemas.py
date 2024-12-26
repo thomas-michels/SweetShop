@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum
 from typing import List, Optional, Type
 
-from pydantic import Field, PositiveFloat, model_validator
+from pydantic import Field, model_validator
 
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
@@ -73,8 +73,8 @@ class Order(GenericModel):
     delivery: Delivery = Field()
     preparation_date: datetime = Field(example=str(datetime.now()))
     description: str | None = Field(default=None, example="Description")
-    additional: PositiveFloat = Field(default=0, example=12.2)
-    discount: PositiveFloat = Field(default=0, example=12.2)
+    additional: float = Field(default=0, ge=0, example=12.2)
+    discount: float | None = Field(default=0, ge=0, example=12.2)
     reason_id: str | None = Field(default=None, example="123")
     payment_details: List[Payment] = Field(default=[])
 
@@ -152,11 +152,27 @@ class UpdateOrder(GenericModel):
         default=None, example=str(datetime.now())
     )
     description: Optional[str] = Field(default=None, example="Description")
-    additional: Optional[PositiveFloat] = Field(default=None, example=12.2)
-    discount: Optional[PositiveFloat] = Field(default=None, example=12.2)
+    additional: Optional[float] = Field(default=None, example=12.2)
+    discount: Optional[float] = Field(default=None, example=12.2)
     reason_id: Optional[str] = Field(default=None, example="123")
     tags: Optional[List[str]] = Field(default=None)
 
+    @model_validator(mode="after")
+    def validate_model(self) -> "UpdateOrder":
+        if self.additional is not None:
+            if self.additional < 0:
+                raise ValueError("Additional must be grater than zero")
+
+        if self.discount is not None:
+            if self.discount < 0:
+                raise ValueError("Discount must be grater than zero")
+
+        if self.products is not None:
+            product_ids = [str(product.product_id) for product in self.products]
+            if len(product_ids) != len(set(product_ids)):
+                raise ValueError("Products must contain unique items.")
+
+        return self
 
 class OrderInDB(Order, DatabaseModel):
     organization_id: str = Field(example="66bae5c2e59a0787e2c903e3")
