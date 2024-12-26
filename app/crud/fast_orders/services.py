@@ -41,7 +41,9 @@ class FastOrderServices:
             await self.__product_repository.select_by_id(id=product.product_id)
 
         total_amount = await self.__calculate_fast_order_total_amount(
-            products=fast_order.products
+            products=fast_order.products,
+            additional=fast_order.additional,
+            discount=fast_order.discount
         )
 
         payment_status = self.__calculate_payment_status(
@@ -75,11 +77,9 @@ class FastOrderServices:
                 )
 
         total_amount = await self.__calculate_fast_order_total_amount(
-            products=(
-                updated_fast_order.products
-                if updated_fast_order.products is not None
-                else fast_order_in_db.products
-            )
+            products=updated_fast_order.products if updated_fast_order.products is not None else fast_order_in_db.products,
+            discount=updated_fast_order.discount if updated_fast_order.discount is not None else fast_order_in_db.discount,
+            additional=updated_fast_order.additional if updated_fast_order.additional is not None else fast_order_in_db.additional
         )
 
         is_updated = fast_order_in_db.validate_updated_fields(
@@ -135,6 +135,8 @@ class FastOrderServices:
             products=fast_order_in_db.products,
             payment_details=fast_order_in_db.payment_details,
             total_amount=fast_order_in_db.total_amount,
+            additional=fast_order_in_db.additional,
+            discount=fast_order_in_db.discount,
             preparation_date=fast_order_in_db.preparation_date,
             description=fast_order_in_db.description,
             is_active=fast_order_in_db.is_active,
@@ -160,9 +162,12 @@ class FastOrderServices:
         return complete_fast_order
 
     async def __calculate_fast_order_total_amount(
-        self, products: List[RequestedProduct]
+        self,
+        products: List[RequestedProduct],
+        additional: float,
+        discount: float
     ) -> float:
-        total_amount = 0
+        total_amount = additional - discount
 
         for product in products:
             try:

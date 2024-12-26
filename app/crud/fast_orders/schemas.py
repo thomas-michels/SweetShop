@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional, Type
 
-from pydantic import Field, model_validator
+from pydantic import Field, model_validator, PositiveFloat
 
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
@@ -23,6 +23,8 @@ class FastOrder(GenericModel):
     products: List[RequestedProduct] = Field(default=[], min_length=1)
     preparation_date: datetime = Field(example=str(datetime.now()))
     description: str | None = Field(default=None, example="Description")
+    additional: PositiveFloat = Field(default=0, example=12.2)
+    discount: PositiveFloat = Field(default=0, example=12.2)
     payment_details: List[Payment] = Field(default=[])
 
     @model_validator(mode="after")
@@ -59,6 +61,17 @@ class FastOrder(GenericModel):
         if update_fast_order.payment_details is not None:
             self.payment_details = update_fast_order.payment_details
             is_updated = True
+        if update_fast_order.payment_details is not None:
+            self.payment_details = update_fast_order.payment_details
+            is_updated = True
+
+        if update_fast_order.additional is not None:
+            self.additional = update_fast_order.additional
+            is_updated = True
+
+        if update_fast_order.discount is not None:
+            self.discount = update_fast_order.discount
+            is_updated = True
 
         return is_updated
 
@@ -67,6 +80,8 @@ class UpdateFastOrder(GenericModel):
     products: Optional[List[RequestedProduct]] = Field(default=None, min_length=1)
     preparation_date: Optional[datetime] = Field(default=None, example=str(datetime.now()))
     description: Optional[str] = Field(default=None, example="Description")
+    additional: Optional[PositiveFloat] = Field(default=None, example=12.2)
+    discount: Optional[PositiveFloat] = Field(default=None, example=12.2)
     payment_details: Optional[List[Payment]] = Field(default=None)
 
     @model_validator(mode="after")

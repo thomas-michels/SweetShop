@@ -10,24 +10,24 @@ from app.crud.organizations import OrganizationInDB, OrganizationServices
 router = APIRouter(tags=["Organizations"])
 
 
-@router.get("/users/organizations", responses={200: {"model": OrganizationInDB}})
+@router.get("/users/{user_id}/organizations", responses={200: {"model": OrganizationInDB}})
 async def get_users_organizations(
+    user_id: str,
     current_user: UserInDB = Security(decode_jwt, scopes=["organization:get"]),
     organization_services: OrganizationServices = Depends(organization_composer),
 ):
-    organizations = []
 
     for organization_id in current_user.app_metadata.get("organizations", []):
         organization_in_db = await organization_services.search_by_id(id=organization_id)
-        organizations.append(organization_in_db)
+        # organizations.append(organization_in_db)
 
-    if organizations:
-        return build_response(
-            status_code=200, message="Organization found with success", data=organizations
-        )
+    # if organizations:
+    #     return build_response(
+    #         status_code=200, message="Organization found with success", data=organizations
+    #     )
 
-    else:
-        return Response(status_code=204)
+    # else:
+    #     return Response(status_code=204)
 
 
 @router.get("/organizations/{organization_id}", responses={200: {"model": OrganizationInDB}})

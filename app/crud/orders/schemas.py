@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum
 from typing import List, Optional, Type
 
-from pydantic import Field, model_validator
+from pydantic import Field, PositiveFloat, model_validator
 
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
@@ -18,6 +18,7 @@ class OrderStatus(str, Enum):
     SCHEDULED = "SCHEDULED"
     IN_PREPARATION = "IN_PREPARATION"
     DONE = "DONE"
+    CANCELED = "CANCELED"
 
 
 class DeliveryType(str, Enum):
@@ -72,7 +73,8 @@ class Order(GenericModel):
     delivery: Delivery = Field()
     preparation_date: datetime = Field(example=str(datetime.now()))
     description: str | None = Field(default=None, example="Description")
-    additional: float = Field(default=0, example=12.2)
+    additional: PositiveFloat = Field(default=0, example=12.2)
+    discount: PositiveFloat = Field(default=0, example=12.2)
     reason_id: str | None = Field(default=None, example="123")
     payment_details: List[Payment] = Field(default=[])
 
@@ -127,6 +129,10 @@ class Order(GenericModel):
             self.additional = update_order.additional
             is_updated = True
 
+        if update_order.discount is not None:
+            self.discount = update_order.discount
+            is_updated = True
+
         if update_order.payment_details is not None:
             self.payment_details = update_order.payment_details
             is_updated = True
@@ -146,7 +152,8 @@ class UpdateOrder(GenericModel):
         default=None, example=str(datetime.now())
     )
     description: Optional[str] = Field(default=None, example="Description")
-    additional: Optional[float] = Field(default=None, example=12.2)
+    additional: Optional[PositiveFloat] = Field(default=None, example=12.2)
+    discount: Optional[PositiveFloat] = Field(default=None, example=12.2)
     reason_id: Optional[str] = Field(default=None, example="123")
     tags: Optional[List[str]] = Field(default=None)
 

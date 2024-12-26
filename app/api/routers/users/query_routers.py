@@ -9,6 +9,15 @@ from app.crud.users import UserInDB, UserServices
 router = APIRouter(tags=["Users"])
 
 
+@router.get("/users/me/", responses={200: {"model": UserInDB}})
+async def current_user(
+    current_user: UserInDB = Security(decode_jwt, scopes=["user:me"]),
+):
+    return build_response(
+        status_code=200, message="User found with success", data=current_user
+    )
+
+
 @router.get("/users/{user_id}", responses={200: {"model": UserInDB}})
 async def get_user_by_id(
     user_id: str,

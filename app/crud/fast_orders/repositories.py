@@ -114,10 +114,17 @@ class FastOrderRepository(Repository):
             raise NotFoundError(message=f"FastOrder #{id} not found")
 
     def __build_order_model(
-        self, fast_order: FastOrder, total_amount: float, payment_status: PaymentStatus
+        self,
+        fast_order: FastOrder,
+        payment_status: PaymentStatus,
+        total_amount: float,
+        additional: float,
+        discount: float
     ) -> OrderModel:
         order_model = OrderModel(
             total_amount=total_amount,
+            additional=additional,
+            discount=discount,
             organization_id=self.__organization_id,
             status=OrderStatus.DONE,
             payment_status=payment_status,
@@ -141,6 +148,8 @@ class FastOrderRepository(Repository):
             organization_id=order_model.organization_id,
             payment_details=order_model.payment_details,
             total_amount=order_model.total_amount,
+            additional=order_model.additional,
+            discount=order_model.discount,
             products=order_model.products,
             is_active=order_model.is_active,
             created_at=order_model.created_at,

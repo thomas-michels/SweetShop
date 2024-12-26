@@ -7,7 +7,6 @@ from app.api.dependencies.response import build_response
 from app.api.routers import (
     user_router,
     product_router,
-    authentication_router,
     order_router,
     customer_router,
     tag_router,
@@ -57,7 +56,6 @@ app.add_middleware(
 )
 app.add_middleware(SessionMiddleware, secret_key=_env.APP_SECRET_KEY)
 
-app.include_router(authentication_router, prefix="/api")
 app.include_router(organization_router, prefix="/api")
 app.include_router(user_router, prefix="/api")
 app.include_router(product_router, prefix="/api")

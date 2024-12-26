@@ -41,6 +41,7 @@ class OrderServices:
         total_amount = await self.__calculate_order_total_amount(
             products=order.products,
             additional=order.additional,
+            discount=order.discount,
             delivery_value=order.delivery.delivery_value if order.delivery.delivery_value else 0
         )
 
@@ -89,6 +90,7 @@ class OrderServices:
         total_amount = await self.__calculate_order_total_amount(
             products=updated_order.products if updated_order.products is not None else order_in_db.products,
             additional=updated_order.additional if updated_order.additional is not None else order_in_db.additional,
+            discount=updated_order.discount if updated_order.discount is not None else order_in_db.discount,
             delivery_value=delivery_value
         )
 
@@ -146,6 +148,7 @@ class OrderServices:
             total_amount=order_in_db.total_amount,
             description=order_in_db.description,
             additional=order_in_db.additional,
+            discount=order_in_db.discount,
             is_active=order_in_db.is_active,
             created_at=order_in_db.created_at,
             updated_at=order_in_db.updated_at,
@@ -192,8 +195,8 @@ class OrderServices:
 
         return complete_order
 
-    async def __calculate_order_total_amount(self, products: List[RequestedProduct], delivery_value: float, additional: float) -> float:
-        total_amount = delivery_value + additional
+    async def __calculate_order_total_amount(self, products: List[RequestedProduct], delivery_value: float, additional: float, discount: float) -> float:
+        total_amount = delivery_value + additional - discount
 
         for product in products:
             try:

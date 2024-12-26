@@ -34,7 +34,7 @@ async def create_user(
         )
 
 
-@router.put("/user/me", responses={200: {"model": UserInDB}})
+@router.put("/users/me", responses={200: {"model": UserInDB}})
 async def update_user(
     user: UpdateUser,
     current_user: UserInDB = Security(decode_jwt, scopes=["user:me"]),
@@ -53,7 +53,7 @@ async def update_user(
         )
 
 
-@router.put("/user/{user_id}", responses={200: {"model": UserInDB}})
+@router.put("/users/{user_id}", responses={200: {"model": UserInDB}})
 async def update_user(
     user_id: str,
     user: UpdateUser,
@@ -73,7 +73,7 @@ async def update_user(
         )
 
 
-@router.delete("/user/{user_id}", responses={200: {"model": UserInDB}})
+@router.delete("/users/{user_id}", responses={200: {"model": UserInDB}})
 async def delete_user(
     user_id: str,
     current_user: UserInDB = Security(decode_jwt, scopes=["user:delete"]),
@@ -92,7 +92,7 @@ async def delete_user(
         )
 
 
-@router.delete("/user/me", responses={200: {"model": UserInDB}})
+@router.delete("/users/me", responses={200: {"model": UserInDB}})
 async def delete_user(
     current_user: UserInDB = Security(decode_jwt, scopes=["user:me"]),
     user_services: UserServices = Depends(user_composer),
