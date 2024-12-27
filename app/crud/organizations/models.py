@@ -1,13 +1,12 @@
 from datetime import datetime
 from mongoengine import (
-    Document,
     StringField,
     DictField
 )
 from app.core.models.base_document import BaseDocument
 
 
-class OrganizationModel(Document, BaseDocument):
+class OrganizationModel(BaseDocument):
     name = StringField(required=True, unique=True)
     ddd = StringField(max_length=3, required=False)
     phone_number = StringField(max_length=9, required=False)

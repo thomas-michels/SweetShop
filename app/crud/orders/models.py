@@ -4,7 +4,6 @@ from mongoengine import (
     BooleanField,
     DateTimeField,
     DictField,
-    Document,
     FloatField,
     ListField,
     StringField,
@@ -14,7 +13,7 @@ from app.core.models.base_document import BaseDocument
 from app.crud.orders.schemas import OrderStatus, PaymentStatus
 
 
-class OrderModel(Document, BaseDocument):
+class OrderModel(BaseDocument):
     organization_id = StringField(required=True)
     customer_id = StringField(required=False)
     status = StringField(
@@ -33,7 +32,6 @@ class OrderModel(Document, BaseDocument):
     description = StringField(required=False)
     reason_id = StringField(required=False)
     is_fast_order = BooleanField(required=False, default=False)
-    is_active = BooleanField(required=True, default=True)
     payment_details = ListField(DictField(), required=False)
 
     meta = {"collection": "orders"}

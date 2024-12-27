@@ -1,9 +1,9 @@
-from mongoengine import StringField, Document, ListField, DictField
+from mongoengine import StringField, ListField, DictField
 
 from app.core.models.base_document import BaseDocument
 
 
-class CustomerModel(Document, BaseDocument):
+class CustomerModel(BaseDocument):
     organization_id = StringField(required=True)
     name = StringField(max_length=100, required=True)
     ddd = StringField(max_length=3, required=False)

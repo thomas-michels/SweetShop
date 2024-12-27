@@ -1,10 +1,10 @@
-from mongoengine import StringField, Document, FloatField
+from mongoengine import StringField, FloatField
 
 from app.core.models.base_document import BaseDocument
 
 
 
-class ProductModel(Document, BaseDocument):
+class ProductModel(BaseDocument):
     organization_id = StringField(required=True)
     name = StringField(max_length=100, required=True)
     description = StringField(max_length=255, required=True)

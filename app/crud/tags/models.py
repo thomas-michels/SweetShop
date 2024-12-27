@@ -1,9 +1,9 @@
 from datetime import datetime
-from mongoengine import StringField, DictField, BooleanField, Document
+from mongoengine import StringField, DictField, BooleanField
 from app.core.models.base_document import BaseDocument
 
 
-class TagModel(Document, BaseDocument):
+class TagModel(BaseDocument):
     name = StringField(max_length=100, required=True, unique_with="organization_id")
     styling = DictField(required=False)
     organization_id = StringField(required=True)

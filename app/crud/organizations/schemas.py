@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Dict, Optional, Type
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
@@ -52,4 +52,11 @@ class UpdateOrganization(GenericModel):
 
 
 class OrganizationInDB(Organization, DatabaseModel):
-    users: Dict[str, RoleEnum] = Field(default={}, example=RoleEnum.MANAGER)
+    users: Dict[str, RoleEnum] | None = Field(default={}, example=RoleEnum.MANAGER)
+
+    @model_validator(mode="after")
+    def validate_model(self) -> "OrganizationInDB":
+        if self.users is None:
+            self.users = {}
+
+        return self

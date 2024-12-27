@@ -1,9 +1,9 @@
-from mongoengine import StringField, Document, DateTimeField, FloatField, ListField, DictField
+from mongoengine import StringField, DateTimeField, FloatField, ListField, DictField
 
 from app.core.models.base_document import BaseDocument
 
 
-class ExpenseModel(Document, BaseDocument):
+class ExpenseModel(BaseDocument):
     organization_id = StringField(required=True)
     name = StringField(max_length=120, required=True)
     expense_date = DateTimeField(required=True)

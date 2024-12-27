@@ -154,14 +154,14 @@ class OrderServices:
             updated_at=order_in_db.updated_at,
         )
 
-        if "customer" in expand:
+        if "customers" in expand:
             if order_in_db.customer_id is not None:
                 customer = await self.__customer_repository.select_by_id(
                     id=order_in_db.customer_id,
                     raise_404=False
                 )
 
-                if not customer:
+                if customer:
                     complete_order.customer = customer
 
         if "products" in expand:
