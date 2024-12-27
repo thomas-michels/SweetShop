@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
@@ -10,10 +10,18 @@ from app.crud.tags.schemas import TagInDB
 
 class Customer(GenericModel):
     name: str = Field(example="Ted Mosby")
-    ddd: str | None = Field(default=None, example="047", max_length=3, pattern=r"^\d+$")
+    ddd: str | None = Field(default=None, example="047", max_length=3)
     phone_number: str | None = Field(default=None, max_length=9, pattern=r"^\d+$")
     addresses: List[Address] = Field(default=[])
     tags: List[str] = Field(default=[])
+
+    @model_validator(mode="after")
+    def validate_model(self) -> "Customer":
+        if self.ddd is not None and self.phone_number is not None:
+            if not self.ddd or not self.phone_number.isdigit():
+                raise ValueError("DDD or phone number must be only numbers")
+
+        return self
 
     def validate_updated_fields(self, update_customer: "UpdateCustomer") -> bool:
         is_updated = False
@@ -42,10 +50,18 @@ class Customer(GenericModel):
 
 class UpdateCustomer(GenericModel):
     name: Optional[str] = Field(default=None, example="Ted Mosby")
-    ddd: Optional[str] = Field(default=None, example="047", max_length=3, pattern=r"^\d+$")
-    phone_number: Optional[str] = Field(default=None, max_length=9, pattern=r"^\d+$")
+    ddd: Optional[str] = Field(default=None, example="047", max_length=3)
+    phone_number: Optional[str] = Field(default=None, max_length=9)
     addresses: Optional[List[Address]] = Field(default=None)
     tags: Optional[List[str]] = Field(default=None)
+
+    @model_validator(mode="after")
+    def validate_model(self) -> "UpdateCustomer":
+        if self.ddd is not None and self.phone_number is not None:
+            if not self.ddd or not self.phone_number.isdigit():
+                raise ValueError("DDD or phone number must be only numbers")
+
+        return self
 
 
 class CustomerInDB(Customer, DatabaseModel):
