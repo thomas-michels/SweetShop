@@ -118,13 +118,11 @@ class FastOrderRepository(Repository):
         fast_order: FastOrder,
         payment_status: PaymentStatus,
         total_amount: float,
-        additional: float,
-        discount: float
     ) -> OrderModel:
         order_model = OrderModel(
             total_amount=total_amount,
-            additional=additional,
-            discount=discount,
+            additional=fast_order.additional,
+            discount=fast_order.discount,
             organization_id=self.__organization_id,
             status=OrderStatus.DONE,
             payment_status=payment_status,

@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List
 
-from app.api.exceptions.authentication_exceptions import BadRequestException
+from app.api.exceptions.authentication_exceptions import BadRequestException, UnprocessableEntityException
 from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.crud.products.repositories import ProductRepository
@@ -46,6 +46,9 @@ class FastOrderServices:
             discount=fast_order.discount
         )
 
+        if fast_order.discount > total_amount:
+            raise UnprocessableEntityException(detail="Discount cannot be grater than total amount")
+
         payment_status = self.__calculate_payment_status(
             total_amount=total_amount,
             payment_details=fast_order.payment_details
@@ -89,6 +92,9 @@ class FastOrderServices:
         if is_updated:
             updated_fields = updated_fast_order.model_dump(exclude_none=True)
             updated_fields["total_amount"] = total_amount
+
+            if updated_fast_order.discount is not None and updated_fast_order.discount > total_amount:
+                raise UnprocessableEntityException(detail="Discount cannot be grater than total amount")
 
             if updated_fast_order.payment_details is not None:
                 updated_fields["payment_status"] = self.__calculate_payment_status(
