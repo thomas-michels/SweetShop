@@ -11,7 +11,7 @@ from app.crud.tags.schemas import TagInDB
 class Customer(GenericModel):
     name: str = Field(example="Ted Mosby")
     ddd: str | None = Field(default=None, example="047", max_length=3)
-    phone_number: str | None = Field(default=None, max_length=9, pattern=r"^\d+$")
+    phone_number: str | None = Field(default=None, max_length=9)
     addresses: List[Address] = Field(default=[])
     tags: List[str] = Field(default=[])
 
