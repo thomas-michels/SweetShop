@@ -24,7 +24,7 @@ class ExpenseRepository(Repository):
                 organization_id=self.organization_id,
                 **expense.model_dump()
             )
-            expense_model.name = expense_model.name.capitalize()
+            expense_model.name = expense_model.name.title()
 
             expense_model.save()
             _logger.info(f"Expense {expense.name} saved for organization {self.organization_id}")
@@ -42,7 +42,7 @@ class ExpenseRepository(Repository):
                 is_active=True,
                 organization_id=self.organization_id
             ).first()
-            expense.name = expense.name.capitalize()
+            expense.name = expense.name.title()
 
             expense_model.update(**expense.model_dump())
 

@@ -25,7 +25,7 @@ class TagRepository(Repository):
                 updated_at=datetime.now(),
                 **tag.model_dump()
             )
-            tag_model.name = tag_model.name.capitalize()
+            tag_model.name = tag_model.name.title()
 
             tag_model.save()
 
@@ -47,7 +47,7 @@ class TagRepository(Repository):
                 is_active=True,
                 organization_id=self.__organization_id
             ).first()
-            tag.name = tag.name.capitalize()
+            tag.name = tag.name.title()
 
             tag_model.update(**tag.model_dump())
 
@@ -74,7 +74,7 @@ class TagRepository(Repository):
 
     async def select_by_name(self, name: str) -> TagInDB:
         try:
-            name = name.capitalize()
+            name = name.title()
             tag_model: TagModel = TagModel.objects(
                 name=name,
                 is_active=True,

@@ -24,7 +24,7 @@ class CustomerRepository(Repository):
                 organization_id=self.__organization_id,
                 **customer.model_dump()
             )
-            customer_model.name = customer_model.name.capitalize()
+            customer_model.name = customer_model.name.title()
 
             customer_model.save()
 
@@ -45,7 +45,7 @@ class CustomerRepository(Repository):
                 is_active=True,
                 organization_id=self.__organization_id
             ).first()
-            customer.name = customer.name.capitalize()
+            customer.name = customer.name.title()
 
             customer_model.update(**customer.model_dump())
 
