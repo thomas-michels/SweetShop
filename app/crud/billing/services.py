@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List
 from app.crud.expenses.services import ExpenseServices
 from app.crud.fast_orders.services import FastOrderServices
@@ -20,12 +21,21 @@ class BillingServices:
         self.expenses_services = expenses_services
 
     async def search_by_month(self, month: int) -> Billing:
+        start_date = datetime(datetime.now().year, month, 1)
+
+        if month == 12:
+            end_date = datetime(datetime.now().year + 1, 1, 1)
+
+        else:
+            end_date = datetime(datetime.now().year, month + 1, 1)
+
         orders = await self.order_services.search_all(
             customer_id=None,
             status=None,
             payment_status=None,
             delivery_type=None,
-            month=month,
+            start_date=start_date,
+            end_date=end_date,
             expand=[],
         )
 

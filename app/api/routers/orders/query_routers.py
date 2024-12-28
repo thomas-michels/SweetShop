@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List
 
 from fastapi import APIRouter, Depends, Security, Query, Response
@@ -33,21 +34,23 @@ async def get_order_by_id(
 
 @router.get("/orders", responses={200: {"model": List[OrderInDB]}})
 async def get_orders(
-    status: OrderStatus = Query(default=None),
     customer_id: str = Query(default=None),
-    month: int = Query(default=None),
+    status: OrderStatus = Query(default=None),
     payment_status: PaymentStatus = Query(default=None),
     delivery_type: DeliveryType = Query(default=None),
+    start_date: datetime = Query(default=None),
+    end_date: datetime = Query(default=None),
     expand: List[str] = Query(default=[]),
     current_user: UserInDB = Security(decode_jwt, scopes=["order:get"]),
     order_services: OrderServices = Depends(order_composer),
 ):
     orders = await order_services.search_all(
-        status=status,
         customer_id=customer_id,
-        month=month,
+        status=status,
         delivery_type=delivery_type,
         payment_status=payment_status,
+        start_date=start_date,
+        end_date=end_date,
         expand=expand
     )
 

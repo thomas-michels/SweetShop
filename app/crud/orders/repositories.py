@@ -74,7 +74,8 @@ class OrderRepository(Repository):
         self,
         customer_id: str,
         status: OrderStatus,
-        month: int,
+        start_date: datetime,
+        end_date: datetime,
         payment_status: PaymentStatus,
         delivery_type: DeliveryType,
     ) -> List[OrderInDB]:
@@ -99,19 +100,11 @@ class OrderRepository(Repository):
             if delivery_type:
                 objects = objects.filter(delivery__delivery_type=delivery_type.value)
 
-            if month:
-                start_date = datetime(datetime.now().year, month, 1)
+            if start_date:
+                objects = objects.filter(preparation_date__gte=start_date)
 
-                if month == 12:
-                    end_date = datetime(datetime.now().year + 1, 1, 1)
-
-                else:
-                    end_date = datetime(datetime.now().year, month + 1, 1)
-
-                objects = objects.filter(
-                    preparation_date__gte=start_date,
-                    preparation_date__lt=end_date,
-                )
+            if end_date:
+                objects = objects.filter(preparation_date__lt=end_date)
 
             for order_model in objects.order_by("-preparation_date"):
                 orders.append(OrderInDB.model_validate(order_model))

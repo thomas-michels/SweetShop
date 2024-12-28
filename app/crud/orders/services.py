@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List
 
 from app.core.configs import get_logger
@@ -124,14 +125,16 @@ class OrderServices:
             payment_status: PaymentStatus,
             delivery_type: DeliveryType,
             customer_id: str,
-            month: int,
+            start_date: datetime,
+            end_date: datetime,
             expand: List[str]
         ) -> List[CompleteOrder]:
 
         orders = await self.__order_repository.select_all(
             status=status,
             customer_id=customer_id,
-            month=month,
+            start_date=start_date,
+            end_date=end_date,
             payment_status=payment_status,
             delivery_type=delivery_type
         )
