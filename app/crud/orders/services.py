@@ -118,8 +118,24 @@ class OrderServices:
 
         return await self.__build_complete_order(order_in_db)
 
-    async def search_all(self, status: OrderStatus, customer_id: str, expand: List[str]) -> List[CompleteOrder]:
-        orders = await self.__order_repository.select_all(status=status, customer_id=customer_id)
+    async def search_all(
+            self,
+            status: OrderStatus,
+            payment_status: PaymentStatus,
+            delivery_type: DeliveryType,
+            customer_id: str,
+            month: int,
+            expand: List[str]
+        ) -> List[CompleteOrder]:
+
+        orders = await self.__order_repository.select_all(
+            status=status,
+            customer_id=customer_id,
+            month=month,
+            payment_status=payment_status,
+            delivery_type=delivery_type
+        )
+
         complete_orders = []
 
         for order in orders:

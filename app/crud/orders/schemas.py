@@ -22,12 +22,13 @@ class OrderStatus(str, Enum):
 
 
 class DeliveryType(str, Enum):
+    FAST_ORDER = "FAST_ORDER"
     WITHDRAWAL = "WITHDRAWAL"
     DELIVERY = "DELIVERY"
 
 
 class Delivery(GenericModel):
-    type: DeliveryType = Field(
+    delivery_type: DeliveryType = Field(
         default=DeliveryType.WITHDRAWAL, example=DeliveryType.WITHDRAWAL
     )
     delivery_at: datetime | None = Field(default=None, example=str(datetime.now()))

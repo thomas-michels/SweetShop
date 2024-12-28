@@ -4,7 +4,8 @@ from fastapi import APIRouter, Depends, Security, Query, Response
 
 from app.api.composers import order_composer
 from app.api.dependencies import build_response, decode_jwt
-from app.crud.orders.schemas import OrderStatus
+from app.crud.orders.schemas import DeliveryType, OrderStatus
+from app.crud.shared_schemas.payment import PaymentStatus
 from app.crud.users import UserInDB
 from app.crud.orders import OrderInDB, OrderServices
 
@@ -34,6 +35,9 @@ async def get_order_by_id(
 async def get_orders(
     status: OrderStatus = Query(default=None),
     customer_id: str = Query(default=None),
+    month: int = Query(default=None),
+    payment_status: PaymentStatus = Query(default=None),
+    delivery_type: DeliveryType = Query(default=None),
     expand: List[str] = Query(default=[]),
     current_user: UserInDB = Security(decode_jwt, scopes=["order:get"]),
     order_services: OrderServices = Depends(order_composer),
@@ -41,6 +45,9 @@ async def get_orders(
     orders = await order_services.search_all(
         status=status,
         customer_id=customer_id,
+        month=month,
+        delivery_type=delivery_type,
+        payment_status=payment_status,
         expand=expand
     )
 

@@ -7,7 +7,7 @@ from app.core.repositories.base_repository import Repository
 from app.crud.shared_schemas.payment import PaymentStatus
 
 from .models import OrderModel
-from .schemas import Order, OrderInDB, OrderStatus
+from .schemas import DeliveryType, Order, OrderInDB, OrderStatus
 
 _logger = get_logger(__name__)
 
@@ -71,7 +71,12 @@ class OrderRepository(Repository):
             raise NotFoundError(message=f"Order #{id} not found")
 
     async def select_all(
-        self, customer_id: str, status: OrderStatus
+        self,
+        customer_id: str,
+        status: OrderStatus,
+        month: int,
+        payment_status: PaymentStatus,
+        delivery_type: DeliveryType,
     ) -> List[OrderInDB]:
         try:
             orders = []
@@ -83,10 +88,30 @@ class OrderRepository(Repository):
             )
 
             if customer_id:
-                objects = objects(customer_id=customer_id)
+                objects = objects.filter(customer_id=customer_id)
 
             if status:
-                objects = objects(status=status.total_amount)
+                objects = objects.filter(status=status.value)
+
+            if payment_status:
+                objects = objects.filter(payment_status=payment_status.value)
+
+            if delivery_type:
+                objects = objects.filter(delivery__delivery_type=delivery_type.value)
+
+            if month:
+                start_date = datetime(datetime.now().year, month, 1)
+
+                if month == 12:
+                    end_date = datetime(datetime.now().year + 1, 1, 1)
+
+                else:
+                    end_date = datetime(datetime.now().year, month + 1, 1)
+
+                objects = objects.filter(
+                    preparation_date__gte=start_date,
+                    preparation_date__lt=end_date,
+                )
 
             for order_model in objects.order_by("-preparation_date"):
                 orders.append(OrderInDB.model_validate(order_model))

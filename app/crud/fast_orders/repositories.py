@@ -129,7 +129,7 @@ class FastOrderRepository(Repository):
             payment_details=[payment.model_dump() for payment in fast_order.payment_details],
             products=[product.model_dump() for product in fast_order.products],
             tags=[],
-            delivery=Delivery(type=DeliveryType.WITHDRAWAL).model_dump(),
+            delivery=Delivery(delivery_type=DeliveryType.FAST_ORDER).model_dump(),
             preparation_date=fast_order.preparation_date,
             description=fast_order.description,
             is_fast_order=True,
