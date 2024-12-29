@@ -1,4 +1,4 @@
-from mongoengine import StringField, FloatField
+from mongoengine import StringField, FloatField, ListField
 
 from app.core.models.base_document import BaseDocument
 
@@ -10,6 +10,7 @@ class ProductModel(BaseDocument):
     description = StringField(max_length=255, required=True)
     unit_price = FloatField(min_value=0, required=True)
     unit_cost = FloatField(min_value=0, required=True)
+    tags = ListField(StringField(), required=False)
 
     meta = {
         "collection": "products",

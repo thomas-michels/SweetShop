@@ -74,10 +74,11 @@ class OrderRepository(Repository):
         self,
         customer_id: str,
         status: OrderStatus,
-        start_date: datetime,
-        end_date: datetime,
         payment_status: PaymentStatus,
         delivery_type: DeliveryType,
+        tags: List[str],
+        start_date: datetime,
+        end_date: datetime,
     ) -> List[OrderInDB]:
         try:
             orders = []
@@ -105,6 +106,9 @@ class OrderRepository(Repository):
 
             if end_date:
                 objects = objects.filter(preparation_date__lt=end_date)
+
+            if tags:
+                objects = objects.filter(tags__in=tags)
 
             for order_model in objects.order_by("-preparation_date"):
                 orders.append(OrderInDB.model_validate(order_model))

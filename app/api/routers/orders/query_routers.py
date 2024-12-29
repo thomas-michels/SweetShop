@@ -38,6 +38,7 @@ async def get_orders(
     status: OrderStatus = Query(default=None),
     payment_status: PaymentStatus = Query(default=None),
     delivery_type: DeliveryType = Query(default=None),
+    tags: List[str] = Query(default=[]),
     start_date: datetime = Query(default=None),
     end_date: datetime = Query(default=None),
     expand: List[str] = Query(default=[]),
@@ -51,6 +52,7 @@ async def get_orders(
         payment_status=payment_status,
         start_date=start_date,
         end_date=end_date,
+        tags=tags,
         expand=expand
     )
 

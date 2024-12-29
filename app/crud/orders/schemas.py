@@ -173,7 +173,12 @@ class UpdateOrder(GenericModel):
             if len(product_ids) != len(set(product_ids)):
                 raise ValueError("Products must contain unique items.")
 
+        if self.tags is not None:
+            if len(self.tags) != len(set(self.tags)):
+                raise ValueError("Tags must contain unique items.")
+
         return self
+
 
 class OrderInDB(Order, DatabaseModel):
     organization_id: str = Field(example="66bae5c2e59a0787e2c903e3")

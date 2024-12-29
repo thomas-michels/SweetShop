@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import Field, model_validator
 
@@ -11,11 +11,15 @@ class Product(GenericModel):
     description: str = Field(example="Brigadeiro de Leite Ninho")
     unit_price: float = Field(example=1.5)
     unit_cost: float = Field(example=0.75)
+    tags: List[str] = Field(default=[])
 
     @model_validator(mode="after")
     def validate_price_and_cost(self) -> "Product":
         if self.unit_cost > self.unit_price:
             raise ValueError("Unit price should be greater than unit cost")
+
+        if len(self.tags) != len(set(self.tags)):
+            raise ValueError("Tags must contain unique items.")
 
         return self
 
@@ -38,19 +42,29 @@ class Product(GenericModel):
             self.unit_price = update_product.unit_price
             is_updated = True
 
+        if update_product.tags is not None:
+            self.tags = update_product.tags
+            is_updated = True
+
         return is_updated
+
 
 class UpdateProduct(GenericModel):
     name: Optional[str] = Field(default=None, example="Brigadeiro")
     description: Optional[str] = Field(default=None, example="Brigadeiro de Leite Ninho")
     unit_price: Optional[float] = Field(default=None, example=1.5)
     unit_cost: Optional[float] = Field(default=None, example=0.75)
+    tags: Optional[List[str]] = Field(default=None)
 
     @model_validator(mode="after")
     def validate_price_and_cost(self) -> "Product":
         if self.unit_cost and self.unit_price:
             if self.unit_cost > self.unit_price:
                 raise ValueError("Unit price should be greater than unit cost")
+
+        if self.tags is not None:
+            if len(self.tags) != len(set(self.tags)):
+                raise ValueError("Tags must contain unique items.")
 
         return self
 

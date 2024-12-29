@@ -9,6 +9,7 @@ class ExpenseModel(BaseDocument):
     expense_date = DateTimeField(required=True)
     total_paid = FloatField(required=True)
     payment_details = ListField(DictField(), required=False)
+    tags = ListField(StringField(), required=False)
 
     meta = {
         "collection": "expenses"

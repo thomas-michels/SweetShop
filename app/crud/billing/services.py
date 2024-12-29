@@ -36,6 +36,7 @@ class BillingServices:
             delivery_type=None,
             start_date=start_date,
             end_date=end_date,
+            tags=[],
             expand=[],
         )
 

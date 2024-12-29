@@ -127,16 +127,18 @@ class OrderServices:
             customer_id: str,
             start_date: datetime,
             end_date: datetime,
+            tags: List[str],
             expand: List[str]
         ) -> List[CompleteOrder]:
 
         orders = await self.__order_repository.select_all(
-            status=status,
             customer_id=customer_id,
+            status=status,
+            payment_status=payment_status,
+            delivery_type=delivery_type,
             start_date=start_date,
             end_date=end_date,
-            payment_status=payment_status,
-            delivery_type=delivery_type
+            tags=tags
         )
 
         complete_orders = []
