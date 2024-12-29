@@ -36,7 +36,7 @@ class FastOrderRepository(Repository):
             return self.__from_order_model(order_model=order_model)
 
         except Exception as error:
-            _logger.error(f"Error on create_order: {str(error)}")
+            _logger.error(f"Error on create_fast_order: {str(error)}")
             raise UnprocessableEntity(message="Error on create new fast order")
 
     async def update(self, fast_order_id: str, fast_order: dict) -> OrderInDB:

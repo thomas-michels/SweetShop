@@ -5,6 +5,7 @@ from pydantic import Field, model_validator
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
 from app.crud.shared_schemas.payment import Payment
+from app.crud.tags.schemas import TagInDB
 
 
 class Expense(GenericModel):
@@ -75,3 +76,7 @@ class ExpenseInDB(Expense, DatabaseModel):
     organization_id: str = Field(example="org_123")
     is_active: bool = Field(example=True, exclude=True)
     total_paid: float = Field(gt=0, example=150)
+
+
+class CompleteExpense(ExpenseInDB):
+    tags: List[str | TagInDB] = Field(default=[])
