@@ -4,6 +4,7 @@ from pydantic import Field, model_validator
 
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
+from app.crud.tags.schemas import TagInDB
 
 
 class Product(GenericModel):
@@ -71,4 +72,7 @@ class UpdateProduct(GenericModel):
 
 class ProductInDB(Product, DatabaseModel):
     organization_id: str = Field(example="org_123")
-    is_active: bool = Field(example=True, exclude=True)
+
+
+class CompleteProduct(ProductInDB):
+    tags: List[str | TagInDB] = Field(default=[])

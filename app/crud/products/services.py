@@ -1,7 +1,7 @@
 from typing import List
 
 from app.crud.tags.repositories import TagRepository
-from .schemas import Product, ProductInDB, UpdateProduct
+from .schemas import CompleteProduct, Product, ProductInDB, UpdateProduct
 from .repositories import ProductRepository
 
 
@@ -40,9 +40,38 @@ class ProductServices:
         product_in_db = await self.__product_repository.select_by_id(id=id)
         return product_in_db
 
-    async def search_all(self, query: str) -> List[ProductInDB]:
+    async def search_all(self, query: str, expand: List[str] = []) -> List[ProductInDB]:
         products = await self.__product_repository.select_all(query=query)
-        return products
+
+        if not expand:
+            return products
+
+        complete_products = []
+        tags = {}
+
+        for product in products:
+            complete_product = CompleteProduct(**product.model_dump())
+
+            if "tags" in expand:
+                complete_product.tags = []
+
+                for tag in product.tags:
+                    if tags.get(tag):
+                        tag_in_db = tags[tag]
+
+                    else:
+                        tag_in_db = await self.__tag_repository.select_by_id(
+                            id=tag,
+                            raise_404=False
+                        )
+                        if tag_in_db:
+                            tags[tag_in_db.id] = tag_in_db
+
+                    complete_product.tags.append(tag_in_db)
+
+            complete_products.append(complete_product)
+
+        return complete_products
 
     async def delete_by_id(self, id: str) -> ProductInDB:
         product_in_db = await self.__product_repository.delete_by_id(id=id)
