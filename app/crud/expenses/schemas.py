@@ -74,7 +74,6 @@ class UpdateExpense(GenericModel):
 
 class ExpenseInDB(Expense, DatabaseModel):
     organization_id: str = Field(example="org_123")
-    is_active: bool = Field(example=True, exclude=True)
     total_paid: float = Field(gt=0, example=150)
 
 

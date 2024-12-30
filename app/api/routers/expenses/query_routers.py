@@ -35,13 +35,15 @@ async def get_expenses(
     query: str = Query(default=None),
     start_date: date | None = Query(default=None),
     end_date: date | None = Query(default=None),
+    expand: List[str] = Query(default=[]),
     current_user: UserInDB = Security(decode_jwt, scopes=["expense:get"]),
     expense_services: ExpenseServices = Depends(expense_composer),
 ):
     expenses = await expense_services.search_all(
         query=query,
         start_date=start_date,
-        end_date=end_date
+        end_date=end_date,
+        expand=expand
     )
 
     if expenses:

@@ -4,7 +4,7 @@ from typing import List
 from app.api.exceptions.authentication_exceptions import UnprocessableEntityException
 from app.crud.shared_schemas.payment import Payment
 from app.crud.tags.repositories import TagRepository
-from .schemas import Expense, ExpenseInDB, UpdateExpense
+from .schemas import CompleteExpense, Expense, ExpenseInDB, UpdateExpense
 from .repositories import ExpenseRepository
 
 
@@ -65,7 +65,35 @@ class ExpenseServices:
             start_date=start_date,
             end_date=end_date
         )
-        return expenses
+
+        if not expand:
+            return expenses
+
+        complete_expenses = []
+        tags = {}
+
+        for expense in expenses:
+            complete_expense = CompleteExpense(**expense.model_dump())
+            if "tags" in expand:
+                complete_expense.tags = []
+
+                for tag in expense.tags:
+                    if tags.get(tag):
+                        tag_in_db = tags[tag]
+
+                    else:
+                        tag_in_db = await self.__tag_repository.select_by_id(
+                            id=tag,
+                            raise_404=False
+                        )
+                        if tag_in_db:
+                            tags[tag_in_db.id] = tag_in_db
+
+                    complete_expense.tags.append(tag_in_db)
+
+            complete_expenses.append(complete_expense)
+
+        return complete_expenses
 
     async def delete_by_id(self, id: str) -> ExpenseInDB:
         expense_in_db = await self.__expense_repository.delete_by_id(id=id)
