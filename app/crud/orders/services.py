@@ -115,10 +115,13 @@ class OrderServices:
 
         return await self.__build_complete_order(order_in_db)
 
-    async def search_by_id(self, id: str) -> CompleteOrder:
+    async def search_by_id(self, id: str, expand: List[str] = []) -> CompleteOrder:
         order_in_db = await self.__order_repository.select_by_id(id=id)
 
-        return await self.__build_complete_order(order_in_db)
+        return await self.__build_complete_order(
+            order_in_db=order_in_db,
+            expand=expand
+        )
 
     async def search_all(
             self,

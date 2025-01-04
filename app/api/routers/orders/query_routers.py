@@ -16,10 +16,14 @@ router = APIRouter(tags=["Orders"])
 @router.get("/orders/{order_id}", responses={200: {"model": OrderInDB}})
 async def get_order_by_id(
     order_id: str,
+    expand: List[str] = Query(default=[]),
     current_user: UserInDB = Security(decode_jwt, scopes=["order:get"]),
     order_services: OrderServices = Depends(order_composer),
 ):
-    order_in_db = await order_services.search_by_id(id=order_id)
+    order_in_db = await order_services.search_by_id(
+        id=order_id,
+        expand=expand
+    )
 
     if order_in_db:
         return build_response(
