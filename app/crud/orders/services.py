@@ -79,9 +79,10 @@ class OrderServices:
                 if not await self.__tag_repository.select_by_id(id=tag, raise_404=False):
                     updated_order.tags.remove(tag)
 
-        if order_in_db.delivery.delivery_type == DeliveryType.DELIVERY and updated_order.delivery.delivery_type == DeliveryType.WITHDRAWAL:
-            updated_order.delivery.delivery_value = 0
-            updated_order.delivery.address = None
+        if updated_order.delivery is not None:
+            if order_in_db.delivery.delivery_type == DeliveryType.DELIVERY and updated_order.delivery.delivery_type == DeliveryType.WITHDRAWAL:
+                updated_order.delivery.delivery_value = 0
+                updated_order.delivery.address = None
 
         delivery_value = order_in_db.delivery.delivery_value if order_in_db.delivery.delivery_value is not None else 0
 

@@ -40,9 +40,11 @@ class Delivery(GenericModel):
         if self.delivery_type == DeliveryType.DELIVERY:
             if not self.delivery_at:
                 raise ValueError("`delivery_at` must be set for DELIVERY type")
-            if not self.address:
+
+            if self.address is None:
                 raise ValueError("`address` must be set for DELIVERY type")
-            if not self.delivery_value:
+
+            if self.delivery_value is None:
                 raise ValueError("`delivery_value` must be set for DELIVERY type")
 
         else:  # WITHDRAWAL
