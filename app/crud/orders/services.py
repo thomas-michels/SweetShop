@@ -128,6 +128,8 @@ class OrderServices:
             start_date: datetime,
             end_date: datetime,
             tags: List[str],
+            min_total_amount: float,
+            max_total_amount: float,
             expand: List[str]
         ) -> List[CompleteOrder]:
 
@@ -138,6 +140,8 @@ class OrderServices:
             delivery_type=delivery_type,
             start_date=start_date,
             end_date=end_date,
+            min_total_amount=min_total_amount,
+            max_total_amount=max_total_amount,
             tags=tags
         )
 

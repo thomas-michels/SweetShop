@@ -37,6 +37,8 @@ class BillingServices:
             start_date=start_date,
             end_date=end_date,
             tags=[],
+            min_total_amount=None,
+            max_total_amount=None,
             expand=[],
         )
 

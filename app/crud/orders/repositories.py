@@ -79,6 +79,8 @@ class OrderRepository(Repository):
         tags: List[str],
         start_date: datetime,
         end_date: datetime,
+        min_total_amount: float,
+        max_total_amount: float,
     ) -> List[OrderInDB]:
         try:
             orders = []
@@ -109,6 +111,12 @@ class OrderRepository(Repository):
 
             if tags:
                 objects = objects.filter(tags__in=tags)
+
+            if min_total_amount:
+                objects = objects.filter(total_amount__gte=min_total_amount)
+
+            if max_total_amount:
+                objects = objects.filter(total_amount__lte=max_total_amount)
 
             for order_model in objects.order_by("-preparation_date"):
                 orders.append(OrderInDB.model_validate(order_model))

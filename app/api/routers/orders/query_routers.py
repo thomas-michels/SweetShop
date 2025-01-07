@@ -45,6 +45,8 @@ async def get_orders(
     tags: List[str] = Query(default=[]),
     start_date: datetime = Query(default=None, alias="startDate"),
     end_date: datetime = Query(default=None, alias="endDate"),
+    min_total_amount: float | None = Query(default=None, alias="minTotalAmount"),
+    max_total_amount: float | None = Query(default=None, alias="maxTotalAmount"),
     expand: List[str] = Query(default=[]),
     current_user: UserInDB = Security(decode_jwt, scopes=["order:get"]),
     order_services: OrderServices = Depends(order_composer),
@@ -57,6 +59,8 @@ async def get_orders(
         start_date=start_date,
         end_date=end_date,
         tags=tags,
+        min_total_amount=min_total_amount,
+        max_total_amount=max_total_amount,
         expand=expand
     )
 
