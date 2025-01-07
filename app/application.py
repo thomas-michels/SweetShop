@@ -11,7 +11,7 @@ from app.api.routers import (
     customer_router,
     tag_router,
     organization_router,
-    financial_router,
+    billing_router,
     fast_order_router,
     expenses_router
 )
@@ -61,7 +61,7 @@ app.include_router(user_router, prefix="/api")
 app.include_router(product_router, prefix="/api")
 app.include_router(order_router, prefix="/api")
 app.include_router(fast_order_router, prefix="/api")
-app.include_router(financial_router, prefix="/api")
+app.include_router(billing_router, prefix="/api")
 app.include_router(customer_router, prefix="/api")
 app.include_router(tag_router, prefix="/api")
 app.include_router(expenses_router, prefix="/api")

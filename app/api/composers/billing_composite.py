@@ -13,6 +13,7 @@ async def billing_composer(
     fast_order_services: FastOrderServices = Depends(fast_order_composer),
     expense_services: ExpenseServices = Depends(expense_composer)
 ) -> BillingServices:
+
     billing_services = BillingServices(
         order_services=order_services,
         expenses_services=expense_services,

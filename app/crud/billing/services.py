@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List
+from typing import List, Tuple
 from app.crud.expenses.services import ExpenseServices
 from app.crud.fast_orders.services import FastOrderServices
 from app.crud.orders.services import OrderServices
@@ -20,14 +20,14 @@ class BillingServices:
         self.fast_order_services = fast_order_services
         self.expenses_services = expenses_services
 
-    async def search_by_month(self, month: int) -> Billing:
-        start_date = datetime(datetime.now().year, month, 1)
+    async def get_billing_for_dashboard(self, month: int, year: int) -> Billing:
+        return await self.__generate_monthly_billing(month=month, year=year)
 
-        if month == 12:
-            end_date = datetime(datetime.now().year + 1, 1, 1)
+    async def get_monthly_billings(self, last_months: int) -> List[Billing]:
+        return []
 
-        else:
-            end_date = datetime(datetime.now().year, month + 1, 1)
+    async def __generate_monthly_billing(self, month: int, year: int) -> Billing:
+        start_date, end_date = self.__get_start_and_end_date(month=month, year=year)
 
         orders = await self.order_services.search_all(
             customer_id=None,
@@ -41,11 +41,14 @@ class BillingServices:
         )
 
         fast_orders = await self.fast_order_services.search_all(
-            expand=[]
+            expand=[],
+            start_date=start_date,
+            end_date=end_date
         )
+
         orders.extend(fast_orders)
 
-        billing = Billing(month=month)
+        billing = Billing(month=month, year=year)
 
         for order in orders:
             billing.total_amount += order.total_amount
@@ -86,3 +89,14 @@ class BillingServices:
 
         if total_paid < total_amount:
             billing.pending_payments += round((total_amount - total_paid), 2)
+
+    def __get_start_and_end_date(self, month: int, year: int) -> Tuple[datetime, datetime]:
+        start_date = datetime(year, month, 1)
+
+        if month == 12:
+            end_date = datetime(year + 1, 1, 1)
+
+        else:
+            end_date = datetime(year, month + 1, 1)
+
+        return start_date,end_date

@@ -62,10 +62,6 @@ class OrderServices:
     async def update(self, id: str, updated_order: UpdateOrder) -> CompleteOrder:
         order_in_db = await self.search_by_id(id=id)
 
-        if order_in_db.status == OrderStatus.DONE:
-            logger.warning(f"Order cannot be updated if is done")
-            return
-
         if updated_order.customer_id is not None:
             await self.__customer_repository.select_by_id(id=updated_order.customer_id)
 

@@ -75,7 +75,7 @@ class FastOrderRepository(Repository):
             _logger.error(f"Error on select_by_id: {str(error)}")
             raise NotFoundError(message=f"FastOrder #{id} not found")
 
-    async def select_all(self, day: date) -> List[OrderInDB]:
+    async def select_all(self, day: datetime = None, start_date: datetime = None, end_date: datetime = None) -> List[OrderInDB]:
         try:
             fast_orders = []
 
@@ -87,6 +87,12 @@ class FastOrderRepository(Repository):
 
             if day:
                 objects = objects(preparation_date=day)
+
+            if start_date:
+                objects = objects.filter(preparation_date__gte=start_date)
+
+            if end_date:
+                objects = objects.filter(preparation_date__lt=end_date)
 
             for order_model in objects.order_by("-preparation_date"):
                 fast_orders.append(self.__from_order_model(order_model=order_model))

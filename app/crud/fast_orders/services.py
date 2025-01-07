@@ -114,9 +114,17 @@ class FastOrderServices:
         return await self.__build_complete_fast_order(fast_order_in_db)
 
     async def search_all(
-        self, expand: List[str] = [], day: datetime = None
+        self,
+        expand: List[str] = [],
+        day: datetime = None,
+        start_date: datetime = None,
+        end_date: datetime = None,
     ) -> List[CompleteFastOrder]:
-        orders = await self.__fast_order_repository.select_all(day=day)
+        orders = await self.__fast_order_repository.select_all(
+            day=day,
+            start_date=start_date,
+            end_date=end_date
+        )
         complete_fast_orders = []
 
         for order in orders:
