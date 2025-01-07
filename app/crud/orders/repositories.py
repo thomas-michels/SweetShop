@@ -74,7 +74,7 @@ class OrderRepository(Repository):
         self,
         customer_id: str,
         status: OrderStatus,
-        payment_status: PaymentStatus,
+        payment_status: List[PaymentStatus],
         delivery_type: DeliveryType,
         tags: List[str],
         start_date: datetime,
@@ -96,7 +96,7 @@ class OrderRepository(Repository):
                 objects = objects.filter(status=status.value)
 
             if payment_status:
-                objects = objects.filter(payment_status=payment_status.value)
+                objects = objects.filter(payment_status__in=payment_status)
 
             if delivery_type:
                 objects = objects.filter(delivery__delivery_type=delivery_type.value)

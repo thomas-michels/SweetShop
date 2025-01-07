@@ -38,13 +38,13 @@ async def get_order_by_id(
 
 @router.get("/orders", responses={200: {"model": List[OrderInDB]}})
 async def get_orders(
-    customer_id: str = Query(default=None),
+    customer_id: str = Query(default=None, alias="customerId"),
     status: OrderStatus = Query(default=None),
-    payment_status: PaymentStatus = Query(default=None),
-    delivery_type: DeliveryType = Query(default=None),
+    payment_status: List[PaymentStatus] = Query(default=[], alias="paymentStatus"),
+    delivery_type: DeliveryType = Query(default=None, alias="deliveryType"),
     tags: List[str] = Query(default=[]),
-    start_date: datetime = Query(default=None),
-    end_date: datetime = Query(default=None),
+    start_date: datetime = Query(default=None, alias="startDate"),
+    end_date: datetime = Query(default=None, alias="endDate"),
     expand: List[str] = Query(default=[]),
     current_user: UserInDB = Security(decode_jwt, scopes=["order:get"]),
     order_services: OrderServices = Depends(order_composer),

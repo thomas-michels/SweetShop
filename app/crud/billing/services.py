@@ -32,7 +32,7 @@ class BillingServices:
         orders = await self.order_services.search_all(
             customer_id=None,
             status=None,
-            payment_status=None,
+            payment_status=[],
             delivery_type=None,
             start_date=start_date,
             end_date=end_date,

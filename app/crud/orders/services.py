@@ -122,7 +122,7 @@ class OrderServices:
     async def search_all(
             self,
             status: OrderStatus,
-            payment_status: PaymentStatus,
+            payment_status: List[PaymentStatus],
             delivery_type: DeliveryType,
             customer_id: str,
             start_date: datetime,
