@@ -21,6 +21,12 @@ class Customer(GenericModel):
             if not self.ddd or not self.phone_number.isdigit():
                 raise ValueError("DDD or phone number must be only numbers")
 
+            if len(self.ddd) != 3:
+                raise ValueError("DDD must have 3 numbers")
+
+            if len(self.phone_number) != 8 or len(self.phone_number) != 9:
+                raise ValueError("Phone number must have 8 or 9 numbers")
+
         return self
 
     def validate_updated_fields(self, update_customer: "UpdateCustomer") -> bool:
@@ -60,6 +66,12 @@ class UpdateCustomer(GenericModel):
         if self.ddd is not None and self.phone_number is not None:
             if not self.ddd or not self.phone_number.isdigit():
                 raise ValueError("DDD or phone number must be only numbers")
+
+            if len(self.ddd) != 3:
+                raise ValueError("DDD must have 3 numbers")
+
+            if len(self.phone_number) != 8 or len(self.phone_number) != 9:
+                raise ValueError("Phone number must have 8 or 9 numbers")
 
         return self
 
