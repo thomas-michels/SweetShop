@@ -24,8 +24,8 @@ class Customer(GenericModel):
             if len(self.ddd) != 3:
                 raise ValueError("DDD must have 3 numbers")
 
-            if len(self.phone_number) != 8 or len(self.phone_number) != 9:
-                raise ValueError("Phone number must have 8 or 9 numbers")
+            if len(self.phone_number) not in [8, 9]:
+                raise ValueError("Phone number must have 8 or 9 digits")
 
         return self
 
@@ -70,8 +70,8 @@ class UpdateCustomer(GenericModel):
             if len(self.ddd) != 3:
                 raise ValueError("DDD must have 3 numbers")
 
-            if len(self.phone_number) != 8 or len(self.phone_number) != 9:
-                raise ValueError("Phone number must have 8 or 9 numbers")
+            if len(self.phone_number) not in [8, 9]:
+                raise ValueError("Phone number must have 8 or 9 digits")
 
         return self
 
