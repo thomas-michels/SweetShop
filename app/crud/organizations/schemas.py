@@ -6,6 +6,7 @@ from pydantic import Field, model_validator
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
 from app.crud.shared_schemas.address import Address
+from app.crud.users.schemas import UserInDB
 
 
 class RoleEnum(str, Enum):
@@ -18,6 +19,12 @@ class RoleEnum(str, Enum):
 
 class UserOrganization(GenericModel):
     user_id: str = Field(example="user_123")
+    role: RoleEnum = Field(example=RoleEnum.ADMIN.value)
+
+
+class CompleteUserOrganization(GenericModel):
+    user: UserInDB | None = Field(default=None)
+    user_id: str = Field(example="user_123", exclude=True)
     role: RoleEnum = Field(example=RoleEnum.ADMIN.value)
 
 
@@ -107,3 +114,7 @@ class OrganizationInDB(Organization, DatabaseModel):
             return True
 
         return False
+
+
+class CompleteOrganization(OrganizationInDB):
+    users: List[CompleteUserOrganization] | None = Field(default=[])

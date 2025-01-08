@@ -2,9 +2,9 @@ from typing import List
 
 from app.api.exceptions.authentication_exceptions import UnauthorizedException
 from app.crud.users.repositories import UserRepository
-from app.crud.users.schemas import UpdateUser, UserInDB
+from app.crud.users.schemas import UserInDB
 
-from .schemas import Organization, OrganizationInDB, RoleEnum, UpdateOrganization, UserOrganization
+from .schemas import CompleteOrganization, Organization, OrganizationInDB, RoleEnum, UpdateOrganization, UserOrganization
 from .repositories import OrganizationRepository
 from app.core.configs import get_logger
 
@@ -46,17 +46,38 @@ class OrganizationServices:
 
         return organization_in_db
 
-    async def search_by_id(self, id: str) -> OrganizationInDB:
+    async def search_by_id(self, id: str, expand: List[str] = []) -> CompleteOrganization:
         organization_in_db = await self.__organization_repository.select_by_id(id=id)
-        return organization_in_db
+        return await self.__build_complete_organization(
+            organization=organization_in_db,
+            expand=expand
+        )
 
-    async def search_all(self, expand: List[str] = []) -> List[OrganizationInDB]:
+    async def search_all(self, expand: List[str] = []) -> List[CompleteOrganization]:
         organizations = await self.__organization_repository.select_all()
-        return organizations
+        complete_organizations = []
+
+        for organization in organizations:
+            complete_organizations.append(await self.__build_complete_organization(
+                organization=organization,
+                expand=expand
+            ))
+
+        return complete_organizations
 
     async def delete_by_id(self, id: str) -> OrganizationInDB:
         organization_in_db = await self.__organization_repository.delete_by_id(id=id)
         return organization_in_db
+
+    async def __build_complete_organization(self, organization: OrganizationInDB, expand: List[str] = []) -> CompleteOrganization:
+        complete_organization = CompleteOrganization.model_validate(organization)
+
+        if "users" in expand:
+            for user in complete_organization.users:
+                user_in_db = await self.__user_repository.select_by_id(id=user.user_id)
+                user.user = user_in_db
+
+        return complete_organization
 
     async def add_user(self, organization_id: str, user_making_request: str, user_id: str, role: RoleEnum) -> bool:
         organization_in_db = await self.search_by_id(id=organization_id)
