@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import List
-
+from pydantic_core import ValidationError
 from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.core.repositories.base_repository import Repository
@@ -65,6 +65,9 @@ class OrderRepository(Repository):
             ).first()
 
             return OrderInDB.model_validate(order_model)
+
+        except ValidationError:
+            raise NotFoundError(message=f"Order #{id} not found")
 
         except Exception as error:
             _logger.error(f"Error on select_by_id: {str(error)}")
@@ -138,6 +141,9 @@ class OrderRepository(Repository):
             order_model.delete()
 
             return OrderInDB.model_validate(order_model)
+
+        except ValidationError:
+            raise NotFoundError(message=f"Order #{id} not found")
 
         except Exception as error:
             _logger.error(f"Error on delete_by_id: {str(error)}")
