@@ -1,7 +1,8 @@
 from datetime import datetime
 from mongoengine import (
     StringField,
-    DictField
+    DictField,
+    ListField
 )
 from app.core.models.base_document import BaseDocument
 
@@ -11,7 +12,7 @@ class OrganizationModel(BaseDocument):
     ddd = StringField(max_length=3, required=False)
     phone_number = StringField(max_length=9, required=False)
     address = DictField(required=True)
-    users = DictField(null=True)
+    users = ListField(DictField())
 
     meta = {
         "collection": "organizations"

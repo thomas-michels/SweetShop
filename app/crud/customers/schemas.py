@@ -18,7 +18,7 @@ class Customer(GenericModel):
     @model_validator(mode="after")
     def validate_model(self) -> "Customer":
         if self.ddd is not None and self.phone_number is not None:
-            if not self.ddd or not self.phone_number.isdigit():
+            if not self.ddd.isdigit() or not self.phone_number.isdigit():
                 raise ValueError("DDD or phone number must be only numbers")
 
             if len(self.ddd) != 3:
@@ -64,7 +64,7 @@ class UpdateCustomer(GenericModel):
     @model_validator(mode="after")
     def validate_model(self) -> "UpdateCustomer":
         if self.ddd is not None and self.phone_number is not None:
-            if not self.ddd or not self.phone_number.isdigit():
+            if not self.ddd.isdigit() or not self.phone_number.isdigit():
                 raise ValueError("DDD or phone number must be only numbers")
 
             if len(self.ddd) != 3:

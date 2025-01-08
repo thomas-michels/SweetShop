@@ -21,7 +21,7 @@ class OrganizationRepository(Repository):
 
             organization_model = OrganizationModel(
                 is_active=True,
-                users={},
+                users=[],
                 created_at=datetime.now(),
                 updated_at=datetime.now(),
                 **json

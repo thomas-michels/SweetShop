@@ -4,7 +4,7 @@ from app.api.exceptions.authentication_exceptions import UnauthorizedException
 from app.crud.users.repositories import UserRepository
 from app.crud.users.schemas import UpdateUser, UserInDB
 
-from .schemas import Organization, OrganizationInDB, RoleEnum, UpdateOrganization
+from .schemas import Organization, OrganizationInDB, RoleEnum, UpdateOrganization, UserOrganization
 from .repositories import OrganizationRepository
 from app.core.configs import get_logger
 
@@ -50,7 +50,7 @@ class OrganizationServices:
         organization_in_db = await self.__organization_repository.select_by_id(id=id)
         return organization_in_db
 
-    async def search_all(self) -> List[OrganizationInDB]:
+    async def search_all(self, expand: List[str] = []) -> List[OrganizationInDB]:
         organizations = await self.__organization_repository.select_all()
         return organizations
 
@@ -60,19 +60,19 @@ class OrganizationServices:
 
     async def add_user(self, organization_id: str, user_making_request: str, user_id: str, role: RoleEnum) -> bool:
         organization_in_db = await self.search_by_id(id=organization_id)
+
         user_in_db_making_request = await self.__user_repository.select_by_id(id=user_making_request)
         user_in_db = await self.__user_repository.select_by_id(id=user_id)
 
         if not (organization_in_db and user_in_db_making_request and user_in_db):
             return False
 
-        user_making_request_role = RoleEnum(organization_in_db.users.get(user_making_request)) if organization_in_db.users.get(user_making_request) else None
+        user_making_request_role = organization_in_db.get_user_in_organization(user_making_request).role if organization_in_db.get_user_in_organization(user_making_request) else None
 
         if user_making_request_role and user_making_request_role not in {RoleEnum.OWNER, RoleEnum.MANAGER, RoleEnum.ADMIN}:
             raise UnauthorizedException(detail="You cannot change roles!")
 
-        user_organizations = user_in_db.app_metadata.get("organizations", {})
-        current_role = RoleEnum(user_organizations.get(organization_id)) if organization_id in user_organizations else None
+        current_role = organization_in_db.get_user_in_organization(user_in_db.user_id).role if organization_in_db.get_user_in_organization(user_in_db.user_id) else None
 
         if current_role:
             if current_role not in {RoleEnum.OWNER, RoleEnum.MANAGER, RoleEnum.ADMIN}:
@@ -87,15 +87,12 @@ class OrganizationServices:
             if current_role == RoleEnum.OWNER and role == RoleEnum.OWNER:
                 raise UnauthorizedException(detail="An organization can only have one owner!")
 
-        if not user_in_db.app_metadata.get("organizations"):
-            user_in_db.app_metadata["organizations"] = {}
-
-        user_in_db.app_metadata["organizations"][organization_in_db.id] = role.value
-        organization_in_db.users[user_in_db.user_id] = role
-
-        user = UpdateUser(app_metadata=user_in_db.app_metadata)
-
-        await self.__user_repository.update(user_id=user_id, user=user)
+        organization_in_db.users.append(
+            UserOrganization(
+                user_id=user_in_db.user_id,
+                role=role
+            )
+        )
 
         await self.__organization_repository.update(
             organization_id=organization_id,
@@ -106,19 +103,19 @@ class OrganizationServices:
 
     async def remove_user(self, organization_id: str, user_making_request: str, user_id: str) -> bool:
         organization_in_db = await self.search_by_id(id=organization_id)
+
         user_in_db_making_request = await self.__user_repository.select_by_id(id=user_making_request)
         user_in_db = await self.__user_repository.select_by_id(id=user_id)
 
         if not (organization_in_db and user_in_db_making_request and user_in_db):
             return False
 
-        user_making_request_role = RoleEnum(organization_in_db.users.get(user_making_request)) if organization_in_db.users.get(user_making_request) else None
+        user_making_request_role = organization_in_db.get_user_in_organization(user_making_request).role if organization_in_db.get_user_in_organization(user_making_request) else None
 
         if user_making_request_role and user_making_request_role not in {RoleEnum.OWNER, RoleEnum.ADMIN}:
             raise UnauthorizedException(detail="You cannot remove users!")
 
-        user_organizations = user_in_db.app_metadata.get("organizations", {})
-        current_role = RoleEnum(user_organizations.get(organization_id)) if organization_id in user_organizations else None
+        current_role = organization_in_db.get_user_in_organization(user_in_db.user_id).role if organization_in_db.get_user_in_organization(user_in_db.user_id) else None
 
         if current_role:
             if current_role == RoleEnum.OWNER:
@@ -130,13 +127,7 @@ class OrganizationServices:
             if current_role == RoleEnum.MANAGER and user_making_request_role not in [RoleEnum.OWNER, RoleEnum.ADMIN]:
                 raise UnauthorizedException(detail="You cannot remove this user!")
 
-        user_in_db.app_metadata["organizations"].pop(organization_in_db.id)
-
-        organization_in_db.users.pop(user_in_db.user_id)
-
-        user = UpdateUser(app_metadata=user_in_db.app_metadata)
-
-        await self.__user_repository.update(user_id=user_id, user=user)
+        organization_in_db.delete_user(user_in_db)
 
         await self.__organization_repository.update(
             organization_id=organization_id,
