@@ -48,6 +48,9 @@ class OrganizationServices:
 
     async def search_by_id(self, id: str, expand: List[str] = []) -> CompleteOrganization:
         organization_in_db = await self.__organization_repository.select_by_id(id=id)
+        if not expand:
+            return organization_in_db
+
         return await self.__build_complete_organization(
             organization=organization_in_db,
             expand=expand
@@ -56,6 +59,9 @@ class OrganizationServices:
     async def search_all(self, expand: List[str] = []) -> List[CompleteOrganization]:
         organizations = await self.__organization_repository.select_all()
         complete_organizations = []
+
+        if not expand:
+            return organizations
 
         for organization in organizations:
             complete_organizations.append(await self.__build_complete_organization(
