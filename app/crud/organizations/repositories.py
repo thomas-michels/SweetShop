@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import List
 from fastapi.encoders import jsonable_encoder
+from mongoengine import NotUniqueError
 from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.core.repositories.base_repository import Repository
@@ -30,6 +31,9 @@ class OrganizationRepository(Repository):
             organization_model.save()
 
             return OrganizationInDB.model_validate(organization_model)
+
+        except NotUniqueError:
+            raise UnprocessableEntity(message="Organization name should be unique")
 
         except Exception as error:
             _logger.error(f"Error on create_organization: {str(error)}")

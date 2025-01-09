@@ -48,6 +48,7 @@ class OrganizationServices:
 
     async def search_by_id(self, id: str, expand: List[str] = []) -> CompleteOrganization:
         organization_in_db = await self.__organization_repository.select_by_id(id=id)
+
         if not expand:
             return organization_in_db
 
