@@ -129,6 +129,54 @@ class OrganizationServices:
 
         return True
 
+    async def update_user_role(self, organization_id: str, user_making_request: str, user_id: str, role: RoleEnum) -> bool:
+        organization_in_db = await self.search_by_id(id=organization_id)
+
+        user_in_db_making_request = await self.__user_repository.select_by_id(id=user_making_request)
+        user_in_db = await self.__user_repository.select_by_id(id=user_id)
+
+        if not (organization_in_db and user_in_db_making_request and user_in_db):
+            return False
+
+        user_making_request_role = organization_in_db.get_user_in_organization(user_making_request).role if organization_in_db.get_user_in_organization(user_making_request) else None
+
+        if not user_making_request_role or user_making_request_role not in {RoleEnum.OWNER, RoleEnum.ADMIN, RoleEnum.MANAGER}:
+            raise UnauthorizedException(detail="You cannot change roles!")
+
+        current_role = organization_in_db.get_user_in_organization(user_in_db.user_id).role if organization_in_db.get_user_in_organization(user_in_db.user_id) else None
+
+        if not current_role:
+            raise UnauthorizedException(detail="The user is not part of this organization!")
+
+        if current_role == RoleEnum.OWNER and role != RoleEnum.OWNER:
+            if user_making_request_role != RoleEnum.OWNER:
+                raise UnauthorizedException(detail="Only an owner can change the role of another owner!")
+
+        if current_role == RoleEnum.OWNER and role == RoleEnum.OWNER:
+            raise UnauthorizedException(detail="An organization can only have one owner!")
+
+        if role == RoleEnum.ADMIN and user_making_request_role not in {RoleEnum.OWNER}:
+            raise UnauthorizedException(detail="Only an owner can assign the admin role!")
+
+        if current_role in {RoleEnum.ADMIN, RoleEnum.MANAGER} and user_making_request_role == RoleEnum.MANAGER:
+            raise UnauthorizedException(detail="You cannot change roles for users with higher or equal privileges!")
+
+        if user_making_request_role == RoleEnum.MANAGER and role in {RoleEnum.ADMIN, RoleEnum.OWNER}:
+            raise UnauthorizedException(detail="Managers cannot assign these roles!")
+
+        user_organization = organization_in_db.get_user_in_organization(user_id=user_in_db.user_id)
+        user_organization.role = role
+
+        organization_in_db.delete_user(user_id=user_id)
+        organization_in_db.users.append(user_organization)
+
+        await self.__organization_repository.update(
+            organization_id=organization_id,
+            organization=organization_in_db.model_dump()
+        )
+
+        return True
+
     async def remove_user(self, organization_id: str, user_making_request: str, user_id: str) -> bool:
         organization_in_db = await self.search_by_id(id=organization_id)
 
