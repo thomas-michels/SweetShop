@@ -13,21 +13,25 @@ router = APIRouter(tags=["Organizations"])
 @router.get("/users/{user_id}/organizations", responses={200: {"model": OrganizationInDB}})
 async def get_users_organizations(
     user_id: str,
+    expand: List[str] = Query(default=[]),
     current_user: UserInDB = Security(decode_jwt, scopes=["organization:get"]),
     organization_services: OrganizationServices = Depends(organization_composer),
 ):
+    organizations = await organization_services.search_all(expand=expand)
 
-    for organization_id in current_user.app_metadata.get("organizations", []):
-        organization_in_db = await organization_services.search_by_id(id=organization_id)
-        # organizations.append(organization_in_db)
+    allowed_organizations = []
 
-    # if organizations:
-    #     return build_response(
-    #         status_code=200, message="Organization found with success", data=organizations
-    #     )
+    for organization in organizations:
+        if organization.get_user_in_organization(user_id=user_id):
+            allowed_organizations.append(organization)
 
-    # else:
-    #     return Response(status_code=204)
+    if allowed_organizations:
+        return build_response(
+            status_code=200, message="Organization found with success", data=allowed_organizations
+        )
+
+    else:
+        return Response(status_code=204)
 
 
 @router.get("/organizations/{organization_id}", responses={200: {"model": OrganizationInDB}})
