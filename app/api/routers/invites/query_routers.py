@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, Query, Security, Response
+from fastapi import APIRouter, Depends, Security, Response
 
 from app.api.composers import invite_composer
 from app.api.dependencies import build_response, decode_jwt

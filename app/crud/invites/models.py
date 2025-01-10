@@ -7,6 +7,7 @@ from app.core.models.base_document import generate_prefixed_id
 class InviteModel(Document):
     id = StringField(primary_key=True)
     user_email = StringField(required=True, unique_with="organization_id")
+    role = StringField(required=True)
     organization_id = StringField(required=True)
     is_accepted = BooleanField(default=False, required=True)
     expires_at = DateTimeField(required=False)
