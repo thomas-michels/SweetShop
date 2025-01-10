@@ -48,6 +48,13 @@ class BillingServices:
             end_date=end_date
         )
 
+        expenses = await self.expenses_services.search_all(
+            start_date=start_date,
+            end_date=end_date,
+            query=None,
+            expand=[]
+        )
+
         orders.extend(fast_orders)
 
         billing = Billing(month=month, year=year)
@@ -62,6 +69,9 @@ class BillingServices:
                 total_paid=total_paid,
                 total_amount=order.total_amount
             )
+
+        for expense in expenses:
+            billing.total_expanses += expense.total_paid
 
         return billing
 
