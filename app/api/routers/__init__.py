@@ -7,3 +7,4 @@ from .organizations import organization_router
 from .billing import billing_router
 from .fast_orders import fast_order_router
 from .expenses import expenses_router
+from .invites import invite_router

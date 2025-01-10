@@ -69,32 +69,6 @@ async def delete_organization(
         )
 
 
-@router.post("/organizations/{organization_id}/members/{user_id}", responses={200: {"model": OrganizationInDB}})
-async def add_user_in_organization(
-    organization_id: str,
-    user_id: str,
-    request_role: RequestRole,
-    current_user: UserInDB = Security(decode_jwt, scopes=["member:add"]),
-    organization_services: OrganizationServices = Depends(organization_composer),
-):
-    added = await organization_services.add_user(
-        organization_id=organization_id,
-        user_making_request=current_user.user_id,
-        user_id=user_id,
-        role=request_role.role
-    )
-
-    if added:
-        return build_response(
-            status_code=200, message="User added in Organization with success", data=None
-        )
-
-    else:
-        return build_response(
-            status_code=400, message="Some error happened on add an user in an organization", data=None
-        )
-
-
 @router.patch("/organizations/{organization_id}/members/{user_id}", responses={200: {"model": OrganizationInDB}})
 async def update_user_in_organization(
     organization_id: str,
