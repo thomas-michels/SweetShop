@@ -29,6 +29,9 @@ class InviteModel(Document):
         self.updated_at = datetime.now()
         super().save(*args, **kwargs)
 
+    def base_update(self):
+        self.updated_at = datetime.now()
+
     def update(self, **kwargs):
         self.base_update()
         if kwargs.get("updated_at"):

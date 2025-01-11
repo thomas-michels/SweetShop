@@ -1,17 +1,35 @@
 from typing import List
 
-from .schemas import Invite, InviteInDB
+from app.api.exceptions.authentication_exceptions import BadRequestException
+from app.crud.organizations.repositories import OrganizationRepository
+from app.crud.users.repositories import UserRepository
+
+from .schemas import CompleteInvite, Invite, InviteInDB
 from .repositories import InviteRepository
 
 
 class InviteServices:
 
-    def __init__(self, invite_repository: InviteRepository) -> None:
-        self.__repository = invite_repository
+    def __init__(
+            self,
+            invite_repository: InviteRepository,
+            user_repository: UserRepository,
+            organization_repository: OrganizationRepository,
+        ) -> None:
+        self.__invite_repository = invite_repository
+        self.__user_repository = user_repository
+        self.__organization_repository = organization_repository
 
     async def create(self, invite: Invite) -> InviteInDB:
-        # TODO 
-        invite_in_db = await self.__repository.create(invite=invite)
+        user_in_db = await self.__user_repository.select_by_email(email=invite.user_email)
+
+        if user_in_db:
+            organization_in_db = await self.__organization_repository.select_by_id(id=invite.organization_id)
+
+            if organization_in_db.get_user_in_organization(user_id=user_in_db.user_id):
+                raise BadRequestException(detail="User is already a participant of the organization")
+
+        invite_in_db = await self.__invite_repository.create(invite=invite)
 
         # TODO add send email here
 
@@ -20,29 +38,59 @@ class InviteServices:
     async def accept(self, id: str, user_making_request: str) -> InviteInDB:
         invite_in_db = await self.search_by_id(id=id)
 
-        # Add logic to check if the user accepting the invite is the same of the invite
-        # if invite_in_db.user_email
+        user_in_db = await self.__user_repository.select_by_id(id=user_making_request)
 
-        # TODO add logic to accept an invite
+        if invite_in_db.user_email != user_in_db.email:
+            raise BadRequestException(detail="You cannot accept this invite!")
 
-        # if is_updated:
-        #     invite_in_db = await self.__repository.update(invite=invite_in_db)
+        invite_in_db.is_accepted = True
+        invite_in_db = await self.__invite_repository.update(invite=invite_in_db)
 
-        # return invite_in_db
+        return invite_in_db
 
     async def search_by_id(self, id: str) -> InviteInDB:
-        invite_in_db = await self.__repository.select_by_id(id=id)
+        invite_in_db = await self.__invite_repository.select_by_id(id=id)
         return invite_in_db
 
-    async def search_by_user_id(self, user_id: str) -> List[InviteInDB]:
-        ...
-        # invite_in_db = await self.__repository.select_by_id(id=id)
-        # return invite_in_db
+    async def search_by_user_id(self, user_id: str, expand: List[str] = []) -> List[InviteInDB]:
+        user_in_db = await self.__user_repository.select_by_id(id=user_id)
 
-    async def search_all(self) -> List[InviteInDB]:
-        invites = await self.__repository.select_all()
-        return invites
+        invites = await self.__invite_repository.select_by_email(user_email=user_in_db.email)
+
+        if not expand:
+            return invites
+
+        complete_invites = []
+
+        for invite in invites:
+            complete_invite = await self.__build_complete_invite(invite=invite, expand=expand)
+            complete_invites.append(complete_invite)
+
+        return complete_invites
+
+    async def search_all(self, organization_id: str, expand: List[str] = []) -> List[InviteInDB]:
+        invites = await self.__invite_repository.select_all(organization_id=organization_id)
+
+        if not expand:
+            return invites
+
+        complete_invites = []
+
+        for invite in invites:
+            complete_invite = await self.__build_complete_invite(invite=invite, expand=expand)
+            complete_invites.append(complete_invite)
+
+        return complete_invites
 
     async def delete_by_id(self, id: str) -> InviteInDB:
-        invite_in_db = await self.__repository.delete_by_id(id=id)
+        invite_in_db = await self.__invite_repository.delete_by_id(id=id)
         return invite_in_db
+
+    async def __build_complete_invite(self, invite: InviteInDB, expand: List[str]) -> CompleteInvite:
+        complete_invite = CompleteInvite(**invite.model_dump())
+
+        if "organizations" in expand:
+            organization_in_db = await self.__organization_repository.select_by_id(invite.organization_id)
+            complete_invite.organization = organization_in_db
+
+        return complete_invite

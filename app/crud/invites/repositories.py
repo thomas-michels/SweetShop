@@ -12,14 +12,12 @@ _logger = get_logger(__name__)
 
 
 class InviteRepository(Repository):
-    def __init__(self, organization_id: str) -> None:
+    def __init__(self) -> None:
         super().__init__()
-        self.__organization_id = organization_id
 
     async def create(self, invite: Invite) -> InviteInDB:
         try:
             invite_model = InviteModel(
-                organization_id=self.__organization_id,
                 is_accepted=False,
                 created_at=datetime.now(),
                 updated_at=datetime.now(),
@@ -32,8 +30,8 @@ class InviteRepository(Repository):
             return InviteInDB.model_validate(invite_model)
 
         except NotUniqueError:
-            _logger.warning(f"Duplicated invite for email {invite.user_email} and organization {self.__organization_id}!")
-            return await self.select_by_email(user_email=invite.user_email)
+            _logger.warning(f"Duplicated invite for email {invite.user_email} and organization {invite.organization_id}!")
+            return UnprocessableEntity(message="This user already has an active invitation for this organization!")
 
         except Exception as error:
             _logger.error(f"Error on create_invite: {str(error)}")
@@ -43,7 +41,6 @@ class InviteRepository(Repository):
         try:
             invite_model: InviteModel = InviteModel.objects(
                 id=invite.id,
-                organization_id=self.__organization_id
             ).first()
 
             invite.user_email = invite.user_email.lower()
@@ -59,7 +56,6 @@ class InviteRepository(Repository):
         try:
             invite_model: InviteModel = InviteModel.objects(
                 id=id,
-                organization_id=self.__organization_id
             ).first()
 
             return InviteInDB.model_validate(invite_model)
@@ -69,27 +65,30 @@ class InviteRepository(Repository):
             if raise_404:
                 raise NotFoundError(message=f"Invite #{id} not found")
 
-    async def select_by_email(self, user_email: str) -> InviteInDB:
+    async def select_by_email(self, user_email: str) -> List[InviteInDB]:
         try:
             user_email = user_email.lower()
-            invite_model: InviteModel = InviteModel.objects(
-                user_email=user_email,
-                organization_id=self.__organization_id
-            ).first()
 
-            return InviteInDB.model_validate(invite_model)
+            objects: InviteModel = InviteModel.objects(
+                user_email=user_email,
+            )
+
+            invites = []
+
+            for invite_model in objects.order_by("user_email"):
+                invites.append(InviteInDB.model_validate(invite_model))
+
+            return invites
 
         except Exception as error:
             _logger.error(f"Error on select_by_email: {str(error)}")
             raise NotFoundError(message=f"Invite with email {user_email} not found")
 
-    async def select_all(self) -> List[InviteInDB]:
+    async def select_all(self, organization_id: str) -> List[InviteInDB]:
         try:
             invites = []
 
-            objects = InviteModel.objects(
-                organization_id=self.__organization_id
-            )
+            objects = InviteModel.objects(organization_id=organization_id)
 
             for invite_model in objects.order_by("user_email"):
                 invites.append(InviteInDB.model_validate(invite_model))
@@ -104,7 +103,6 @@ class InviteRepository(Repository):
         try:
             invite_model: InviteModel = InviteModel.objects(
                 id=id,
-                organization_id=self.__organization_id
             ).first()
             invite_model.delete()
 

@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, Security, Response
+from fastapi import APIRouter, Depends, Query, Security, Response
 
 from app.api.composers import invite_composer
 from app.api.dependencies import build_response, decode_jwt
@@ -29,12 +29,14 @@ async def get_invites_by_id(
         )
 
 
-@router.get("/invites", responses={200: {"model": List[InviteInDB]}})
-async def get_invites(
-    current_invites: UserInDB = Security(decode_jwt, scopes=["invites:get"]),
+@router.get("/organizations/{organization_id}/invites", responses={200: {"model": List[InviteInDB]}})
+async def get_invites_by_organization_id(
+    organization_id: str,
+    expand: List[str] = Query(default=[]),
+    current_user: UserInDB = Security(decode_jwt, scopes=["invites:get"]),
     invites_services: InviteServices = Depends(invite_composer),
 ):
-    invites = await invites_services.search_all()
+    invites = await invites_services.search_all(organization_id=organization_id, expand=expand)
 
     if invites:
         return build_response(
@@ -45,13 +47,17 @@ async def get_invites(
         return Response(status_code=204)
 
 
-@router.get("/users/{user_id}/invites", responses={200: {"model": InviteInDB}})
+@router.get("/users/{user_id}/invites", responses={200: {"model": List[InviteInDB]}})
 async def get_user_invites(
     user_id: str,
+    expand: List[str] = Query(default=[]),
     current_user: UserInDB = Security(decode_jwt, scopes=["invites:get"]),
     invites_services: InviteServices = Depends(invite_composer),
 ):
-    invites_in_db = await invites_services.search_by_user_id(user_id=user_id)
+    invites_in_db = await invites_services.search_by_user_id(
+        user_id=user_id,
+        expand=expand
+    )
 
     if invites_in_db:
         return build_response(

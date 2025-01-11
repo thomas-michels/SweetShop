@@ -1,12 +1,14 @@
 from fastapi import APIRouter, Depends, Security
 
 from app.api.composers import invite_composer
+from app.api.composers.organization_composite import organization_composer
 from app.api.dependencies import build_response, decode_jwt
 from app.crud.invites import (
     Invite,
     InviteInDB,
     InviteServices
 )
+from app.crud.organizations.services import OrganizationServices
 from app.crud.users import UserInDB
 
 router = APIRouter(tags=["Invites"])
@@ -35,11 +37,19 @@ async def create_invite(
 async def accept_invite(
     invite_id: str,
     invite_services: InviteServices = Depends(invite_composer),
+    organization_services: OrganizationServices = Depends(organization_composer),
     current_user: UserInDB = Security(decode_jwt, scopes=["invite:create"]),
 ):
     invite_in_db = await invite_services.accept(id=invite_id, user_making_request=current_user.user_id)
 
-    if invite_in_db:
+    if invite_in_db and invite_in_db.is_accepted:
+        await organization_services.add_user(
+            user_id=current_user.user_id,
+            organization_id=invite_in_db.organization_id,
+            role=invite_in_db.role,
+            user_making_request=current_user.user_id
+        )
+
         return build_response(
             status_code=200, message="Invite accepted with success", data=invite_in_db
         )
