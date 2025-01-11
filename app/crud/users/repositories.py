@@ -70,7 +70,7 @@ class UserRepository:
                 url=f"{_env.AUTH0_DOMAIN}/api/v2/users/{id}"
             )
 
-            if status_code == 200:
+            if status_code == 200 and response:
                 _logger.info("User retrieved successfully.")
                 return UserInDB(**response)
 
@@ -90,7 +90,7 @@ class UserRepository:
                 params={"email": email}
             )
 
-            if status_code == 200:
+            if status_code == 200 and response:
                 _logger.info("User retrieved successfully.")
                 return UserInDB(**response[0])
 

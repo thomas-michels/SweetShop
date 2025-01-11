@@ -20,7 +20,7 @@ async def create_invite(
     invite_services: InviteServices = Depends(invite_composer),
     current_user: UserInDB = Security(decode_jwt, scopes=["invite:create"]),
 ):
-    invite_in_db = await invite_services.create(invite=invite)
+    invite_in_db = await invite_services.create(invite=invite, user_making_request=current_user.user_id)
 
     if invite_in_db:
         return build_response(

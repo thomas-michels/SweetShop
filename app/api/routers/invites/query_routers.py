@@ -32,11 +32,16 @@ async def get_invites_by_id(
 @router.get("/organizations/{organization_id}/invites", responses={200: {"model": List[InviteInDB]}})
 async def get_invites_by_organization_id(
     organization_id: str,
+    accepted: bool = Query(default=False),
     expand: List[str] = Query(default=[]),
     current_user: UserInDB = Security(decode_jwt, scopes=["invites:get"]),
     invites_services: InviteServices = Depends(invite_composer),
 ):
-    invites = await invites_services.search_all(organization_id=organization_id, expand=expand)
+    invites = await invites_services.search_all(
+        organization_id=organization_id,
+        accepted=accepted,
+        expand=expand
+    )
 
     if invites:
         return build_response(
@@ -50,12 +55,14 @@ async def get_invites_by_organization_id(
 @router.get("/users/{user_id}/invites", responses={200: {"model": List[InviteInDB]}})
 async def get_user_invites(
     user_id: str,
+    accepted: bool = Query(default=False),
     expand: List[str] = Query(default=[]),
     current_user: UserInDB = Security(decode_jwt, scopes=["invites:get"]),
     invites_services: InviteServices = Depends(invite_composer),
 ):
     invites_in_db = await invites_services.search_by_user_id(
         user_id=user_id,
+        accepted=accepted,
         expand=expand
     )
 
