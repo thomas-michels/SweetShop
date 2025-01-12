@@ -13,7 +13,7 @@ def convert_datetime_to_realworld(dt: datetime) -> str:
     if str(dt).__contains__("Z"):
         return dt.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z")
 
-    return dt
+    return dt.replace(tzinfo=timezone.utc)
 
 
 class GenericModel(BaseModel):

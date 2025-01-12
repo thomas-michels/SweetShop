@@ -76,6 +76,7 @@ class UserRepository:
 
             else:
                 _logger.info(f"User {id} not found.")
+                raise NotFoundError(message=f"User #{id} not found")
 
         except Exception as error:
             _logger.error("Error on select_by_id")
@@ -96,6 +97,7 @@ class UserRepository:
 
             else:
                 _logger.info(f"User with email {email} not found.")
+                raise NotFoundError(message=f"User with email {email} not found")
 
         except Exception as error:
             _logger.error(f"Error on select_by_email: {str(error)}")
