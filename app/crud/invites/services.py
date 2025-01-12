@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 
 from app.api.exceptions.authentication_exceptions import BadRequestException, UnauthorizedException, UnprocessableEntityException
@@ -26,7 +26,7 @@ class InviteServices:
         if invite.role == RoleEnum.OWNER:
             raise UnauthorizedException(detail="You cannot invite a new owner of an organization!")
 
-        if invite.expires_at and invite.expires_at <= datetime.now():
+        if invite.expires_at and invite.expires_at <= datetime.now(tz=timezone.utc):
             raise UnprocessableEntityException(detail="Expires at should be grater than now!")
 
         user_in_db = await self.__user_repository.select_by_email(email=invite.user_email)
