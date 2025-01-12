@@ -203,7 +203,7 @@ class OrganizationServices:
             if current_role == RoleEnum.MANAGER and user_making_request_role not in [RoleEnum.OWNER, RoleEnum.ADMIN]:
                 raise UnauthorizedException(detail="You cannot remove this user!")
 
-        organization_in_db.delete_user(user_in_db)
+        organization_in_db.delete_user(user_id=user_in_db.user_id)
 
         await self.__organization_repository.update(
             organization_id=organization_id,
