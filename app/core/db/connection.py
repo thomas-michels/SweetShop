@@ -22,6 +22,7 @@ async def lifespan(app: FastAPI) -> None: # type: ignore
 
     start_database()
     app.state.access_token = None
+    app.state.cached_users = {}
 
     _logger.info("Connection established")
 

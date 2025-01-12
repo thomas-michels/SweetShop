@@ -12,7 +12,9 @@ _env = get_environment()
 
 
 class UserRepository:
-    def __init__(self, access_token: str) -> None:
+    def __init__(self, access_token: str, cached_users: dict) -> None:
+        self.cached_users = cached_users
+
         self.access_token = access_token
         self.headers = {
             "authorization": self.access_token,
@@ -66,9 +68,16 @@ class UserRepository:
     async def select_by_id(self, id: str) -> UserInDB:
         _logger.info("Getting user by ID on Management API")
         try:
-            status_code, response = self.http_client.get(
-                url=f"{_env.AUTH0_DOMAIN}/api/v2/users/{id}"
-            )
+            if id in self.cached_users:
+                status_code, response = 200, self.cached_users[id]
+
+            else:
+                status_code, response = self.http_client.get(
+                    url=f"{_env.AUTH0_DOMAIN}/api/v2/users/{id}"
+                )
+
+                if status_code == 200 and response:
+                    self.cached_users[response["user_id"]] = response
 
             if status_code == 200 and response:
                 _logger.info("User retrieved successfully.")
