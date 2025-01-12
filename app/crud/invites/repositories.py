@@ -18,7 +18,7 @@ class InviteRepository(Repository):
 
     async def create(self, invite: Invite) -> InviteInDB:
         try:
-            await self.validate_if_is_not_duplicated(invite=invite)
+            await self.validate_if_is_not_duplicated(invite_in_db=invite)
 
             invite_model = InviteModel(
                 is_accepted=False,
@@ -133,9 +133,9 @@ class InviteRepository(Repository):
             _logger.error(f"Error on delete_by_id: {str(error)}")
             raise NotFoundError(message=f"Invite #{id} not found")
 
-    async def validate_if_is_not_duplicated(self, invite: Invite) -> None:
-        invites = await self.select_by_email(user_email=invite.user_email, accepted=False)
+    async def validate_if_is_not_duplicated(self, invite_in_db: Invite) -> None:
+        invites = await self.select_by_email(user_email=invite_in_db.user_email, accepted=False)
 
         for invite in invites:
-            if invite.organization_id == invite.organization_id:
+            if invite.organization_id == invite_in_db.organization_id:
                 raise NotUniqueError()
