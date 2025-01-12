@@ -84,7 +84,7 @@ class UserRepository:
 
             raise NotFoundError(message=f"User #{id} not found")
 
-    async def select_by_email(self, email: str) -> UserInDB:
+    async def select_by_email(self, email: str, raise_404: bool = True) -> UserInDB:
         try:
             status_code, response = self.http_client.get(
                 url=f"{_env.AUTH0_DOMAIN}/api/v2/users-by-email",
@@ -97,7 +97,8 @@ class UserRepository:
 
             else:
                 _logger.info(f"User with email {email} not found.")
-                raise NotFoundError(message=f"User with email {email} not found")
+                if raise_404:
+                    raise NotFoundError(message=f"User with email {email} not found")
 
         except Exception as error:
             _logger.error(f"Error on select_by_email: {str(error)}")

@@ -29,7 +29,7 @@ class InviteServices:
         if invite.expires_at and invite.expires_at <= datetime.now(tz=timezone.utc):
             raise UnprocessableEntityException(detail="Expires at should be grater than now!")
 
-        user_in_db = await self.__user_repository.select_by_email(email=invite.user_email)
+        user_in_db = await self.__user_repository.select_by_email(email=invite.user_email, raise_404=False)
 
         organization_in_db = await self.__organization_repository.select_by_id(id=invite.organization_id)
 
