@@ -23,6 +23,11 @@ class InviteServices:
         self.__organization_repository = organization_repository
 
     async def create(self, invite: Invite, user_making_request: str) -> InviteInDB:
+        user_making_request_in_db = await self.__user_repository.select_by_id(id=user_making_request)
+
+        if invite.user_email == user_making_request_in_db.email:
+            raise UnprocessableEntityException(detail="You cannot create an invite for you!")
+
         if invite.role == RoleEnum.OWNER:
             raise UnauthorizedException(detail="You cannot invite a new owner of an organization!")
 
