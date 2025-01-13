@@ -24,3 +24,9 @@ class Billing(GenericModel):
         self.credit_card_received = round(self.credit_card_received, 2)
         self.debit_card_received = round(self.debit_card_received, 2)
         self.pending_payments = round(self.pending_payments, 2)
+
+
+class ExpanseCategory(GenericModel):
+    tag_id: str = Field(example="tag_123")
+    tag_name: str = Field(example="Tag 123")
+    total_paid: float = Field(default=0, example=123)

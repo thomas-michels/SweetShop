@@ -51,3 +51,49 @@ async def get_monthly_billings(
 
     else:
         return Response(status_code=204)
+
+
+@router.get("/billings/products/categories", responses={200: {"model": List[Billing]}})
+async def get_best_selling_products_categories(
+    month_year: str = Query(default=f"{datetime.now().month}/{datetime.now().year}", pattern=r'\b(1[0-2]|0?[1-9])/([0-9]{4})\b'),
+    current_user: UserInDB = Security(decode_jwt, scopes=["billing:get"]),
+    billing_services: BillingServices = Depends(billing_composer),
+):
+    month = int(month_year.split("/")[0])
+    year = int(month_year.split("/")[1])
+
+    products_categories = await billing_services.get_best_selling_products_categories(
+        month=month,
+        year=year
+    )
+
+    if products_categories:
+        return build_response(
+            status_code=200, message="Best selling products categories found with success", data=products_categories
+        )
+
+    else:
+        return Response(status_code=204)
+
+
+@router.get("/billings/expenses/categories", responses={200: {"model": List[Billing]}})
+async def get_expanses_categories(
+    month_year: str = Query(default=f"{datetime.now().month}/{datetime.now().year}", pattern=r'\b(1[0-2]|0?[1-9])/([0-9]{4})\b'),
+    current_user: UserInDB = Security(decode_jwt, scopes=["billing:get"]),
+    billing_services: BillingServices = Depends(billing_composer),
+):
+    month = int(month_year.split("/")[0])
+    year = int(month_year.split("/")[1])
+
+    expanses_categories = await billing_services.get_expanses_categories(
+        month=month,
+        year=year
+    )
+
+    if expanses_categories:
+        return build_response(
+            status_code=200, message="Expanses categories found with success", data=expanses_categories
+        )
+
+    else:
+        return Response(status_code=204)

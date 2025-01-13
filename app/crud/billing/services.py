@@ -1,11 +1,11 @@
 from datetime import datetime
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 from app.crud.expenses.services import ExpenseServices
 from app.crud.fast_orders.services import FastOrderServices
 from app.crud.orders.services import OrderServices
 from app.crud.shared_schemas.payment import Payment, PaymentMethod
 
-from .schemas import Billing
+from .schemas import Billing, ExpanseCategory
 
 
 class BillingServices:
@@ -33,6 +33,39 @@ class BillingServices:
             billings.append(billing)
 
         return billings
+
+    async def get_best_selling_products_categories(self, month: int, year: int) -> List[Billing]:
+        start_date, end_date = self.__get_start_and_end_date(month=month, year=year)
+
+    async def get_expanses_categories(self, month: int, year: int) -> List[ExpanseCategory]:
+        start_date, end_date = self.__get_start_and_end_date(month=month, year=year)
+
+        expenses = await self.expenses_services.search_all(
+            start_date=start_date,
+            end_date=end_date,
+            query=None,
+            expand=["tags"]
+        )
+
+        categories: Dict[str, ExpanseCategory] = {}
+
+        for expense in expenses:
+            for tag in expense.tags:
+                if tag.id not in categories:
+                    categories[tag.id] = ExpanseCategory(
+                        tag_id=tag.id,
+                        tag_name=tag.name
+                    )
+
+                category = categories[tag.id]
+
+                category.total_paid += expense.total_paid
+
+        category_list = list(categories.values())
+
+        category_list.sort(key=lambda c: c.total_paid, reverse=True)
+
+        return category_list
 
     def __get_month_and_year(self, past_months: int) -> Tuple[int, int]:
         current_date = datetime.now()
