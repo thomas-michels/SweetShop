@@ -5,7 +5,7 @@ from app.crud.fast_orders.services import FastOrderServices
 from app.crud.orders.services import OrderServices
 from app.crud.shared_schemas.payment import Payment, PaymentMethod
 
-from .schemas import Billing, ExpanseCategory
+from .schemas import Billing, ExpanseCategory, SellingProduct
 
 
 class BillingServices:
@@ -34,8 +34,52 @@ class BillingServices:
 
         return billings
 
-    async def get_best_selling_products_categories(self, month: int, year: int) -> List[Billing]:
+    async def get_best_selling_products(self, month: int, year: int) -> List[SellingProduct]:
         start_date, end_date = self.__get_start_and_end_date(month=month, year=year)
+
+        orders = await self.order_services.search_all(
+            customer_id=None,
+            status=None,
+            payment_status=[],
+            delivery_type=None,
+            start_date=start_date,
+            end_date=end_date,
+            tags=[],
+            min_total_amount=None,
+            max_total_amount=None,
+            expand=["products"],
+        )
+
+        fast_orders = await self.fast_order_services.search_all(
+            expand=["products"],
+            start_date=start_date,
+            end_date=end_date
+        )
+
+        orders.extend(fast_orders)
+
+        selling_products: Dict[str, SellingProduct] = {}
+
+        for order in orders:
+            for order_product in order.products:
+                if not hasattr(order_product, "product"):
+                    continue
+
+                product = order_product.product
+                if product.id not in selling_products:
+                    selling_products[product.id] = SellingProduct(
+                        product_id=product.id,
+                        product_name=product.name
+                    )
+
+                product_category = selling_products[product.id]
+                product_category.quantity += 1
+
+        selling_products = list(selling_products.values())
+
+        selling_products.sort(key=lambda c: c.quantity, reverse=True)
+
+        return selling_products
 
     async def get_expanses_categories(self, month: int, year: int) -> List[ExpanseCategory]:
         start_date, end_date = self.__get_start_and_end_date(month=month, year=year)
