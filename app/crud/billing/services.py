@@ -24,7 +24,27 @@ class BillingServices:
         return await self.__generate_monthly_billing(month=month, year=year)
 
     async def get_monthly_billings(self, last_months: int) -> List[Billing]:
-        return []
+        billings = []
+
+        for i in range(last_months):
+            year, month = self.__get_month_and_year(past_months=i)
+
+            billing = await self.__generate_monthly_billing(month=month, year=year)
+            billings.append(billing)
+
+        return billings
+
+    def __get_month_and_year(self, past_months: int) -> Tuple[int, int]:
+        current_date = datetime.now()
+
+        year = current_date.year
+        month = current_date.month - past_months
+
+        while month <= 0:
+            month += 12
+            year -= 1
+
+        return year, month
 
     async def __generate_monthly_billing(self, month: int, year: int) -> Billing:
         start_date, end_date = self.__get_start_and_end_date(month=month, year=year)
@@ -73,6 +93,7 @@ class BillingServices:
         for expense in expenses:
             billing.total_expanses += expense.total_paid
 
+        billing.round_numbers()
         return billing
 
     def __process_payments(

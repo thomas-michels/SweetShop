@@ -36,7 +36,7 @@ async def get_dashboard_billings(
 
 @router.get("/billings/monthly", responses={200: {"model": List[Billing]}})
 async def get_monthly_billings(
-    last_months: int = Query(gt=0, lt=7, default=3),
+    last_months: int = Query(gt=0, lt=13, default=3),
     current_user: UserInDB = Security(decode_jwt, scopes=["billing:get"]),
     billing_services: BillingServices = Depends(billing_composer),
 ):
@@ -46,7 +46,7 @@ async def get_monthly_billings(
 
     if billings:
         return build_response(
-            status_code=200, message="Billings for dashboard found with success", data=billings
+            status_code=200, message="Monthly Billings found with success", data=billings
         )
 
     else:
