@@ -62,11 +62,14 @@ class OrganizationRepository(Repository):
             _logger.error(f"Error on select_by_id: {str(error)}")
             raise NotFoundError(message=f"Organization #{id} not found")
 
-    async def select_all(self) -> List[OrganizationInDB]:
+    async def select_all(self, user_id: str = None) -> List[OrganizationInDB]:
         try:
             organizations = []
 
             objects = OrganizationModel.objects(is_active=True)
+
+            if user_id:
+                objects = objects.filter(users__user_id=user_id)
 
             for organization_model in objects.order_by("name"):
                 organizations.append(OrganizationInDB.model_validate(organization_model))

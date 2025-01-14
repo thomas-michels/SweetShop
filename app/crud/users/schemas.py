@@ -1,5 +1,6 @@
 import re
 from datetime import datetime
+from typing import List
 from passlib.context import CryptContext
 from pydantic import Field, SecretStr
 from app.core.exceptions import InvalidPassword, UnprocessableEntity
@@ -61,3 +62,7 @@ class UpdateUser(GenericModel):
     picture: str | None = Field(default=None, example="http://localhost")
     user_metadata: dict | None = Field(default=None)
     app_metadata: dict | None = Field(default=None)
+
+
+class CompleteUserInDB(UserInDB):
+    organizations: List[str] = Field(default=[])

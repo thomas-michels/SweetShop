@@ -57,8 +57,9 @@ class OrganizationServices:
             expand=expand
         )
 
-    async def search_all(self, expand: List[str] = []) -> List[CompleteOrganization]:
-        organizations = await self.__organization_repository.select_all()
+    async def search_all(self, user_id: str = None, expand: List[str] = []) -> List[CompleteOrganization]:
+        organizations = await self.__organization_repository.select_all(user_id=user_id)
+
         complete_organizations = []
 
         if not expand:

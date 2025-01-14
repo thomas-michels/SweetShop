@@ -17,17 +17,11 @@ async def get_users_organizations(
     current_user: UserInDB = Security(decode_jwt, scopes=["organization:get"]),
     organization_services: OrganizationServices = Depends(organization_composer),
 ):
-    organizations = await organization_services.search_all(expand=expand)
+    organizations = await organization_services.search_all(user_id=user_id, expand=expand)
 
-    allowed_organizations = []
-
-    for organization in organizations:
-        if organization.get_user_in_organization(user_id=user_id):
-            allowed_organizations.append(organization)
-
-    if allowed_organizations:
+    if organizations:
         return build_response(
-            status_code=200, message="Organization found with success", data=allowed_organizations
+            status_code=200, message="Organization found with success", data=organizations
         )
 
     else:

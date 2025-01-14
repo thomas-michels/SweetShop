@@ -6,6 +6,7 @@ from jose import JWTError
 from pydantic import ValidationError
 
 from app.api.composers import authentication_composer
+from app.api.dependencies.get_current_organization import check_current_organization
 from app.api.dependencies.verify_token import verify_token
 from app.api.shared_schemas.token import TokenData
 from app.core.exceptions.users import NotFoundError
@@ -16,6 +17,7 @@ from app.crud.users.schemas import UserInDB
 async def decode_jwt(
     security_scopes: SecurityScopes,
     token: HTTPAuthorizationCredentials = Depends(HTTPBearer()),
+    organization_id: str = Depends(check_current_organization),
     authetication_services: AuthenticationServices = Depends(authentication_composer),
 ) -> UserInDB:
     try:
@@ -33,9 +35,20 @@ async def decode_jwt(
         #     user_scopes=token_data.scopes,
         # )
 
-        current_user = await authetication_services.get_current_user(token=token_data)
+        current_user = await authetication_services.get_current_user(
+            token=token_data,
+            expand=["organizations"]
+        )
 
         if current_user:
+            if organization_id:
+                if organization_id not in current_user.organizations:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="You cannot access this organization!",
+                        headers={"WWW-Authenticate": "Bearer"},
+                    )
+
             return current_user
 
         raise HTTPException(
