@@ -13,7 +13,11 @@ router = APIRouter(tags=["Billing"])
 
 @router.get("/billings/dashboard", responses={200: {"model": List[Billing]}})
 async def get_dashboard_billings(
-    month_year: str = Query(default=f"{datetime.now().month}/{datetime.now().year}", pattern=r'\b(1[0-2]|0?[1-9])/([0-9]{4})\b'),
+    month_year: str = Query(
+        default=f"{datetime.now().month}/{datetime.now().year}",
+        pattern=r'\b(1[0-2]|0?[1-9])/([0-9]{4})\b',
+        alias="monthYear"
+    ),
     current_user: UserInDB = Security(decode_jwt, scopes=["billing:get"]),
     billing_services: BillingServices = Depends(billing_composer),
 ):
@@ -36,7 +40,7 @@ async def get_dashboard_billings(
 
 @router.get("/billings/monthly", responses={200: {"model": List[Billing]}})
 async def get_monthly_billings(
-    last_months: int = Query(gt=0, lt=13, default=3),
+    last_months: int = Query(gt=0, lt=13, default=3, alias="lastMonths"),
     current_user: UserInDB = Security(decode_jwt, scopes=["billing:get"]),
     billing_services: BillingServices = Depends(billing_composer),
 ):
@@ -55,7 +59,11 @@ async def get_monthly_billings(
 
 @router.get("/billings/products", responses={200: {"model": List[Billing]}})
 async def get_best_selling_products(
-    month_year: str = Query(default=f"{datetime.now().month}/{datetime.now().year}", pattern=r'\b(1[0-2]|0?[1-9])/([0-9]{4})\b'),
+    month_year: str = Query(
+        default=f"{datetime.now().month}/{datetime.now().year}",
+        pattern=r'\b(1[0-2]|0?[1-9])/([0-9]{4})\b',
+        alias="monthYear"
+    ),
     current_user: UserInDB = Security(decode_jwt, scopes=["billing:get"]),
     billing_services: BillingServices = Depends(billing_composer),
 ):
@@ -78,7 +86,11 @@ async def get_best_selling_products(
 
 @router.get("/billings/expenses/categories", responses={200: {"model": List[Billing]}})
 async def get_expanses_categories(
-    month_year: str = Query(default=f"{datetime.now().month}/{datetime.now().year}", pattern=r'\b(1[0-2]|0?[1-9])/([0-9]{4})\b'),
+    month_year: str = Query(
+        default=f"{datetime.now().month}/{datetime.now().year}",
+        pattern=r'\b(1[0-2]|0?[1-9])/([0-9]{4})\b',
+        alias="monthYear"
+    ),
     current_user: UserInDB = Security(decode_jwt, scopes=["billing:get"]),
     billing_services: BillingServices = Depends(billing_composer),
 ):
