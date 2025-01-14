@@ -36,12 +36,14 @@ async def get_customer_by_id(
 @router.get("/customers", responses={200: {"model": List[CustomerInDB]}})
 async def get_customers(
     query: str = Query(default=None),
+    tags: List[str] = Query(default=[]),
     expand: List[str] = Query(default=[]),
     current_customer: UserInDB = Security(decode_jwt, scopes=["customer:get"]),
     customer_services: CustomerServices = Depends(customer_composer),
 ):
     customers = await customer_services.search_all(
         query=query,
+        tags=tags,
         expand=expand
     )
 

@@ -42,8 +42,8 @@ class CustomerServices:
         customer_in_db = await self.__repository.select_by_id(id=id)
         return await self.__build_complete_customer(customer_in_db=customer_in_db, expand=expand)
 
-    async def search_all(self, query: str, expand: List[str] = []) -> List[CompleteCustomerInDB]:
-        customers = await self.__repository.select_all(query=query)
+    async def search_all(self, query: str, tags: List[str] = [], expand: List[str] = []) -> List[CompleteCustomerInDB]:
+        customers = await self.__repository.select_all(query=query, tags=tags)
         all_customers = []
 
         for customer in customers:
