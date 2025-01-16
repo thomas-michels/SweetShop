@@ -9,3 +9,4 @@ from .billing_composite import billing_composer
 from .fast_order_composite import fast_order_composer
 from .expense_composite import expense_composer
 from .invite_composite import invite_composer
+from .payment_composite import payment_composer
