@@ -55,7 +55,7 @@ class OrderRepository(Repository):
             _logger.error(f"Error on update_order: {str(error)}")
             raise UnprocessableEntity(message="Error on update order")
 
-    async def select_by_id(self, id: str, fast_order: bool = True) -> OrderInDB:
+    async def select_by_id(self, id: str, fast_order: bool = False) -> OrderInDB:
         try:
             order_model: OrderModel = OrderModel.objects(
                 id=id,
