@@ -79,7 +79,7 @@ class BillingServices:
 
         selling_products.sort(key=lambda c: c.quantity, reverse=True)
 
-        return selling_products
+        return selling_products[:5]
 
     async def get_expanses_categories(self, month: int, year: int) -> List[ExpanseCategory]:
         start_date, end_date = self.__get_start_and_end_date(month=month, year=year)
@@ -109,7 +109,7 @@ class BillingServices:
 
         category_list.sort(key=lambda c: c.total_paid, reverse=True)
 
-        return category_list
+        return category_list[:5]
 
     def __get_month_and_year(self, past_months: int) -> Tuple[int, int]:
         current_date = datetime.now()
