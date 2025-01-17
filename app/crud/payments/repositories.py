@@ -18,8 +18,6 @@ class PaymentRepository(Repository):
 
     async def create(self, payment: Payment) -> PaymentInDB:
         try:
-            await self.__check_if_is_duplicated(payment=payment)
-
             payment_model = PaymentModel(
                 organization_id=self.__organization_id,
                 created_at=datetime.now(),
@@ -99,10 +97,3 @@ class PaymentRepository(Repository):
         except Exception as error:
             _logger.error(f"Error on delete_by_id: {str(error)}")
             raise NotFoundError(message=f"Payment #{id} not found")
-
-    async def __check_if_is_duplicated(self, payment: Payment) -> None:
-        payments_in_db = await self.select_all(order_id=payment.order_id)
-
-        for payment_in_db in payments_in_db:
-            if payment_in_db.method == payment.method:
-                raise NotUniqueError("Payment methods should be unique")

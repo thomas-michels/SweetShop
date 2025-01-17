@@ -90,7 +90,11 @@ class UpdateFastOrder(GenericModel):
 
     @model_validator(mode="after")
     def validate_model(self) -> "FastOrder":
-        product_ids = [str(product.product_id) for product in self.products]
+        if self.products is not None:
+            product_ids = [str(product.product_id) for product in self.products]
+
+            if len(product_ids) != len(set(product_ids)):
+                raise ValueError("Products must contain unique items.")
 
         if self.additional is not None:
             if self.additional < 0:
@@ -100,11 +104,8 @@ class UpdateFastOrder(GenericModel):
             if self.discount < 0:
                 raise ValueError("Discount must be grater than zero")
 
-        if len(product_ids) != len(set(product_ids)):
-            raise ValueError("Products must contain unique items.")
-
         if (
-            self.preparation_date.second is not None
+            self.preparation_date is not None
             and self.preparation_date.second != 0
         ):
             self.preparation_date = datetime(

@@ -17,12 +17,12 @@ class OrderRepository(Repository):
         super().__init__()
         self.__organization_id = organization_id
 
-    async def create(self, order: Order, total_amount: float, payment_status: PaymentStatus) -> OrderInDB:
+    async def create(self, order: Order, total_amount: float) -> OrderInDB:
         try:
             order_model = OrderModel(
                 total_amount=total_amount,
                 organization_id=self.__organization_id,
-                payment_status=payment_status,
+                payment_status=PaymentStatus.PENDING,
                 is_fast_order=False,
                 created_at=datetime.now(),
                 updated_at=datetime.now(),
@@ -42,7 +42,6 @@ class OrderRepository(Repository):
             order_model: OrderModel = OrderModel.objects(
                 id=order_id,
                 is_active=True,
-                is_fast_order=False,
                 organization_id=self.__organization_id,
             ).first()
 
@@ -57,12 +56,16 @@ class OrderRepository(Repository):
 
     async def select_by_id(self, id: str, fast_order: bool = False) -> OrderInDB:
         try:
-            order_model: OrderModel = OrderModel.objects(
+            objects = OrderModel.objects(
                 id=id,
                 is_active=True,
-                is_fast_order=fast_order,
                 organization_id=self.__organization_id,
-            ).first()
+            )
+
+            if fast_order is not None:
+                objects = objects.filter(is_fast_order=fast_order)
+
+            order_model = objects.first()
 
             return OrderInDB.model_validate(order_model)
 

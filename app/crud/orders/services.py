@@ -46,15 +46,9 @@ class OrderServices:
             delivery_value=order.delivery.delivery_value if order.delivery.delivery_value else 0
         )
 
-        payment_status = self.__calculate_payment_status(
-            total_amount=total_amount,
-            payment_details=order.payment_details
-        )
-
         order_in_db = await self.__order_repository.create(
             order=order,
-            total_amount=total_amount,
-            payment_status=payment_status
+            total_amount=total_amount
         )
 
         return await self.__build_complete_order(order_in_db)
@@ -97,12 +91,6 @@ class OrderServices:
         if is_updated:
             updated_fields = updated_order.model_dump(exclude_none=True)
             updated_fields["total_amount"] = total_amount
-
-            if updated_order.payment_details is not None:
-                updated_fields["payment_status"] = self.__calculate_payment_status(
-                    total_amount=total_amount,
-                    payment_details=updated_order.payment_details
-                )
 
             order_in_db = await self.__order_repository.update(
                 order_id=order_in_db.id,
@@ -233,18 +221,3 @@ class OrderServices:
                 raise UnprocessableEntity(message=f"Product {product.product_id} is invalid!")
 
         return total_amount
-
-    def __calculate_payment_status(self, total_amount: float, payment_details: List[Payment]) -> PaymentStatus:
-        if payment_details:
-            total_paid = 0
-
-            for payment in payment_details:
-                total_paid += payment.amount
-
-            if total_amount == total_paid:
-                return PaymentStatus.PAID
-
-            else:
-                return PaymentStatus.PARTIALLY_PAID
-
-        return PaymentStatus.PENDING
