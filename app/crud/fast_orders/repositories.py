@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import datetime
 from typing import List
 
 from app.core.configs import get_logger
@@ -67,9 +67,9 @@ class FastOrderRepository(Repository):
                 is_active=True,
                 is_fast_order=True,
                 organization_id=self.__organization_id,
-            ).first()
+            ).aggregate(OrderModel.get_payments())
 
-            return self.__from_order_model(order_model=order_model)
+            return self.__from_order_model(order_model=list(order_model)[0])
 
         except Exception as error:
             _logger.error(f"Error on select_by_id: {str(error)}")
@@ -94,7 +94,7 @@ class FastOrderRepository(Repository):
             if end_date:
                 objects = objects.filter(preparation_date__lt=end_date)
 
-            for order_model in objects.order_by("-preparation_date"):
+            for order_model in objects.order_by("-preparation_date").aggregate(OrderModel.get_payments()):
                 fast_orders.append(self.__from_order_model(order_model=order_model))
 
             return fast_orders
@@ -144,19 +144,7 @@ class FastOrderRepository(Repository):
         )
         return order_model
 
-    def __from_order_model(self, order_model: OrderModel) -> FastOrderInDB:
-        fast_order_in_db = FastOrderInDB(
-            id=order_model.pk,
-            description=order_model.description,
-            preparation_date=order_model.preparation_date,
-            organization_id=order_model.organization_id,
-            payment_details=order_model.payment_details,
-            total_amount=order_model.total_amount,
-            additional=order_model.additional,
-            discount=order_model.discount,
-            products=order_model.products,
-            is_active=order_model.is_active,
-            created_at=order_model.created_at,
-            updated_at=order_model.updated_at,
-        )
+    def __from_order_model(self, order_model: dict) -> FastOrderInDB:
+        order_model["id"] = order_model["_id"]
+        fast_order_in_db = FastOrderInDB(**order_model)
         return fast_order_in_db

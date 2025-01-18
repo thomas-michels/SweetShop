@@ -153,6 +153,7 @@ class FastOrderServices:
             discount=fast_order_in_db.discount,
             preparation_date=fast_order_in_db.preparation_date,
             description=fast_order_in_db.description,
+            payments=fast_order_in_db.payments,
             is_active=fast_order_in_db.is_active,
             created_at=fast_order_in_db.created_at,
             updated_at=fast_order_in_db.updated_at,

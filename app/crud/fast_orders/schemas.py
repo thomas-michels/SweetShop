@@ -121,6 +121,7 @@ class FastOrderInDB(FastOrder, DatabaseModel):
     organization_id: str = Field(example="66bae5c2e59a0787e2c903e3")
     total_amount: float = Field(example=12.2)
     is_active: bool = Field(example=True, exclude=True)
+    payments: List[dict] = Field(default=[])
 
 
 class CompleteFastOrder(FastOrderInDB):
