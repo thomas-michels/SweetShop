@@ -8,11 +8,11 @@ from app.crud.products.repositories import ProductRepository
 from app.crud.shared_schemas.payment import Payment, PaymentStatus
 from .repositories import FastOrderRepository
 from .schemas import (
-    CompleteFastOrder,
-    CompleteProduct,
+    RequestFastOrder,
     FastOrder,
     FastOrderInDB,
     RequestedProduct,
+    StoredProduct,
     UpdateFastOrder,
 )
 
@@ -29,7 +29,7 @@ class FastOrderServices:
         self.__fast_order_repository = fast_order_repository
         self.__product_repository = product_repository
 
-    async def create(self, fast_order: FastOrder) -> CompleteFastOrder:
+    async def create(self, fast_order: RequestFastOrder) -> FastOrderInDB:
         already_exists = await self.search_all(day=fast_order.preparation_date)
 
         if already_exists:
@@ -37,8 +37,13 @@ class FastOrderServices:
                 detail="You cannot create two fast orders for the same day"
             )
 
+        fast_order = FastOrder.model_validate(fast_order)
+
         for product in fast_order.products:
-            await self.__product_repository.select_by_id(id=product.product_id)
+            product_in_db = await self.__product_repository.select_by_id(id=product.product_id)
+            product.name = product_in_db.name
+            product.unit_cost = product_in_db.unit_cost
+            product.unit_price = product_in_db.unit_price
 
         total_amount = await self.__calculate_fast_order_total_amount(
             products=fast_order.products,
@@ -60,16 +65,26 @@ class FastOrderServices:
             payment_status=payment_status
         )
 
-        return await self.__build_complete_fast_order(fast_order_in_db)
+        return fast_order_in_db
 
     async def update(
         self, id: str, updated_fast_order: UpdateFastOrder
-    ) -> CompleteFastOrder:
+    ) -> FastOrderInDB:
         fast_order_in_db = await self.search_by_id(id=id)
 
         if updated_fast_order.products is not None:
+            fast_order_in_db.products = []
+
             for product in updated_fast_order.products:
-                await self.__product_repository.select_by_id(id=product.product_id)
+                product_in_db = await self.__product_repository.select_by_id(id=product.product_id)
+                stored_product = StoredProduct(
+                    product_id=product.product_id,
+                    quantity=product.quantity,
+                    name=product_in_db.name,
+                    unit_cost=product_in_db.unit_cost,
+                    unit_price=product_in_db.unit_price
+                )
+                fast_order_in_db.products.append(stored_product)
 
         if updated_fast_order.preparation_date is not None:
             already_exists = await self.search_all(day=updated_fast_order.preparation_date)
@@ -106,12 +121,12 @@ class FastOrderServices:
                 fast_order_id=fast_order_in_db.id, fast_order=updated_fields
             )
 
-        return await self.__build_complete_fast_order(fast_order_in_db)
+        return fast_order_in_db
 
-    async def search_by_id(self, id: str) -> CompleteFastOrder:
+    async def search_by_id(self, id: str) -> FastOrderInDB:
         fast_order_in_db = await self.__fast_order_repository.select_by_id(id=id)
 
-        return await self.__build_complete_fast_order(fast_order_in_db)
+        return fast_order_in_db
 
     async def search_all(
         self,
@@ -119,62 +134,17 @@ class FastOrderServices:
         day: datetime = None,
         start_date: datetime = None,
         end_date: datetime = None,
-    ) -> List[CompleteFastOrder]:
+    ) -> List[FastOrderInDB]:
         orders = await self.__fast_order_repository.select_all(
             day=day,
             start_date=start_date,
             end_date=end_date
         )
-        complete_fast_orders = []
+        return orders
 
-        for order in orders:
-            complete_fast_orders.append(
-                await self.__build_complete_fast_order(
-                    fast_order_in_db=order, expand=expand
-                )
-            )
-
-        return complete_fast_orders
-
-    async def delete_by_id(self, id: str) -> CompleteFastOrder:
+    async def delete_by_id(self, id: str) -> FastOrderInDB:
         fast_order_in_db = await self.__fast_order_repository.delete_by_id(id=id)
-        return await self.__build_complete_fast_order(fast_order_in_db)
-
-    async def __build_complete_fast_order(
-        self, fast_order_in_db: FastOrderInDB, expand: List[str] = []
-    ) -> CompleteFastOrder:
-        complete_fast_order = CompleteFastOrder(
-            id=fast_order_in_db.id,
-            organization_id=fast_order_in_db.organization_id,
-            products=fast_order_in_db.products,
-            payment_details=fast_order_in_db.payment_details,
-            total_amount=fast_order_in_db.total_amount,
-            additional=fast_order_in_db.additional,
-            discount=fast_order_in_db.discount,
-            preparation_date=fast_order_in_db.preparation_date,
-            description=fast_order_in_db.description,
-            payments=fast_order_in_db.payments,
-            is_active=fast_order_in_db.is_active,
-            created_at=fast_order_in_db.created_at,
-            updated_at=fast_order_in_db.updated_at,
-        )
-
-        if "products" in expand:
-            complete_fast_order.products = []
-
-            for product in fast_order_in_db.products:
-                product_in_db = await self.__product_repository.select_by_id(
-                    id=product.product_id, raise_404=False
-                )
-
-                if product_in_db:
-                    complete_product = CompleteProduct(
-                        product=product_in_db, quantity=product.quantity
-                    )
-
-                    complete_fast_order.products.append(complete_product)
-
-        return complete_fast_order
+        return fast_order_in_db
 
     async def __calculate_fast_order_total_amount(
         self,

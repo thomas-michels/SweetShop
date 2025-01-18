@@ -5,7 +5,6 @@ from pydantic import Field, model_validator
 
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
-from app.crud.products.schemas import ProductInDB
 from app.crud.shared_schemas.payment import Payment
 
 
@@ -14,12 +13,15 @@ class RequestedProduct(GenericModel):
     quantity: int = Field(gt=0, example=1)
 
 
-class CompleteProduct(GenericModel):
-    product: ProductInDB = Field()
+class StoredProduct(RequestedProduct):
+    product_id: str = Field()
+    name: str | None = Field(default=None, example="Brigadeiro")
+    unit_price: float | None = Field(default=None, example=1.5)
+    unit_cost: float | None = Field(default=None, example=0.75)
     quantity: int = Field(gt=0, example=1)
 
 
-class FastOrder(GenericModel):
+class RequestFastOrder(GenericModel):
     products: List[RequestedProduct] = Field(default=[], min_length=1)
     preparation_date: datetime = Field(example=str(datetime.now()))
     description: str | None = Field(default=None, example="Description")
@@ -28,7 +30,7 @@ class FastOrder(GenericModel):
     payment_details: List[Payment] = Field(default=[])
 
     @model_validator(mode="after")
-    def validate_model(self) -> "FastOrder":
+    def validate_model(self) -> "RequestFastOrder":
         product_ids = [str(product.product_id) for product in self.products]
 
         if len(product_ids) != len(set(product_ids)):
@@ -78,6 +80,10 @@ class FastOrder(GenericModel):
         return is_updated
 
 
+class FastOrder(RequestFastOrder):
+    products: List[StoredProduct] = Field(default=[], min_length=1)
+
+
 class UpdateFastOrder(GenericModel):
     products: Optional[List[RequestedProduct]] = Field(default=None, min_length=1)
     preparation_date: Optional[datetime] = Field(
@@ -122,9 +128,3 @@ class FastOrderInDB(FastOrder, DatabaseModel):
     total_amount: float = Field(example=12.2)
     is_active: bool = Field(example=True, exclude=True)
     payments: List[dict] = Field(default=[])
-
-
-class CompleteFastOrder(FastOrderInDB):
-    products: List[CompleteProduct] | List[RequestedProduct] = Field(
-        default=[], min_length=1
-    )

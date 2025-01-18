@@ -3,14 +3,14 @@ from fastapi import APIRouter, Depends, Security
 from app.api.composers import order_composer
 from app.api.dependencies import build_response, decode_jwt
 from app.crud.users import UserInDB
-from app.crud.orders import Order, OrderInDB, UpdateOrder, OrderServices
+from app.crud.orders import RequestOrder, OrderInDB, UpdateOrder, OrderServices
 
 router = APIRouter(tags=["Orders"])
 
 
 @router.post("/orders", responses={201: {"model": OrderInDB}})
 async def create_orders(
-    order: Order,
+    order: RequestOrder,
     current_user: UserInDB = Security(decode_jwt, scopes=["order:create"]),
     order_services: OrderServices = Depends(order_composer),
 ):

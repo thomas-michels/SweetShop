@@ -69,11 +69,6 @@ class StoredProduct(RequestedProduct):
     quantity: int = Field(gt=0, example=1)
 
 
-class CompleteProduct(GenericModel):
-    product: ProductInDB = Field()
-    quantity: int = Field(gt=0, example=1)
-
-
 class RequestOrder(GenericModel):
     customer_id: str | None = Field(default=None, example="66bae5c2e59a0787e2c903e3")
     status: OrderStatus = Field(

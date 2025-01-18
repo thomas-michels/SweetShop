@@ -6,12 +6,12 @@ from fastapi import APIRouter, Depends, Security, Query, Response
 from app.api.composers import fast_order_composer
 from app.api.dependencies import build_response, decode_jwt
 from app.crud.users import UserInDB
-from app.crud.fast_orders import CompleteFastOrder, FastOrderServices
+from app.crud.fast_orders import FastOrderInDB, FastOrderServices
 
 router = APIRouter(tags=["Fast Orders"])
 
 
-@router.get("/fast-orders/{fast_order_id}", responses={200: {"model": CompleteFastOrder}})
+@router.get("/fast-orders/{fast_order_id}", responses={200: {"model": FastOrderInDB}})
 async def get_fast_order_by_id(
     fast_order_id: str,
     current_user: UserInDB = Security(decode_jwt, scopes=["fast_order:get"]),
@@ -30,7 +30,7 @@ async def get_fast_order_by_id(
         )
 
 
-@router.get("/fast-orders", responses={200: {"model": List[CompleteFastOrder]}})
+@router.get("/fast-orders", responses={200: {"model": List[FastOrderInDB]}})
 async def get_fast_orders(
     day: date | None = Query(default=None),
     expand: List[str] = Query(default=[]),
