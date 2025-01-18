@@ -61,12 +61,20 @@ class RequestedProduct(GenericModel):
     quantity: int = Field(gt=0, example=1)
 
 
+class StoredProduct(RequestedProduct):
+    product_id: str = Field()
+    name: str | None = Field(default=None, example="Brigadeiro")
+    unit_price: float | None = Field(default=None, example=1.5)
+    unit_cost: float | None = Field(default=None, example=0.75)
+    quantity: int = Field(gt=0, example=1)
+
+
 class CompleteProduct(GenericModel):
     product: ProductInDB = Field()
     quantity: int = Field(gt=0, example=1)
 
 
-class Order(GenericModel):
+class RequestOrder(GenericModel):
     customer_id: str | None = Field(default=None, example="66bae5c2e59a0787e2c903e3")
     status: OrderStatus = Field(
         default=OrderStatus.PENDING, example=OrderStatus.IN_PREPARATION
@@ -143,6 +151,10 @@ class Order(GenericModel):
         return is_updated
 
 
+class Order(RequestOrder):
+    products: List[StoredProduct] = Field(default=[], min_length=1)
+
+
 class UpdateOrder(GenericModel):
     customer_id: Optional[str] = Field(default=None, example="66bae5c2e59a0787e2c903e3")
     status: Optional[OrderStatus] = Field(
@@ -194,7 +206,4 @@ class OrderInDB(Order, DatabaseModel):
 
 class CompleteOrder(OrderInDB):
     customer: CustomerInDB | str | None = Field(default=None)
-    products: List[CompleteProduct] | List[RequestedProduct] = Field(
-        default=[], min_length=1
-    )
     tags: List[TagInDB] | List[str] = Field(default=[])

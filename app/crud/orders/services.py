@@ -5,12 +5,21 @@ from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.crud.customers.repositories import CustomerRepository
 from app.crud.products.repositories import ProductRepository
-from app.crud.shared_schemas.payment import Payment, PaymentStatus
+from app.crud.shared_schemas.payment import PaymentStatus
 from app.crud.tags.repositories import TagRepository
 
 from .repositories import OrderRepository
-from .schemas import (CompleteOrder, CompleteProduct, DeliveryType, Order,
-                      OrderInDB, OrderStatus, RequestedProduct, UpdateOrder)
+from .schemas import (
+    CompleteOrder,
+    DeliveryType,
+    Order,
+    OrderInDB,
+    OrderStatus,
+    RequestOrder,
+    RequestedProduct,
+    StoredProduct,
+    UpdateOrder
+)
 
 logger = get_logger(__name__)
 
@@ -29,12 +38,17 @@ class OrderServices:
         self.__tag_repository = tag_repository
         self.__customer_repository = customer_repository
 
-    async def create(self, order: Order) -> CompleteOrder:
+    async def create(self, order: RequestOrder) -> CompleteOrder:
+        order = Order.model_validate(order)
+
         if order.customer_id is not None:
             await self.__customer_repository.select_by_id(id=order.customer_id)
 
         for product in order.products:
-            await self.__product_repository.select_by_id(id=product.product_id)
+            product_in_db = await self.__product_repository.select_by_id(id=product.product_id)
+            product.name = product_in_db.name
+            product.unit_cost = product_in_db.unit_cost
+            product.unit_price = product_in_db.unit_price
 
         for tag in order.tags:
             await self.__tag_repository.select_by_id(id=tag)
@@ -60,8 +74,18 @@ class OrderServices:
             await self.__customer_repository.select_by_id(id=updated_order.customer_id)
 
         if updated_order.products is not None:
+            order_in_db.products = []
+
             for product in updated_order.products:
-                await self.__product_repository.select_by_id(id=product.product_id)
+                product_in_db = await self.__product_repository.select_by_id(id=product.product_id)
+                stored_product = StoredProduct(
+                    product_id=product.product_id,
+                    quantity=product.quantity,
+                    name=product_in_db.name,
+                    unit_cost=product_in_db.unit_cost,
+                    unit_price=product_in_db.unit_price
+                )
+                order_in_db.products.append(stored_product)
 
         if updated_order.tags is not None:
             temp_tags = updated_order.tags
@@ -177,23 +201,6 @@ class OrderServices:
 
                 if customer:
                     complete_order.customer = customer
-
-        if "products" in expand:
-            complete_order.products = []
-
-            for product in order_in_db.products:
-                product_in_db = await self.__product_repository.select_by_id(
-                    id=product.product_id,
-                    raise_404=False
-                )
-
-                if product_in_db:
-                    complete_product = CompleteProduct(
-                        product=product_in_db,
-                        quantity=product.quantity
-                    )
-
-                    complete_order.products.append(complete_product)
 
         if "tags" in expand:
             complete_order.tags = []
