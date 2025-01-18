@@ -103,6 +103,9 @@ class OrderRepository(Repository):
             if status:
                 objects = objects.filter(status=status.value)
 
+            else:
+                objects = objects.filter(status__ne=OrderStatus.CANCELED.value)
+
             if payment_status:
                 objects = objects.filter(payment_status__in=payment_status)
 

@@ -1,6 +1,5 @@
 from datetime import datetime
 from typing import List
-from mongoengine.errors import NotUniqueError
 from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.core.repositories.base_repository import Repository
