@@ -3,7 +3,8 @@ from typing import Dict, List, Tuple
 from app.crud.expenses.services import ExpenseServices
 from app.crud.fast_orders.services import FastOrderServices
 from app.crud.orders.services import OrderServices
-from app.crud.shared_schemas.payment import Payment, PaymentMethod
+from app.crud.payments.schemas import PaymentInDB
+from app.crud.shared_schemas.payment import PaymentMethod
 
 from .schemas import Billing, ExpanseCategory, SellingProduct
 
@@ -162,7 +163,7 @@ class BillingServices:
 
             self.__process_payments(
                 billing=billing,
-                payment_details=order.payment_details,
+                payments=order.payments,
                 total_paid=total_paid,
                 total_amount=order.total_amount
             )
@@ -176,12 +177,15 @@ class BillingServices:
     def __process_payments(
             self,
             billing: Billing,
-            payment_details: List[Payment],
+            payments: List[dict],
             total_paid: float,
             total_amount: float
         ) -> None:
 
-        for payment in payment_details:
+        for payment in payments:
+            payment["id"] = payment["_id"]
+            payment = PaymentInDB.model_validate(payment)
+
             total_paid += payment.amount
             billing.payment_received += payment.amount
 
