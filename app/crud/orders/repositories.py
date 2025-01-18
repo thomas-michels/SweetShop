@@ -31,7 +31,7 @@ class OrderRepository(Repository):
 
             order_model.save()
 
-            return OrderInDB.model_validate(order_model)
+            return await self.select_by_id(id=order_model.id)
 
         except Exception as error:
             _logger.error(f"Error on create_order: {str(error)}")
@@ -65,7 +65,8 @@ class OrderRepository(Repository):
             if fast_order is not None:
                 objects = objects.filter(is_fast_order=fast_order)
 
-            order_model = objects.first()
+            order_model = list(objects.aggregate(OrderModel.get_payments()))[0]
+            order_model["id"] = order_model["_id"]
 
             return OrderInDB.model_validate(order_model)
 
@@ -127,7 +128,10 @@ class OrderRepository(Repository):
             if max_total_amount:
                 objects = objects.filter(total_amount__lte=max_total_amount)
 
-            for order_model in objects.order_by("-preparation_date"):
+            objects = objects.order_by("-preparation_date").aggregate(OrderModel.get_payments())
+
+            for order_model in objects:
+                order_model["id"] = order_model["_id"]
                 orders.append(OrderInDB.model_validate(order_model))
 
             return orders

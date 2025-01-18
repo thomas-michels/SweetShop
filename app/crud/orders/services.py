@@ -162,6 +162,7 @@ class OrderServices:
             description=order_in_db.description,
             additional=order_in_db.additional,
             discount=order_in_db.discount,
+            payments=order_in_db.payments,
             is_active=order_in_db.is_active,
             created_at=order_in_db.created_at,
             updated_at=order_in_db.updated_at,

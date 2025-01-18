@@ -36,6 +36,21 @@ class OrderModel(BaseDocument):
 
     meta = {"collection": "orders"}
 
+    @staticmethod
+    def get_payments():
+        pipeline = [
+            {
+                "$lookup": {
+                    "from": "payments",
+                    "localField": "_id",
+                    "foreignField": "order_id",
+                    "as": "payments"
+                }
+            }
+        ]
+
+        return pipeline
+
     def update(self, **kwargs):
         self.base_update()
         if kwargs.get("updated_at"):
