@@ -35,7 +35,7 @@ class FastOrderRepository(Repository):
 
             order_model.save()
 
-            return self.__from_order_model(order_model=order_model)
+            return await self.select_by_id(id=order_model.id)
 
         except Exception as error:
             _logger.error(f"Error on create_fast_order: {str(error)}")
@@ -156,6 +156,11 @@ class FastOrderRepository(Repository):
         )
         return order_model
 
-    def __from_order_model(self, order_model: dict) -> FastOrderInDB:
-        fast_order_in_db = FastOrderInDB(**order_model)
-        return fast_order_in_db
+    def __from_order_model(self, order_model: dict | OrderModel) -> FastOrderInDB:
+        try:
+            fast_order_in_db = FastOrderInDB(**order_model)
+            return fast_order_in_db
+
+        except TypeError:
+            fast_order_in_db = FastOrderInDB.model_validate(order_model)
+            return fast_order_in_db
