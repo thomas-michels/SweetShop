@@ -48,11 +48,11 @@ class BillingServices:
             tags=[],
             min_total_amount=None,
             max_total_amount=None,
-            expand=["products"],
+            expand=[],
         )
 
         fast_orders = await self.fast_order_services.search_all(
-            expand=["products"],
+            expand=[],
             start_date=start_date,
             end_date=end_date
         )
@@ -63,17 +63,13 @@ class BillingServices:
 
         for order in orders:
             for order_product in order.products:
-                if not hasattr(order_product, "product"):
-                    continue
-
-                product = order_product.product
-                if product.id not in selling_products:
-                    selling_products[product.id] = SellingProduct(
-                        product_id=product.id,
-                        product_name=product.name
+                if order_product.product_id not in selling_products:
+                    selling_products[order_product.product_id] = SellingProduct(
+                        product_id=order_product.product_id,
+                        product_name=order_product.name
                     )
 
-                product_category = selling_products[product.id]
+                product_category = selling_products[order_product.product_id]
                 product_category.quantity += 1
 
         selling_products = list(selling_products.values())
