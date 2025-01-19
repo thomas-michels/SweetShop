@@ -32,6 +32,7 @@ class OrderModel(BaseDocument):
     description = StringField(required=False)
     reason_id = StringField(required=False)
     is_fast_order = BooleanField(required=False, default=False)
+    order_date = DateTimeField(required=True)
     payment_details = ListField(DictField(), required=False)
 
     meta = {"collection": "orders"}
@@ -40,34 +41,39 @@ class OrderModel(BaseDocument):
     def get_payments():
         pipeline = [
             {
-                '$lookup': {
-                    'from': 'payments',
-                    'localField': '_id',
-                    'foreignField': 'order_id',
-                    'as': 'payments'
-                }
-            }, {
-                '$set': {
-                    'id': '$_id',
-                    'payments': {
-                        '$map': {
-                            'input': '$payments',
-                            'as': 'payment',
-                            'in': {
-                                '$mergeObjects': [
-                                    '$$payment', {
-                                        'id': '$$payment._id'
-                                    }
-                                ]
+                "$lookup": {
+                    "from": "payments",
+                    "let": {"orderId": "$_id"},
+                    "pipeline": [
+                        {
+                            "$match": {
+                                "$expr": {
+                                    "$and": [
+                                        {"$eq": ["$order_id", "$$orderId"]},
+                                        {"$eq": ["$is_active", True]},
+                                    ]
+                                }
                             }
                         }
-                    }
+                    ],
+                    "as": "payments",
                 }
-            }, {
-                '$unset': [
-                    '_id', 'payments._id'
-                ]
-            }
+            },
+            {
+                "$set": {
+                    "id": "$_id",
+                    "payments": {
+                        "$map": {
+                            "input": "$payments",
+                            "as": "payment",
+                            "in": {
+                                "$mergeObjects": ["$$payment", {"id": "$$payment._id"}]
+                            },
+                        }
+                    },
+                }
+            },
+            {"$unset": ["_id", "payments._id"]},
         ]
 
         return pipeline

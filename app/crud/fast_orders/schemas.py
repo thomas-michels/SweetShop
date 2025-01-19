@@ -24,10 +24,10 @@ class StoredProduct(RequestedProduct):
 
 class RequestFastOrder(GenericModel):
     products: List[RequestedProduct] = Field(default=[], min_length=1)
-    preparation_date: datetime = Field(example=str(datetime.now()))
+    order_date: datetime = Field(example=str(datetime.now()))
     description: str | None = Field(default=None, example="Description")
     additional: float = Field(default=0, ge=0, example=12.2)
-    discount: float| None = Field(default=0, ge=0, example=12.2)
+    discount: float | None = Field(default=0, ge=0, example=12.2)
     payment_details: List[Payment] = Field(default=[])
 
     @model_validator(mode="after")
@@ -37,11 +37,11 @@ class RequestFastOrder(GenericModel):
         if len(product_ids) != len(set(product_ids)):
             raise ValueError("Products must contain unique items.")
 
-        if self.preparation_date.second != 0:
-            self.preparation_date = datetime(
-                year=self.preparation_date.year,
-                month=self.preparation_date.month,
-                day=self.preparation_date.day,
+        if self.order_date.second != 0:
+            self.order_date = datetime(
+                year=self.order_date.year,
+                month=self.order_date.month,
+                day=self.order_date.day,
             )
 
         return self
@@ -55,8 +55,8 @@ class RequestFastOrder(GenericModel):
             self.description = update_fast_order.description
             is_updated = True
 
-        if update_fast_order.preparation_date is not None:
-            self.preparation_date = update_fast_order.preparation_date
+        if update_fast_order.order_date is not None:
+            self.order_date = update_fast_order.order_date
             is_updated = True
 
         if update_fast_order.products is not None:
@@ -87,9 +87,7 @@ class FastOrder(RequestFastOrder):
 
 class UpdateFastOrder(GenericModel):
     products: Optional[List[RequestedProduct]] = Field(default=None, min_length=1)
-    preparation_date: Optional[datetime] = Field(
-        default=None, example=str(datetime.now())
-    )
+    order_date: Optional[datetime] = Field(default=None, example=str(datetime.now()))
     description: Optional[str] = Field(default=None, example="Description")
     additional: Optional[float] = Field(default=None, example=12.2)
     discount: Optional[float] = Field(default=None, example=12.2)
@@ -111,14 +109,11 @@ class UpdateFastOrder(GenericModel):
             if self.discount < 0:
                 raise ValueError("Discount must be grater than zero")
 
-        if (
-            self.preparation_date is not None
-            and self.preparation_date.second != 0
-        ):
-            self.preparation_date = datetime(
-                year=self.preparation_date.year,
-                month=self.preparation_date.month,
-                day=self.preparation_date.day,
+        if self.order_date is not None and self.order_date.second != 0:
+            self.order_date = datetime(
+                year=self.order_date.year,
+                month=self.order_date.month,
+                day=self.order_date.day,
             )
 
         return self

@@ -86,6 +86,7 @@ class RequestOrder(GenericModel):
     tags: List[str] = Field(default=[])
     delivery: Delivery = Field()
     preparation_date: datetime = Field(example=str(datetime.now()))
+    order_date: datetime = Field(example=str(datetime.now()))
     description: str | None = Field(default=None, example="Description")
     additional: float = Field(default=0, ge=0, example=12.2)
     discount: float | None = Field(default=0, ge=0, example=12.2)
@@ -131,6 +132,10 @@ class RequestOrder(GenericModel):
             self.preparation_date = update_order.preparation_date
             is_updated = True
 
+        if update_order.order_date is not None:
+            self.order_date = update_order.order_date
+            is_updated = True
+
         if update_order.reason_id is not None:
             self.reason_id = update_order.reason_id
             is_updated = True
@@ -169,6 +174,7 @@ class UpdateOrder(GenericModel):
     preparation_date: Optional[datetime] = Field(
         default=None, example=str(datetime.now())
     )
+    order_date: Optional[datetime] = Field(default=None, example=str(datetime.now()))
     description: Optional[str] = Field(default=None, example="Description")
     additional: Optional[float] = Field(default=None, example=12.2)
     discount: Optional[float] = Field(default=None, example=12.2)

@@ -1,14 +1,14 @@
 from datetime import datetime
 from typing import List
 
-from fastapi import APIRouter, Depends, Security, Query, Response
+from fastapi import APIRouter, Depends, Query, Response, Security
 
 from app.api.composers import order_composer
 from app.api.dependencies import build_response, decode_jwt
+from app.crud.orders import OrderInDB, OrderServices
 from app.crud.orders.schemas import DeliveryType, OrderStatus
 from app.crud.shared_schemas.payment import PaymentStatus
 from app.crud.users import UserInDB
-from app.crud.orders import OrderInDB, OrderServices
 
 router = APIRouter(tags=["Orders"])
 
@@ -20,10 +20,7 @@ async def get_order_by_id(
     current_user: UserInDB = Security(decode_jwt, scopes=["order:get"]),
     order_services: OrderServices = Depends(order_composer),
 ):
-    order_in_db = await order_services.search_by_id(
-        id=order_id,
-        expand=expand
-    )
+    order_in_db = await order_services.search_by_id(id=order_id, expand=expand)
 
     if order_in_db:
         return build_response(
@@ -43,8 +40,8 @@ async def get_orders(
     payment_status: List[PaymentStatus] = Query(default=[], alias="paymentStatus"),
     delivery_type: DeliveryType = Query(default=None, alias="deliveryType"),
     tags: List[str] = Query(default=[]),
-    start_preparation_date: datetime = Query(default=None, alias="startPreparationDate"),
-    end_preparation_date: datetime = Query(default=None, alias="endPreparationDate"),
+    start_order_date: datetime = Query(default=None, alias="startOrderDate"),
+    end_order_date: datetime = Query(default=None, alias="endOrderDate"),
     min_total_amount: float | None = Query(default=None, alias="minTotalAmount"),
     max_total_amount: float | None = Query(default=None, alias="maxTotalAmount"),
     expand: List[str] = Query(default=[]),
@@ -56,12 +53,12 @@ async def get_orders(
         status=status,
         delivery_type=delivery_type,
         payment_status=payment_status,
-        start_date=start_preparation_date,
-        end_date=end_preparation_date,
+        start_date=start_order_date,
+        end_date=end_order_date,
         tags=tags,
         min_total_amount=min_total_amount,
         max_total_amount=max_total_amount,
-        expand=expand
+        expand=expand,
     )
 
     if orders:

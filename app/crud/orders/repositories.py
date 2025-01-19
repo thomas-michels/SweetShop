@@ -1,6 +1,8 @@
 from datetime import datetime
 from typing import List
+
 from pydantic_core import ValidationError
+
 from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.core.repositories.base_repository import Repository
@@ -113,10 +115,10 @@ class OrderRepository(Repository):
                 objects = objects.filter(delivery__delivery_type=delivery_type.value)
 
             if start_date:
-                objects = objects.filter(preparation_date__gte=start_date)
+                objects = objects.filter(order_date__gte=start_date)
 
             if end_date:
-                objects = objects.filter(preparation_date__lt=end_date)
+                objects = objects.filter(order_date__lt=end_date)
 
             if tags:
                 objects = objects.filter(tags__in=tags)
@@ -127,7 +129,9 @@ class OrderRepository(Repository):
             if max_total_amount:
                 objects = objects.filter(total_amount__lte=max_total_amount)
 
-            objects = objects.order_by("-preparation_date").aggregate(OrderModel.get_payments())
+            objects = objects.order_by("-order_date").aggregate(
+                OrderModel.get_payments()
+            )
 
             for order_model in objects:
                 orders.append(OrderInDB.model_validate(order_model))

@@ -23,12 +23,14 @@ class FastOrderRepository(Repository):
         super().__init__()
         self.__organization_id = organization_id
 
-    async def create(self, fast_order: FastOrder, total_amount: float, payment_status: PaymentStatus) -> FastOrderInDB:
+    async def create(
+        self, fast_order: FastOrder, total_amount: float, payment_status: PaymentStatus
+    ) -> FastOrderInDB:
         try:
             order_model = self.__build_order_model(
                 fast_order=fast_order,
                 total_amount=total_amount,
-                payment_status=payment_status
+                payment_status=payment_status,
             )
 
             order_model.save()
@@ -75,7 +77,12 @@ class FastOrderRepository(Repository):
             _logger.error(f"Error on select_by_id: {str(error)}")
             raise NotFoundError(message=f"FastOrder #{id} not found")
 
-    async def select_all(self, day: datetime = None, start_date: datetime = None, end_date: datetime = None) -> List[OrderInDB]:
+    async def select_all(
+        self,
+        day: datetime = None,
+        start_date: datetime = None,
+        end_date: datetime = None,
+    ) -> List[OrderInDB]:
         try:
             fast_orders = []
 
@@ -86,15 +93,17 @@ class FastOrderRepository(Repository):
             )
 
             if day:
-                objects = objects(preparation_date=day)
+                objects = objects(order_date=day)
 
             if start_date:
-                objects = objects.filter(preparation_date__gte=start_date)
+                objects = objects.filter(order_date__gte=start_date)
 
             if end_date:
-                objects = objects.filter(preparation_date__lt=end_date)
+                objects = objects.filter(order_date__lt=end_date)
 
-            for order_model in objects.order_by("-preparation_date").aggregate(OrderModel.get_payments()):
+            for order_model in objects.order_by("-order_date").aggregate(
+                OrderModel.get_payments()
+            ):
                 fast_orders.append(self.__from_order_model(order_model=order_model))
 
             return fast_orders
@@ -132,11 +141,14 @@ class FastOrderRepository(Repository):
             organization_id=self.__organization_id,
             status=OrderStatus.DONE,
             payment_status=payment_status,
-            payment_details=[payment.model_dump() for payment in fast_order.payment_details],
+            payment_details=[
+                payment.model_dump() for payment in fast_order.payment_details
+            ],
             products=[product.model_dump() for product in fast_order.products],
             tags=[],
             delivery=Delivery(delivery_type=DeliveryType.FAST_ORDER).model_dump(),
-            preparation_date=fast_order.preparation_date,
+            preparation_date=fast_order.order_date,
+            order_date=fast_order.order_date,
             description=fast_order.description,
             is_fast_order=True,
             created_at=datetime.now(),

@@ -15,10 +15,10 @@ from .schemas import (
     Order,
     OrderInDB,
     OrderStatus,
-    RequestOrder,
     RequestedProduct,
+    RequestOrder,
     StoredProduct,
-    UpdateOrder
+    UpdateOrder,
 )
 
 logger = get_logger(__name__)
@@ -45,7 +45,9 @@ class OrderServices:
             await self.__customer_repository.select_by_id(id=order.customer_id)
 
         for product in order.products:
-            product_in_db = await self.__product_repository.select_by_id(id=product.product_id)
+            product_in_db = await self.__product_repository.select_by_id(
+                id=product.product_id
+            )
             product.name = product_in_db.name
             product.unit_cost = product_in_db.unit_cost
             product.unit_price = product_in_db.unit_price
@@ -57,12 +59,13 @@ class OrderServices:
             products=order.products,
             additional=order.additional,
             discount=order.discount,
-            delivery_value=order.delivery.delivery_value if order.delivery.delivery_value else 0
+            delivery_value=(
+                order.delivery.delivery_value if order.delivery.delivery_value else 0
+            ),
         )
 
         order_in_db = await self.__order_repository.create(
-            order=order,
-            total_amount=total_amount
+            order=order, total_amount=total_amount
         )
 
         return await self.__build_complete_order(order_in_db)
@@ -77,37 +80,60 @@ class OrderServices:
             order_in_db.products = []
 
             for product in updated_order.products:
-                product_in_db = await self.__product_repository.select_by_id(id=product.product_id)
+                product_in_db = await self.__product_repository.select_by_id(
+                    id=product.product_id
+                )
                 stored_product = StoredProduct(
                     product_id=product.product_id,
                     quantity=product.quantity,
                     name=product_in_db.name,
                     unit_cost=product_in_db.unit_cost,
-                    unit_price=product_in_db.unit_price
+                    unit_price=product_in_db.unit_price,
                 )
                 order_in_db.products.append(stored_product)
 
         if updated_order.tags is not None:
             temp_tags = updated_order.tags
             for tag in temp_tags:
-                if not await self.__tag_repository.select_by_id(id=tag, raise_404=False):
+                if not await self.__tag_repository.select_by_id(
+                    id=tag, raise_404=False
+                ):
                     updated_order.tags.remove(tag)
 
         if updated_order.delivery is not None:
-            if order_in_db.delivery.delivery_type == DeliveryType.DELIVERY and updated_order.delivery.delivery_type == DeliveryType.WITHDRAWAL:
+            if (
+                order_in_db.delivery.delivery_type == DeliveryType.DELIVERY
+                and updated_order.delivery.delivery_type == DeliveryType.WITHDRAWAL
+            ):
                 updated_order.delivery.delivery_value = 0
                 updated_order.delivery.address = None
 
-        delivery_value = order_in_db.delivery.delivery_value if order_in_db.delivery.delivery_value is not None else 0
+        delivery_value = (
+            order_in_db.delivery.delivery_value
+            if order_in_db.delivery.delivery_value is not None
+            else 0
+        )
 
         if updated_order.delivery and updated_order.delivery.delivery_value is not None:
             delivery_value = updated_order.delivery.delivery_value
 
         total_amount = await self.__calculate_order_total_amount(
-            products=updated_order.products if updated_order.products is not None else order_in_db.products,
-            additional=updated_order.additional if updated_order.additional is not None else order_in_db.additional,
-            discount=updated_order.discount if updated_order.discount is not None else order_in_db.discount,
-            delivery_value=delivery_value
+            products=(
+                updated_order.products
+                if updated_order.products is not None
+                else order_in_db.products
+            ),
+            additional=(
+                updated_order.additional
+                if updated_order.additional is not None
+                else order_in_db.additional
+            ),
+            discount=(
+                updated_order.discount
+                if updated_order.discount is not None
+                else order_in_db.discount
+            ),
+            delivery_value=delivery_value,
         )
 
         is_updated = order_in_db.validate_updated_fields(update_order=updated_order)
@@ -117,8 +143,7 @@ class OrderServices:
             updated_fields["total_amount"] = total_amount
 
             order_in_db = await self.__order_repository.update(
-                order_id=order_in_db.id,
-                order=updated_fields
+                order_id=order_in_db.id, order=updated_fields
             )
 
         return await self.__build_complete_order(order_in_db)
@@ -126,24 +151,21 @@ class OrderServices:
     async def search_by_id(self, id: str, expand: List[str] = []) -> CompleteOrder:
         order_in_db = await self.__order_repository.select_by_id(id=id)
 
-        return await self.__build_complete_order(
-            order_in_db=order_in_db,
-            expand=expand
-        )
+        return await self.__build_complete_order(order_in_db=order_in_db, expand=expand)
 
     async def search_all(
-            self,
-            status: OrderStatus,
-            payment_status: List[PaymentStatus],
-            delivery_type: DeliveryType,
-            customer_id: str,
-            start_date: datetime,
-            end_date: datetime,
-            tags: List[str],
-            min_total_amount: float,
-            max_total_amount: float,
-            expand: List[str]
-        ) -> List[CompleteOrder]:
+        self,
+        status: OrderStatus,
+        payment_status: List[PaymentStatus],
+        delivery_type: DeliveryType,
+        customer_id: str,
+        start_date: datetime,
+        end_date: datetime,
+        tags: List[str],
+        min_total_amount: float,
+        max_total_amount: float,
+        expand: List[str],
+    ) -> List[CompleteOrder]:
 
         orders = await self.__order_repository.select_all(
             customer_id=customer_id,
@@ -154,13 +176,15 @@ class OrderServices:
             end_date=end_date,
             min_total_amount=min_total_amount,
             max_total_amount=max_total_amount,
-            tags=tags
+            tags=tags,
         )
 
         complete_orders = []
 
         for order in orders:
-            complete_orders.append(await self.__build_complete_order(order_in_db=order, expand=expand))
+            complete_orders.append(
+                await self.__build_complete_order(order_in_db=order, expand=expand)
+            )
 
         return complete_orders
 
@@ -168,7 +192,9 @@ class OrderServices:
         order_in_db = await self.__order_repository.delete_by_id(id=id)
         return await self.__build_complete_order(order_in_db)
 
-    async def __build_complete_order(self, order_in_db: OrderInDB, expand: List[str] = []) -> CompleteOrder:
+    async def __build_complete_order(
+        self, order_in_db: OrderInDB, expand: List[str] = []
+    ) -> CompleteOrder:
         complete_order = CompleteOrder(
             id=order_in_db.id,
             organization_id=order_in_db.organization_id,
@@ -181,6 +207,7 @@ class OrderServices:
             tags=order_in_db.tags,
             delivery=order_in_db.delivery,
             preparation_date=order_in_db.preparation_date,
+            order_date=order_in_db.order_date,
             reason_id=order_in_db.reason_id,
             total_amount=order_in_db.total_amount,
             description=order_in_db.description,
@@ -195,8 +222,7 @@ class OrderServices:
         if "customers" in expand:
             if order_in_db.customer_id is not None:
                 customer = await self.__customer_repository.select_by_id(
-                    id=order_in_db.customer_id,
-                    raise_404=False
+                    id=order_in_db.customer_id, raise_404=False
                 )
 
                 if customer:
@@ -207,8 +233,7 @@ class OrderServices:
 
             for tag in order_in_db.tags:
                 tag_in_db = await self.__tag_repository.select_by_id(
-                    id=tag,
-                    raise_404=False
+                    id=tag, raise_404=False
                 )
 
                 if tag_in_db:
@@ -216,16 +241,26 @@ class OrderServices:
 
         return complete_order
 
-    async def __calculate_order_total_amount(self, products: List[RequestedProduct], delivery_value: float, additional: float, discount: float) -> float:
+    async def __calculate_order_total_amount(
+        self,
+        products: List[RequestedProduct],
+        delivery_value: float,
+        additional: float,
+        discount: float,
+    ) -> float:
         total_amount = delivery_value + additional - discount
 
         for product in products:
             try:
-                product_in_db = await self.__product_repository.select_by_id(id=product.product_id)
+                product_in_db = await self.__product_repository.select_by_id(
+                    id=product.product_id
+                )
 
-                total_amount += (product_in_db.unit_price * product.quantity)
+                total_amount += product_in_db.unit_price * product.quantity
 
             except NotFoundError:
-                raise UnprocessableEntity(message=f"Product {product.product_id} is invalid!")
+                raise UnprocessableEntity(
+                    message=f"Product {product.product_id} is invalid!"
+                )
 
         return total_amount

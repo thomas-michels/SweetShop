@@ -1,5 +1,6 @@
 from typing import List
 
+from app.api.exceptions.authentication_exceptions import BadRequestException
 from app.core.exceptions.users import UnprocessableEntity
 from app.crud.orders.repositories import OrderRepository
 from app.crud.orders.schemas import OrderInDB
@@ -22,6 +23,9 @@ class PaymentServices:
 
     async def create(self, payment: Payment) -> PaymentInDB:
         order_in_db = await self.__order_repository.select_by_id(id=payment.order_id, fast_order=None)
+
+        if order_in_db.payment_status == PaymentStatus.PAID:
+            raise BadRequestException(detail="Order already paid!")
 
         payment_in_db = await self.__payment_repository.create(payment=payment)
 

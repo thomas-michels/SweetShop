@@ -1,17 +1,21 @@
 from datetime import datetime
 from typing import List
 
-from app.api.exceptions.authentication_exceptions import BadRequestException, UnprocessableEntityException
+from app.api.exceptions.authentication_exceptions import (
+    BadRequestException,
+    UnprocessableEntityException,
+)
 from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.crud.products.repositories import ProductRepository
 from app.crud.shared_schemas.payment import Payment, PaymentStatus
+
 from .repositories import FastOrderRepository
 from .schemas import (
-    RequestFastOrder,
     FastOrder,
     FastOrderInDB,
     RequestedProduct,
+    RequestFastOrder,
     StoredProduct,
     UpdateFastOrder,
 )
@@ -30,7 +34,7 @@ class FastOrderServices:
         self.__product_repository = product_repository
 
     async def create(self, fast_order: RequestFastOrder) -> FastOrderInDB:
-        already_exists = await self.search_all(day=fast_order.preparation_date)
+        already_exists = await self.search_all(day=fast_order.order_date)
 
         if already_exists:
             raise BadRequestException(
@@ -40,7 +44,9 @@ class FastOrderServices:
         fast_order = FastOrder.model_validate(fast_order)
 
         for product in fast_order.products:
-            product_in_db = await self.__product_repository.select_by_id(id=product.product_id)
+            product_in_db = await self.__product_repository.select_by_id(
+                id=product.product_id
+            )
             product.name = product_in_db.name
             product.unit_cost = product_in_db.unit_cost
             product.unit_price = product_in_db.unit_price
@@ -48,21 +54,22 @@ class FastOrderServices:
         total_amount = await self.__calculate_fast_order_total_amount(
             products=fast_order.products,
             additional=fast_order.additional,
-            discount=fast_order.discount
+            discount=fast_order.discount,
         )
 
         if fast_order.discount > total_amount:
-            raise UnprocessableEntityException(detail="Discount cannot be grater than total amount")
+            raise UnprocessableEntityException(
+                detail="Discount cannot be grater than total amount"
+            )
 
         payment_status = self.__calculate_payment_status(
-            total_amount=total_amount,
-            payment_details=fast_order.payment_details
+            total_amount=total_amount, payment_details=fast_order.payment_details
         )
 
         fast_order_in_db = await self.__fast_order_repository.create(
             fast_order=fast_order,
             total_amount=total_amount,
-            payment_status=payment_status
+            payment_status=payment_status,
         )
 
         return fast_order_in_db
@@ -76,18 +83,20 @@ class FastOrderServices:
             fast_order_in_db.products = []
 
             for product in updated_fast_order.products:
-                product_in_db = await self.__product_repository.select_by_id(id=product.product_id)
+                product_in_db = await self.__product_repository.select_by_id(
+                    id=product.product_id
+                )
                 stored_product = StoredProduct(
                     product_id=product.product_id,
                     quantity=product.quantity,
                     name=product_in_db.name,
                     unit_cost=product_in_db.unit_cost,
-                    unit_price=product_in_db.unit_price
+                    unit_price=product_in_db.unit_price,
                 )
                 fast_order_in_db.products.append(stored_product)
 
-        if updated_fast_order.preparation_date is not None:
-            already_exists = await self.search_all(day=updated_fast_order.preparation_date)
+        if updated_fast_order.order_date is not None:
+            already_exists = await self.search_all(day=updated_fast_order.order_date)
 
             if already_exists and already_exists[0].id != id:
                 raise BadRequestException(
@@ -95,9 +104,21 @@ class FastOrderServices:
                 )
 
         total_amount = await self.__calculate_fast_order_total_amount(
-            products=updated_fast_order.products if updated_fast_order.products is not None else fast_order_in_db.products,
-            discount=updated_fast_order.discount if updated_fast_order.discount is not None else fast_order_in_db.discount,
-            additional=updated_fast_order.additional if updated_fast_order.additional is not None else fast_order_in_db.additional
+            products=(
+                updated_fast_order.products
+                if updated_fast_order.products is not None
+                else fast_order_in_db.products
+            ),
+            discount=(
+                updated_fast_order.discount
+                if updated_fast_order.discount is not None
+                else fast_order_in_db.discount
+            ),
+            additional=(
+                updated_fast_order.additional
+                if updated_fast_order.additional is not None
+                else fast_order_in_db.additional
+            ),
         )
 
         is_updated = fast_order_in_db.validate_updated_fields(
@@ -108,13 +129,18 @@ class FastOrderServices:
             updated_fields = updated_fast_order.model_dump(exclude_none=True)
             updated_fields["total_amount"] = total_amount
 
-            if updated_fast_order.discount is not None and updated_fast_order.discount > total_amount:
-                raise UnprocessableEntityException(detail="Discount cannot be grater than total amount")
+            if (
+                updated_fast_order.discount is not None
+                and updated_fast_order.discount > total_amount
+            ):
+                raise UnprocessableEntityException(
+                    detail="Discount cannot be grater than total amount"
+                )
 
             if updated_fast_order.payment_details is not None:
                 updated_fields["payment_status"] = self.__calculate_payment_status(
                     total_amount=total_amount,
-                    payment_details=updated_fast_order.payment_details
+                    payment_details=updated_fast_order.payment_details,
                 )
 
             fast_order_in_db = await self.__fast_order_repository.update(
@@ -136,9 +162,7 @@ class FastOrderServices:
         end_date: datetime = None,
     ) -> List[FastOrderInDB]:
         orders = await self.__fast_order_repository.select_all(
-            day=day,
-            start_date=start_date,
-            end_date=end_date
+            day=day, start_date=start_date, end_date=end_date
         )
         return orders
 
@@ -147,10 +171,7 @@ class FastOrderServices:
         return fast_order_in_db
 
     async def __calculate_fast_order_total_amount(
-        self,
-        products: List[RequestedProduct],
-        additional: float,
-        discount: float
+        self, products: List[RequestedProduct], additional: float, discount: float
     ) -> float:
         total_amount = additional - discount
 
@@ -169,7 +190,9 @@ class FastOrderServices:
 
         return total_amount
 
-    def __calculate_payment_status(self, total_amount: float, payment_details: List[Payment]) -> PaymentStatus:
+    def __calculate_payment_status(
+        self, total_amount: float, payment_details: List[Payment]
+    ) -> PaymentStatus:
         if payment_details:
             total_paid = 0
 
