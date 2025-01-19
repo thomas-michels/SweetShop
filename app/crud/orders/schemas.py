@@ -9,7 +9,7 @@ from app.core.models.base_schema import GenericModel
 from app.crud.customers.schemas import CustomerInDB
 from app.crud.products.schemas import ProductInDB
 from app.crud.shared_schemas.address import Address
-from app.crud.shared_schemas.payment import Payment, PaymentStatus
+from app.crud.shared_schemas.payment import Payment, PaymentMethod, PaymentStatus
 from app.crud.tags.schemas import TagInDB
 
 
@@ -25,6 +25,14 @@ class DeliveryType(str, Enum):
     FAST_ORDER = "FAST_ORDER"
     WITHDRAWAL = "WITHDRAWAL"
     DELIVERY = "DELIVERY"
+
+
+class PaymentInOrder(GenericModel, DatabaseModel):
+    id: str = Field(example="123")
+    order_id: str = Field(example="ord_123")
+    method: PaymentMethod = Field(example=PaymentMethod.CASH)
+    payment_date: datetime = Field(example=str(datetime.now()))
+    amount: float = Field(example=10, gt=0)
 
 
 class Delivery(GenericModel):
@@ -193,7 +201,7 @@ class OrderInDB(Order, DatabaseModel):
     organization_id: str = Field(example="66bae5c2e59a0787e2c903e3")
     total_amount: float = Field(example=12.2)
     is_active: bool = Field(example=True, exclude=True)
-    payments: List[dict] = Field(default=[])
+    payments: List[PaymentInOrder] = Field(default=[])
     payment_status: PaymentStatus = Field(
         default=PaymentStatus.PENDING, example=PaymentStatus.PENDING
     )

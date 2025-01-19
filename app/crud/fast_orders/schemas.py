@@ -5,6 +5,7 @@ from pydantic import Field, model_validator
 
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
+from app.crud.orders.schemas import PaymentInOrder
 from app.crud.shared_schemas.payment import Payment
 
 
@@ -127,4 +128,4 @@ class FastOrderInDB(FastOrder, DatabaseModel):
     organization_id: str = Field(example="66bae5c2e59a0787e2c903e3")
     total_amount: float = Field(example=12.2)
     is_active: bool = Field(example=True, exclude=True)
-    payments: List[dict] = Field(default=[])
+    payments: List[PaymentInOrder] = Field(default=[])

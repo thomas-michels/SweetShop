@@ -66,7 +66,6 @@ class OrderRepository(Repository):
                 objects = objects.filter(is_fast_order=fast_order)
 
             order_model = list(objects.aggregate(OrderModel.get_payments()))[0]
-            order_model["id"] = order_model["_id"]
 
             return OrderInDB.model_validate(order_model)
 
@@ -131,7 +130,6 @@ class OrderRepository(Repository):
             objects = objects.order_by("-preparation_date").aggregate(OrderModel.get_payments())
 
             for order_model in objects:
-                order_model["id"] = order_model["_id"]
                 orders.append(OrderInDB.model_validate(order_model))
 
             return orders

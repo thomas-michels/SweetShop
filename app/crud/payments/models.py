@@ -4,14 +4,17 @@ from app.core.models.base_document import BaseDocument
 
 
 class PaymentModel(BaseDocument):
-    order_id = StringField(required=True)
+    order_id = StringField(required=True, index=True)
     organization_id = StringField(required=True)
     method = StringField(required=True)
     payment_date = DateTimeField(required=True)
     amount = FloatField(default=0, required=True)
 
     meta = {
-        "collection": "payments"
+        "collection": "payments",
+        "indexes": [
+            {"fields": ["order_id"]}
+        ]
     }
 
     def update(self, **kwargs):

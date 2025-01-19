@@ -1,28 +1,10 @@
+from datetime import datetime
 from typing import Optional
 
 from pydantic import Field, model_validator
 from app.core.models.base_model import DatabaseModel
 from app.core.models.base_schema import GenericModel
-
-
-from datetime import datetime
-from enum import Enum
-from pydantic import Field
-
-from app.core.models.base_schema import GenericModel
-
-
-class PaymentStatus(str, Enum):
-    PAID = "PAID"
-    PENDING = "PENDING"
-    PARTIALLY_PAID = "PARTIALLY_PAID"
-
-
-class PaymentMethod(str, Enum):
-    PIX = "PIX"
-    CASH = "CASH"
-    CREDIT_CARD = "CREDIT_CARD"
-    DEBIT_CARD = "DEBIT_CARD"
+from app.crud.shared_schemas.payment import PaymentMethod
 
 
 class Payment(GenericModel):

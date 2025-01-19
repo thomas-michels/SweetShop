@@ -145,6 +145,5 @@ class FastOrderRepository(Repository):
         return order_model
 
     def __from_order_model(self, order_model: dict) -> FastOrderInDB:
-        order_model["id"] = order_model["_id"]
         fast_order_in_db = FastOrderInDB(**order_model)
         return fast_order_in_db

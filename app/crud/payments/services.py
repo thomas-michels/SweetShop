@@ -85,7 +85,7 @@ class PaymentServices:
             for payment in payment_details:
                 total_paid += payment.amount
 
-            if round(total_amount, 2) == round(total_paid, 2):
+            if round(total_amount, 2) <= round(total_paid, 2):
                 return PaymentStatus.PAID
 
             else:

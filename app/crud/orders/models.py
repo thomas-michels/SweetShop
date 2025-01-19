@@ -40,12 +40,33 @@ class OrderModel(BaseDocument):
     def get_payments():
         pipeline = [
             {
-                "$lookup": {
-                    "from": "payments",
-                    "localField": "_id",
-                    "foreignField": "order_id",
-                    "as": "payments"
+                '$lookup': {
+                    'from': 'payments',
+                    'localField': '_id',
+                    'foreignField': 'order_id',
+                    'as': 'payments'
                 }
+            }, {
+                '$set': {
+                    'id': '$_id',
+                    'payments': {
+                        '$map': {
+                            'input': '$payments',
+                            'as': 'payment',
+                            'in': {
+                                '$mergeObjects': [
+                                    '$$payment', {
+                                        'id': '$$payment._id'
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }, {
+                '$unset': [
+                    '_id', 'payments._id'
+                ]
             }
         ]
 
