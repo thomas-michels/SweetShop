@@ -2,7 +2,7 @@ from typing import List
 
 from fastapi import APIRouter, Depends, Security, Response
 
-from app.api.composers import tag_composer
+from app.api.composers import payment_composer
 from app.api.dependencies import build_response, decode_jwt
 from app.crud.users import UserInDB
 from app.crud.payments import PaymentServices, PaymentInDB
@@ -14,7 +14,7 @@ router = APIRouter(tags=["Payments"])
 async def get_payments_by_id(
     payment_id: str,
     current_user: UserInDB = Security(decode_jwt, scopes=["payments:get"]),
-    payments_services: PaymentServices = Depends(tag_composer),
+    payments_services: PaymentServices = Depends(payment_composer),
 ):
     payments_in_db = await payments_services.search_by_id(id=payment_id)
 
@@ -33,7 +33,7 @@ async def get_payments_by_id(
 async def get_payments(
     order_id: str,
     current_payments: UserInDB = Security(decode_jwt, scopes=["payments:get"]),
-    payments_services: PaymentServices = Depends(tag_composer),
+    payments_services: PaymentServices = Depends(payment_composer),
 ):
     payments = await payments_services.search_all(order_id=order_id)
 
