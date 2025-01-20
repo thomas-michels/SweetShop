@@ -29,7 +29,7 @@ async def get_payments_by_id(
         )
 
 
-@router.get("/orders/{order_id}/payments", responses={200: {"model": List[PaymentInDB]}})
+@router.get("/orders/{order_id}/payments", tags=["Orders"], responses={200: {"model": List[PaymentInDB]}})
 async def get_payments(
     order_id: str,
     current_payments: UserInDB = Security(decode_jwt, scopes=["payments:get"]),

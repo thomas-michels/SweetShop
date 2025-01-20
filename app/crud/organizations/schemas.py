@@ -10,11 +10,10 @@ from app.crud.users.schemas import UserInDB
 
 
 class RoleEnum(str, Enum):
-    ADMIN = "ADMIN"
     OWNER = "OWNER"
+    ADMIN = "ADMIN"
     MANAGER = "MANAGER"
     MEMBER = "MEMBER"
-    CLIENT = "CLIENT"
 
 
 class UserOrganization(GenericModel):

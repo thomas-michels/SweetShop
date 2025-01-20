@@ -117,3 +117,27 @@ async def remove_user_from_organization(
         return build_response(
             status_code=400, message="Some error happened on remove an user from organization", data=None
         )
+
+
+@router.post("/organizations/{organization_id}/members/{user_id}/transfer_ownership", responses={200: {"model": OrganizationInDB}})
+async def transfer_organization_ownership(
+    organization_id: str,
+    user_id: str,
+    current_user: UserInDB = Security(decode_jwt, scopes=["member:add"]),
+    organization_services: OrganizationServices = Depends(organization_composer),
+):
+    transfered = await organization_services.transfer_ownership(
+        organization_id=organization_id,
+        user_making_request=current_user.user_id,
+        user_id=user_id
+    )
+
+    if transfered:
+        return build_response(
+            status_code=200, message="New organization owner set with success", data=None
+        )
+
+    else:
+        return build_response(
+            status_code=400, message="Some error happened on transfer the organization", data=None
+        )

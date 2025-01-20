@@ -149,10 +149,6 @@ class OrganizationServices:
         if not current_role:
             raise UnauthorizedException(detail="The user is not part of this organization!")
 
-        if current_role == RoleEnum.OWNER and role != RoleEnum.OWNER:
-            if user_making_request_role != RoleEnum.OWNER:
-                raise UnauthorizedException(detail="Only an owner can change the role of another owner!")
-
         if current_role == RoleEnum.OWNER and role == RoleEnum.OWNER:
             raise UnauthorizedException(detail="An organization can only have one owner!")
 
@@ -205,6 +201,42 @@ class OrganizationServices:
                 raise UnauthorizedException(detail="You cannot remove this user!")
 
         organization_in_db.delete_user(user_id=user_in_db.user_id)
+
+        await self.__organization_repository.update(
+            organization_id=organization_id,
+            organization=organization_in_db.model_dump()
+        )
+
+        return True
+
+    async def transfer_ownership(self, organization_id: str, user_making_request: str, user_id: str) -> bool:
+        organization_in_db = await self.search_by_id(id=organization_id)
+
+        user_in_db_making_request = await self.__user_repository.select_by_id(id=user_making_request)
+
+        user_in_db = await self.__user_repository.select_by_id(id=user_id)
+
+        if not (organization_in_db and user_in_db_making_request and user_in_db):
+            return False
+
+        user_making_request_role = organization_in_db.get_user_in_organization(user_id=user_making_request)
+        user_role = organization_in_db.get_user_in_organization(user_id=user_id)
+
+        if not (user_making_request_role and user_role):
+            return False
+
+        if not (user_making_request_role.role == RoleEnum.OWNER \
+            and user_role.role == RoleEnum.ADMIN):
+            raise UnauthorizedException(detail="Ownership can only be transferred to an admin user by the current owner")
+
+        organization_in_db.delete_user(user_id=user_id)
+        organization_in_db.delete_user(user_id=user_making_request)
+
+        user_role.role = RoleEnum.OWNER
+        user_making_request_role.role = RoleEnum.ADMIN
+
+        organization_in_db.users.append(user_role)
+        organization_in_db.users.append(user_making_request_role)
 
         await self.__organization_repository.update(
             organization_id=organization_id,
