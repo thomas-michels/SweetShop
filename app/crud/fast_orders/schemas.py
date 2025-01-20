@@ -66,9 +66,6 @@ class RequestFastOrder(GenericModel):
         if update_fast_order.payment_details is not None:
             self.payment_details = update_fast_order.payment_details
             is_updated = True
-        if update_fast_order.payment_details is not None:
-            self.payment_details = update_fast_order.payment_details
-            is_updated = True
 
         if update_fast_order.additional is not None:
             self.additional = update_fast_order.additional

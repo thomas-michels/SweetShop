@@ -24,13 +24,13 @@ class FastOrderRepository(Repository):
         self.__organization_id = organization_id
 
     async def create(
-        self, fast_order: FastOrder, total_amount: float, payment_status: PaymentStatus
+        self, fast_order: FastOrder, total_amount: float
     ) -> FastOrderInDB:
         try:
             order_model = self.__build_order_model(
                 fast_order=fast_order,
                 total_amount=total_amount,
-                payment_status=payment_status,
+                payment_status=PaymentStatus.PENDING,
             )
 
             order_model.save()

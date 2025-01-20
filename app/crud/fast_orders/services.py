@@ -62,14 +62,9 @@ class FastOrderServices:
                 detail="Discount cannot be grater than total amount"
             )
 
-        payment_status = self.__calculate_payment_status(
-            total_amount=total_amount, payment_details=fast_order.payment_details
-        )
-
         fast_order_in_db = await self.__fast_order_repository.create(
             fast_order=fast_order,
             total_amount=total_amount,
-            payment_status=payment_status,
         )
 
         return fast_order_in_db
@@ -78,9 +73,10 @@ class FastOrderServices:
         self, id: str, updated_fast_order: UpdateFastOrder
     ) -> FastOrderInDB:
         fast_order_in_db = await self.search_by_id(id=id)
+        updated_fields = {}
 
         if updated_fast_order.products is not None:
-            fast_order_in_db.products = []
+            updated_fields["products"] = []
 
             for product in updated_fast_order.products:
                 product_in_db = await self.__product_repository.select_by_id(
@@ -93,7 +89,9 @@ class FastOrderServices:
                     unit_cost=product_in_db.unit_cost,
                     unit_price=product_in_db.unit_price,
                 )
-                fast_order_in_db.products.append(stored_product)
+                updated_fields["products"].append(stored_product.model_dump())
+
+            updated_fast_order.products = None
 
         if updated_fast_order.order_date is not None:
             already_exists = await self.search_all(day=updated_fast_order.order_date)
@@ -126,7 +124,7 @@ class FastOrderServices:
         )
 
         if is_updated:
-            updated_fields = updated_fast_order.model_dump(exclude_none=True)
+            updated_fields.update(updated_fast_order.model_dump(exclude_none=True))
             updated_fields["total_amount"] = total_amount
 
             if (
@@ -135,12 +133,6 @@ class FastOrderServices:
             ):
                 raise UnprocessableEntityException(
                     detail="Discount cannot be grater than total amount"
-                )
-
-            if updated_fast_order.payment_details is not None:
-                updated_fields["payment_status"] = self.__calculate_payment_status(
-                    total_amount=total_amount,
-                    payment_details=updated_fast_order.payment_details,
                 )
 
             fast_order_in_db = await self.__fast_order_repository.update(
@@ -189,20 +181,3 @@ class FastOrderServices:
                 )
 
         return total_amount
-
-    def __calculate_payment_status(
-        self, total_amount: float, payment_details: List[Payment]
-    ) -> PaymentStatus:
-        if payment_details:
-            total_paid = 0
-
-            for payment in payment_details:
-                total_paid += payment.amount
-
-            if total_amount == total_paid:
-                return PaymentStatus.PAID
-
-            else:
-                return PaymentStatus.PARTIALLY_PAID
-
-        return PaymentStatus.PENDING
