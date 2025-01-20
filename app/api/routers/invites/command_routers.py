@@ -38,7 +38,7 @@ async def accept_invite(
     invite_id: str,
     invite_services: InviteServices = Depends(invite_composer),
     organization_services: OrganizationServices = Depends(organization_composer),
-    current_user: UserInDB = Security(decode_jwt, scopes=["invite:create"]),
+    current_user: UserInDB = Security(decode_jwt, scopes=[]),
 ):
     invite_in_db = await invite_services.accept(id=invite_id, user_making_request=current_user.user_id)
 
@@ -63,7 +63,7 @@ async def accept_invite(
 @router.delete("/invites/{invite_id}", responses={200: {"model": InviteInDB}})
 async def delete_invite(
     invite_id: str,
-    current_user: UserInDB = Security(decode_jwt, scopes=["invite:create"]),
+    current_user: UserInDB = Security(decode_jwt, scopes=[]),
     invite_services: InviteServices = Depends(invite_composer),
 ):
     invite_in_db = await invite_services.delete_by_id(id=invite_id)

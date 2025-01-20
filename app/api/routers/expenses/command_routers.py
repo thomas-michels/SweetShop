@@ -33,7 +33,7 @@ async def create_expenses(
 async def update_expenses(
     expense_id: str,
     expense: UpdateExpense,
-    current_user: UserInDB = Security(decode_jwt, scopes=["expense:update"]),
+    current_user: UserInDB = Security(decode_jwt, scopes=["expense:create"]),
     expense_services: ExpenseServices = Depends(expense_composer),
 ):
     expense_in_db = await expense_services.update(id=expense_id, updated_expense=expense)

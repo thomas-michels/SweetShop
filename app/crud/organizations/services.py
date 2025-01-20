@@ -73,7 +73,17 @@ class OrganizationServices:
 
         return complete_organizations
 
-    async def delete_by_id(self, id: str) -> OrganizationInDB:
+    async def delete_by_id(self, id: str, user_making_request: str) -> OrganizationInDB:
+        organization_in_db = await self.__organization_repository.select_by_id(id=id)
+
+        user_organization = organization_in_db.get_user_in_organization(user_id=user_making_request)
+
+        if not user_organization:
+            return
+
+        if user_organization.role != RoleEnum.OWNER:
+            raise UnauthorizedException(detail="Only the owner can delete an organization")
+
         organization_in_db = await self.__organization_repository.delete_by_id(id=id)
         return organization_in_db
 

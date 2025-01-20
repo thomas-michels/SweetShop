@@ -13,7 +13,7 @@ router = APIRouter(tags=["Payments"])
 @router.get("/payments/{payment_id}", responses={200: {"model": PaymentInDB}})
 async def get_payments_by_id(
     payment_id: str,
-    current_user: UserInDB = Security(decode_jwt, scopes=["payments:get"]),
+    current_user: UserInDB = Security(decode_jwt, scopes=["payment:get"]),
     payments_services: PaymentServices = Depends(payment_composer),
 ):
     payments_in_db = await payments_services.search_by_id(id=payment_id)
@@ -32,7 +32,7 @@ async def get_payments_by_id(
 @router.get("/orders/{order_id}/payments", tags=["Orders"], responses={200: {"model": List[PaymentInDB]}})
 async def get_payments(
     order_id: str,
-    current_payments: UserInDB = Security(decode_jwt, scopes=["payments:get"]),
+    current_payments: UserInDB = Security(decode_jwt, scopes=["payment:get"]),
     payments_services: PaymentServices = Depends(payment_composer),
 ):
     payments = await payments_services.search_all(order_id=order_id)

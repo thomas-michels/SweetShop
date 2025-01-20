@@ -30,5 +30,6 @@ class AuthenticationServices:
 
             for organization in organizations:
                 complete_user.organizations.append(organization.id)
+                complete_user.organizations_roles[organization.id] = organization.get_user_in_organization(user_id=user.user_id)
 
         return complete_user

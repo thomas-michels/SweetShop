@@ -55,7 +55,7 @@ async def update_tag(
 @router.delete("/tags/{tag_id}", responses={200: {"model": TagInDB}})
 async def delete_tag(
     tag_id: str,
-    current_user: UserInDB = Security(decode_jwt, scopes=["tag:create"]),
+    current_user: UserInDB = Security(decode_jwt, scopes=["tag:delete"]),
     tag_services: TagServices = Depends(tag_composer),
 ):
     tag_in_db = await tag_services.delete_by_id(id=tag_id)

@@ -4,7 +4,8 @@ from pydantic import Field
 
 from app.core.models.base_model import DatabaseModel
 from app.core.models.base_schema import GenericModel
-from app.crud.organizations.schemas import OrganizationInDB, RoleEnum
+from app.crud.organizations.schemas import OrganizationInDB
+from app.crud.shared_schemas.roles import RoleEnum
 
 
 class Invite(GenericModel):

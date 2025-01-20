@@ -57,7 +57,10 @@ async def delete_organization(
     current_user: UserInDB = Security(decode_jwt, scopes=["organization:delete"]),
     organization_services: OrganizationServices = Depends(organization_composer),
 ):
-    organization_in_db = await organization_services.delete_by_id(id=organization_id)
+    organization_in_db = await organization_services.delete_by_id(
+        id=organization_id,
+        user_making_request=current_user.user_id
+    )
 
     if organization_in_db:
         return build_response(

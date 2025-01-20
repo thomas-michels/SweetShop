@@ -1,10 +1,11 @@
 import re
 from datetime import datetime
-from typing import List
+from typing import Dict, List
 from passlib.context import CryptContext
 from pydantic import Field, SecretStr
 from app.core.exceptions import InvalidPassword, UnprocessableEntity
 from app.core.models.base_schema import GenericModel
+from app.crud.shared_schemas.user_organization import UserOrganization
 
 _pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 _PASSWORD_REGEX = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()\-=_+{};:\'"\\|,.<>?]).+$'
@@ -66,3 +67,4 @@ class UpdateUser(GenericModel):
 
 class CompleteUserInDB(UserInDB):
     organizations: List[str] = Field(default=[])
+    organizations_roles: Dict[str, UserOrganization] = Field(default={})

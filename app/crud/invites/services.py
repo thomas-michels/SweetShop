@@ -3,7 +3,7 @@ from typing import List
 
 from app.api.exceptions.authentication_exceptions import BadRequestException, UnauthorizedException, UnprocessableEntityException
 from app.crud.organizations.repositories import OrganizationRepository
-from app.crud.organizations.schemas import RoleEnum
+from app.crud.shared_schemas.roles import RoleEnum
 from app.crud.users.repositories import UserRepository
 
 from .schemas import CompleteInvite, Invite, InviteInDB

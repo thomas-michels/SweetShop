@@ -33,7 +33,7 @@ async def create_orders(
 async def update_order(
     order_id: str,
     order: UpdateOrder,
-    current_user: UserInDB = Security(decode_jwt, scopes=["order:update"]),
+    current_user: UserInDB = Security(decode_jwt, scopes=["order:create"]),
     order_services: OrderServices = Depends(order_composer),
 ):
     order_in_db = await order_services.update(id=order_id, updated_order=order)

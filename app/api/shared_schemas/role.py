@@ -1,5 +1,6 @@
 from pydantic import Field, BaseModel
-from app.crud.organizations.schemas import RoleEnum
+
+from app.crud.shared_schemas.roles import RoleEnum
 
 
 class RequestRole(BaseModel):

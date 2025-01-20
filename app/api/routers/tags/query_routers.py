@@ -13,7 +13,7 @@ router = APIRouter(tags=["Tags"])
 @router.get("/tags/{tags_id}", responses={200: {"model": TagInDB}})
 async def get_tags_by_id(
     tags_id: str,
-    current_user: UserInDB = Security(decode_jwt, scopes=["tags:get"]),
+    current_user: UserInDB = Security(decode_jwt, scopes=["tag:get"]),
     tags_services: TagServices = Depends(tag_composer),
 ):
     tags_in_db = await tags_services.search_by_id(id=tags_id)
@@ -32,7 +32,7 @@ async def get_tags_by_id(
 @router.get("/tags", responses={200: {"model": List[TagInDB]}})
 async def get_tags(
     query: str = Query(default=None),
-    current_tags: UserInDB = Security(decode_jwt, scopes=["tags:get"]),
+    current_tags: UserInDB = Security(decode_jwt, scopes=["tag:get"]),
     tags_services: TagServices = Depends(tag_composer),
 ):
     tags = await tags_services.search_all(query=query)

@@ -57,7 +57,7 @@ async def update_user(
 async def update_user(
     user_id: str,
     user: UpdateUser,
-    current_user: UserInDB = Security(decode_jwt, scopes=["user:update"]),
+    current_user: UserInDB = Security(decode_jwt, scopes=["user:create"]),
     user_services: UserServices = Depends(user_composer),
 ):
     user_in_db = await user_services.update(id=user_id, updated_user=user)

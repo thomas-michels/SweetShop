@@ -55,7 +55,7 @@ async def update_customer(
 @router.delete("/customers/{customer_id}", responses={200: {"model": CustomerInDB}})
 async def delete_customer(
     customer_id: str,
-    current_user: UserInDB = Security(decode_jwt, scopes=["customer:create"]),
+    current_user: UserInDB = Security(decode_jwt, scopes=["customer:delete"]),
     customer_services: CustomerServices = Depends(customer_composer),
 ):
     customer_in_db = await customer_services.delete_by_id(id=customer_id)

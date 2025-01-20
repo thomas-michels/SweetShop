@@ -10,7 +10,9 @@ from app.api.dependencies.get_current_organization import check_current_organiza
 from app.api.dependencies.verify_token import verify_token
 from app.api.shared_schemas.token import TokenData
 from app.core.exceptions.users import NotFoundError
+from app.core.utils.permissions import get_role_permissions
 from app.crud.authetication import AuthenticationServices
+from app.crud.shared_schemas.roles import RoleEnum
 from app.crud.users.schemas import UserInDB
 
 
@@ -30,32 +32,34 @@ async def decode_jwt(
 
         token_data = TokenData(scopes=token_scopes, id=auth_result["sub"])
 
-        # verify_scopes(
-        #     scopes_needed=security_scopes,
-        #     user_scopes=token_data.scopes,
-        # )
-
         current_user = await authetication_services.get_current_user(
             token=token_data,
             expand=["organizations"]
         )
 
-        if current_user:
-            if organization_id:
-                if organization_id not in current_user.organizations:
-                    raise HTTPException(
-                        status_code=status.HTTP_403_FORBIDDEN,
-                        detail="You cannot access this organization!",
-                        headers={"WWW-Authenticate": "Bearer"},
-                    )
+        if not current_user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Could not validate credentials",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
 
+        if not organization_id:
             return current_user
 
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
+        if organization_id not in current_user.organizations_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You cannot access this organization!",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        verify_scopes(
+            scopes_needed=security_scopes,
+            user_role=current_user.organizations_roles[organization_id].role,
         )
+
+        return current_user
 
     except (JWTError, ValidationError, NotFoundError):
         raise HTTPException(
@@ -66,10 +70,15 @@ async def decode_jwt(
 
 
 def verify_scopes(
-    scopes_needed: SecurityScopes, user_scopes: List[str]
+    scopes_needed: SecurityScopes, user_role: RoleEnum
 ) -> bool:
-    for scope in user_scopes:
-        if scope in scopes_needed.scopes:
+    user_scopes = get_role_permissions(role=user_role)
+
+    if not scopes_needed.scopes:
+        return True
+
+    for scope in scopes_needed.scopes:
+        if scope in user_scopes:
             return True
 
     raise HTTPException(

@@ -1,4 +1,3 @@
-from enum import Enum
 from typing import List, Optional, Type
 
 from pydantic import Field, model_validator
@@ -6,19 +5,9 @@ from pydantic import Field, model_validator
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
 from app.crud.shared_schemas.address import Address
+from app.crud.shared_schemas.roles import RoleEnum
+from app.crud.shared_schemas.user_organization import UserOrganization
 from app.crud.users.schemas import UserInDB
-
-
-class RoleEnum(str, Enum):
-    OWNER = "OWNER"
-    ADMIN = "ADMIN"
-    MANAGER = "MANAGER"
-    MEMBER = "MEMBER"
-
-
-class UserOrganization(GenericModel):
-    user_id: str = Field(example="user_123")
-    role: RoleEnum = Field(example=RoleEnum.ADMIN.value)
 
 
 class CompleteUserOrganization(GenericModel):

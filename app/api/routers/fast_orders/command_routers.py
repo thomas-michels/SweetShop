@@ -34,7 +34,7 @@ async def create_fast_orders(
 async def update_fast_order(
     fast_order_id: str,
     fast_order: UpdateFastOrder,
-    current_user: UserInDB = Security(decode_jwt, scopes=["fast_order:update"]),
+    current_user: UserInDB = Security(decode_jwt, scopes=["fast_order:create"]),
     fast_order_services: FastOrderServices = Depends(fast_order_composer),
 ):
     fast_order_in_db = await fast_order_services.update(id=fast_order_id, updated_fast_order=fast_order)

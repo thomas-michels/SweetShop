@@ -55,7 +55,7 @@ async def update_payment(
 @router.delete("/payments/{payment_id}", responses={200: {"model": PaymentInDB}})
 async def delete_payment(
     payment_id: str,
-    current_user: UserInDB = Security(decode_jwt, scopes=["payment:create"]),
+    current_user: UserInDB = Security(decode_jwt, scopes=["payment:delete"]),
     payment_services: PaymentServices = Depends(payment_composer),
 ):
     payment_in_db = await payment_services.delete_by_id(id=payment_id)

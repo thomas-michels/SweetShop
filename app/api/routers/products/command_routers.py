@@ -33,7 +33,7 @@ async def create_products(
 async def update_product(
     product_id: str,
     product: UpdateProduct,
-    current_user: UserInDB = Security(decode_jwt, scopes=["product:update"]),
+    current_user: UserInDB = Security(decode_jwt, scopes=["product:create"]),
     product_services: ProductServices = Depends(product_composer),
 ):
     product_in_db = await product_services.update(id=product_id, updated_product=product)
