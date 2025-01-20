@@ -158,9 +158,37 @@ class FastOrderRepository(Repository):
 
     def __from_order_model(self, order_model: dict | OrderModel) -> FastOrderInDB:
         try:
-            fast_order_in_db = FastOrderInDB(**order_model)
+            fast_order_in_db = FastOrderInDB(
+                additional=order_model["additional"],
+                created_at=order_model["created_at"],
+                description=order_model.get("description"),
+                discount=order_model["discount"],
+                id=order_model["id"],
+                is_active=order_model["is_active"],
+                order_date=order_model["order_date"],
+                organization_id=order_model["organization_id"],
+                payment_details=order_model.get("payment_details", []),
+                payments=order_model["payments"],
+                products=order_model["products"],
+                total_amount=order_model["total_amount"],
+                updated_at=order_model["updated_at"],
+            )
             return fast_order_in_db
 
         except TypeError:
-            fast_order_in_db = FastOrderInDB.model_validate(order_model)
+            fast_order_in_db = FastOrderInDB(
+                additional=order_model.additional,
+                created_at=order_model.created_at,
+                description=order_model.description,
+                discount=order_model.discount,
+                id=order_model.id,
+                is_active=order_model.is_active,
+                order_date=order_model.order_date,
+                organization_id=order_model.organization_id,
+                payment_details=order_model.payment_details,
+                payments=order_model.payments,
+                products=order_model.products,
+                total_amount=order_model.total_amount,
+                updated_at=order_model.updated_at,
+            )
             return fast_order_in_db
