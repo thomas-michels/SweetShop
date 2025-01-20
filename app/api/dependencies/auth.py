@@ -54,10 +54,10 @@ async def decode_jwt(
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-        verify_scopes(
-            scopes_needed=security_scopes,
-            user_role=current_user.organizations_roles[organization_id].role,
-        )
+        # verify_scopes(
+        #     scopes_needed=security_scopes,
+        #     user_role=current_user.organizations_roles[organization_id].role,
+        # )
 
         return current_user
 
