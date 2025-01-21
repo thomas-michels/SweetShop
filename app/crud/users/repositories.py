@@ -1,6 +1,7 @@
 import traceback
 from typing import List
 from fastapi.encoders import jsonable_encoder
+from pydantic_core import ValidationError
 from app.core.configs import get_logger, get_environment
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.core.utils.http_client import HTTPClient
@@ -87,10 +88,11 @@ class UserRepository:
                 _logger.info(f"User {id} not found.")
                 raise NotFoundError(message=f"User #{id} not found")
 
-        except Exception as error:
-            _logger.error("Error on select_by_id")
-            _logger.error(str(error))
+        except ValidationError:
+            raise NotFoundError(message=f"User #{id} not found")
 
+        except Exception as error:
+            _logger.error(f"Error on select_by_id: {str(error)}")
             raise NotFoundError(message=f"User #{id} not found")
 
     async def select_by_email(self, email: str, raise_404: bool = True) -> UserInDB:

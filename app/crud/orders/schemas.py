@@ -71,9 +71,9 @@ class RequestedProduct(GenericModel):
 
 class StoredProduct(RequestedProduct):
     product_id: str = Field()
-    name: str | None = Field(default=None, example="Brigadeiro")
-    unit_price: float | None = Field(default=None, example=1.5)
-    unit_cost: float | None = Field(default=None, example=0.75)
+    name: str = Field(example="Brigadeiro")
+    unit_price: float = Field(example=1.5)
+    unit_cost: float = Field(example=0.75)
     quantity: int = Field(gt=0, example=1)
 
 

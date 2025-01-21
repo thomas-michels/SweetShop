@@ -1,6 +1,8 @@
 from datetime import datetime
 from typing import List
 
+from pydantic_core import ValidationError
+
 from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.core.repositories.base_repository import Repository
@@ -64,14 +66,20 @@ class FastOrderRepository(Repository):
 
     async def select_by_id(self, id: str) -> OrderInDB:
         try:
-            order_model: OrderModel = OrderModel.objects(
+            order_model: OrderModel = list(OrderModel.objects(
                 id=id,
                 is_active=True,
                 is_fast_order=True,
                 organization_id=self.__organization_id,
-            ).aggregate(OrderModel.get_payments())
+            ).aggregate(OrderModel.get_payments()))
 
-            return self.__from_order_model(order_model=list(order_model)[0])
+            if order_model:
+                return self.__from_order_model(order_model=order_model[0])
+
+            raise NotFoundError(message=f"FastOrder #{id} not found")
+
+        except ValidationError:
+            raise NotFoundError(message=f"FastOrder #{id} not found")
 
         except Exception as error:
             _logger.error(f"Error on select_by_id: {str(error)}")
@@ -175,7 +183,7 @@ class FastOrderRepository(Repository):
             )
             return fast_order_in_db
 
-        except TypeError:
+        except (TypeError, AttributeError):
             fast_order_in_db = FastOrderInDB(
                 additional=order_model.additional,
                 created_at=order_model.created_at,
@@ -186,7 +194,7 @@ class FastOrderRepository(Repository):
                 order_date=order_model.order_date,
                 organization_id=order_model.organization_id,
                 payment_details=order_model.payment_details,
-                payments=order_model.payments,
+                payments=order_model.payments if hasattr(order_model, "payments") else [],
                 products=order_model.products,
                 total_amount=order_model.total_amount,
                 updated_at=order_model.updated_at,

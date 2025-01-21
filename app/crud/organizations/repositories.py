@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import List
 from fastapi.encoders import jsonable_encoder
 from mongoengine import NotUniqueError
+from pydantic_core import ValidationError
 from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.core.repositories.base_repository import Repository
@@ -57,6 +58,9 @@ class OrganizationRepository(Repository):
             organization_model: OrganizationModel = OrganizationModel.objects(id=id, is_active=True).first()
 
             return OrganizationInDB.model_validate(organization_model)
+
+        except ValidationError:
+            raise NotFoundError(message=f"Organization #{id} not found")
 
         except Exception as error:
             _logger.error(f"Error on select_by_id: {str(error)}")
