@@ -91,7 +91,6 @@ class RequestOrder(GenericModel):
     additional: float = Field(default=0, ge=0, example=12.2)
     discount: float | None = Field(default=0, ge=0, example=12.2)
     reason_id: str | None = Field(default=None, example="123")
-    payment_details: List[Payment] = Field(default=[])
 
     @model_validator(mode="after")
     def validate_model(self) -> "Order":
@@ -152,10 +151,6 @@ class RequestOrder(GenericModel):
             self.discount = update_order.discount
             is_updated = True
 
-        if update_order.payment_details is not None:
-            self.payment_details = update_order.payment_details
-            is_updated = True
-
         return is_updated
 
 
@@ -168,7 +163,6 @@ class UpdateOrder(GenericModel):
     status: Optional[OrderStatus] = Field(
         default=None, example=OrderStatus.IN_PREPARATION
     )
-    payment_details: Optional[List[Payment]] = Field(default=None)
     products: Optional[List[RequestedProduct]] = Field(default=None, min_length=1)
     delivery: Optional[Delivery] = Field(default=None)
     preparation_date: Optional[datetime] = Field(

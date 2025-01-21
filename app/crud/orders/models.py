@@ -33,7 +33,6 @@ class OrderModel(BaseDocument):
     reason_id = StringField(required=False)
     is_fast_order = BooleanField(required=False, default=False)
     order_date = DateTimeField(required=True)
-    payment_details = ListField(DictField(), required=False)
 
     meta = {"collection": "orders"}
 

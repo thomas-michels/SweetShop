@@ -202,7 +202,6 @@ class OrderServices:
             customer=order_in_db.customer_id,
             status=order_in_db.status,
             payment_status=order_in_db.payment_status,
-            payment_details=order_in_db.payment_details,
             products=order_in_db.products,
             tags=order_in_db.tags,
             delivery=order_in_db.delivery,

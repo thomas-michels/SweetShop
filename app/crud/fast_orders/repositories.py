@@ -149,9 +149,6 @@ class FastOrderRepository(Repository):
             organization_id=self.__organization_id,
             status=OrderStatus.DONE,
             payment_status=payment_status,
-            payment_details=[
-                payment.model_dump() for payment in fast_order.payment_details
-            ],
             products=[product.model_dump() for product in fast_order.products],
             tags=[],
             delivery=Delivery(delivery_type=DeliveryType.FAST_ORDER).model_dump(),
@@ -175,7 +172,6 @@ class FastOrderRepository(Repository):
                 is_active=order_model["is_active"],
                 order_date=order_model["order_date"],
                 organization_id=order_model["organization_id"],
-                payment_details=order_model.get("payment_details", []),
                 payments=order_model["payments"],
                 products=order_model["products"],
                 total_amount=order_model["total_amount"],
@@ -193,7 +189,6 @@ class FastOrderRepository(Repository):
                 is_active=order_model.is_active,
                 order_date=order_model.order_date,
                 organization_id=order_model.organization_id,
-                payment_details=order_model.payment_details,
                 payments=order_model.payments if hasattr(order_model, "payments") else [],
                 products=order_model.products,
                 total_amount=order_model.total_amount,

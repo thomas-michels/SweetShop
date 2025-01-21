@@ -6,7 +6,6 @@ from pydantic import Field, model_validator
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
 from app.crud.orders.schemas import PaymentInOrder
-from app.crud.shared_schemas.payment import Payment
 
 
 class RequestedProduct(GenericModel):
@@ -28,7 +27,6 @@ class RequestFastOrder(GenericModel):
     description: str | None = Field(default=None, example="Description")
     additional: float = Field(default=0, ge=0, example=12.2)
     discount: float | None = Field(default=0, ge=0, example=12.2)
-    payment_details: List[Payment] = Field(default=[])
 
     @model_validator(mode="after")
     def validate_model(self) -> "RequestFastOrder":
@@ -63,10 +61,6 @@ class RequestFastOrder(GenericModel):
             self.products = update_fast_order.products
             is_updated = True
 
-        if update_fast_order.payment_details is not None:
-            self.payment_details = update_fast_order.payment_details
-            is_updated = True
-
         if update_fast_order.additional is not None:
             self.additional = update_fast_order.additional
             is_updated = True
@@ -88,7 +82,6 @@ class UpdateFastOrder(GenericModel):
     description: Optional[str] = Field(default=None, example="Description")
     additional: Optional[float] = Field(default=None, example=12.2)
     discount: Optional[float] = Field(default=None, example=12.2)
-    payment_details: Optional[List[Payment]] = Field(default=None)
 
     @model_validator(mode="after")
     def validate_model(self) -> "FastOrder":
