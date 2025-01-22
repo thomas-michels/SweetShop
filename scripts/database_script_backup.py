@@ -11,7 +11,7 @@ mongo_uri = os.getenv("DATABASE_HOST")
 client = MongoClient(mongo_uri)
 
 # Nome do banco de dados
-db_name = "test"
+db_name = "prod"
 backup_dir = "./backup"
 
 # Criar pasta para backup

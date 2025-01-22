@@ -6,7 +6,7 @@ from app.crud.orders.schemas import PaymentInOrder
 from app.crud.orders.services import OrderServices
 from app.crud.shared_schemas.payment import PaymentMethod
 
-from .schemas import Billing, ExpanseCategory, SellingProduct
+from .schemas import BestPlace, Billing, ExpanseCategory, SellingProduct
 
 
 class BillingServices:
@@ -107,6 +107,41 @@ class BillingServices:
         category_list.sort(key=lambda c: c.total_paid, reverse=True)
 
         return category_list[:5]
+
+    async def get_best_places(self, month: int, year: int) -> List[BestPlace]:
+        start_date, end_date = self.__get_start_and_end_date(month=month, year=year)
+
+        orders = await self.order_services.search_all(
+            customer_id=None,
+            status=None,
+            payment_status=[],
+            delivery_type=None,
+            start_date=start_date,
+            end_date=end_date,
+            tags=[],
+            min_total_amount=None,
+            max_total_amount=None,
+            expand=["tags"],
+        )
+
+        places: Dict[str, BestPlace] = {}
+
+        for order in orders:
+            for tag in order.tags:
+                if tag.id not in places:
+                    places[tag.id] = BestPlace(
+                        tag_id=tag.id,
+                        tag_name=tag.name
+                    )
+
+                place = places[tag.id]
+                place.total_amount += order.total_amount
+
+        places_list = list(places.values())
+
+        places_list.sort(key=lambda c: c.total_amount, reverse=True)
+
+        return places_list[:5]
 
     def __get_month_and_year(self, past_months: int) -> Tuple[int, int]:
         current_date = datetime.now()

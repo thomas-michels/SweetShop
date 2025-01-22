@@ -109,3 +109,30 @@ async def get_expanses_categories(
 
     else:
         return Response(status_code=204)
+
+
+@router.get("/billings/places", responses={200: {"model": List[Billing]}})
+async def get_best_places(
+    month_year: str = Query(
+        default=f"{datetime.now().month}/{datetime.now().year}",
+        pattern=r'\b(1[0-2]|0?[1-9])/([0-9]{4})\b',
+        alias="monthYear"
+    ),
+    current_user: UserInDB = Security(decode_jwt, scopes=["billing:get"]),
+    billing_services: BillingServices = Depends(billing_composer),
+):
+    month = int(month_year.split("/")[0])
+    year = int(month_year.split("/")[1])
+
+    best_places = await billing_services.get_best_places(
+        month=month,
+        year=year
+    )
+
+    if best_places:
+        return build_response(
+            status_code=200, message="Best places found with success", data=best_places
+        )
+
+    else:
+        return Response(status_code=204)
