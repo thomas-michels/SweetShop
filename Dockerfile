@@ -10,6 +10,7 @@ RUN pip install --upgrade pip \
 
 COPY ./app ./app
 COPY ./main.py ./main.py
+COPY ./templates ./templates
 
 EXPOSE 8080
 
