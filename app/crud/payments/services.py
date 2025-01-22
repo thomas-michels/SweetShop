@@ -60,7 +60,10 @@ class PaymentServices:
 
     async def delete_by_id(self, id: str) -> PaymentInDB:
         payment_in_db = await self.search_by_id(id=id)
-        order_in_db = await self.__order_repository.select_by_id(id=payment_in_db.order_id)
+        order_in_db = await self.__order_repository.select_by_id(
+            id=payment_in_db.order_id,
+            fast_order=None
+        )
 
         payment_in_db = await self.__payment_repository.delete_by_id(id=id)
 
