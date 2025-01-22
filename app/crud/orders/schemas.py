@@ -116,7 +116,6 @@ class RequestOrder(GenericModel):
             is_updated = True
 
         if update_order.products is not None:
-            self.products = update_order.products
             is_updated = True
 
         if update_order.tags is not None:
@@ -155,7 +154,7 @@ class RequestOrder(GenericModel):
 
 
 class Order(RequestOrder):
-    products: List[StoredProduct] = Field(default=[], min_length=1)
+    products: List[StoredProduct] = Field(default=[])
 
 
 class UpdateOrder(GenericModel):

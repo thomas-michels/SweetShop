@@ -69,7 +69,7 @@ class OrderRepository(Repository):
 
             order_model = list(objects.aggregate(OrderModel.get_payments()))[0]
 
-            return OrderInDB.model_validate(order_model)
+            return self.__from_order_model(order_model=order_model)
 
         except ValidationError:
             raise NotFoundError(message=f"Order #{id} not found")
@@ -134,7 +134,7 @@ class OrderRepository(Repository):
             )
 
             for order_model in objects:
-                orders.append(OrderInDB.model_validate(order_model))
+                orders.append(self.__from_order_model(order_model=order_model))
 
             return orders
 
@@ -152,7 +152,7 @@ class OrderRepository(Repository):
             ).first()
             order_model.delete()
 
-            return OrderInDB.model_validate(order_model)
+            return self.__from_order_model(order_model=order_model)
 
         except ValidationError:
             raise NotFoundError(message=f"Order #{id} not found")
@@ -160,3 +160,12 @@ class OrderRepository(Repository):
         except Exception as error:
             _logger.error(f"Error on delete_by_id: {str(error)}")
             raise NotFoundError(message=f"Order #{id} not found")
+
+    def __from_order_model(self, order_model: dict | OrderModel) -> OrderInDB:
+        try:
+            order_in_db = OrderInDB(**order_model)
+            return order_in_db
+
+        except (TypeError, AttributeError):
+            order_in_db = OrderInDB.model_validate(order_model)
+            return order_in_db

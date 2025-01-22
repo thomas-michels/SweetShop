@@ -39,7 +39,7 @@ class OrderServices:
         self.__customer_repository = customer_repository
 
     async def create(self, order: RequestOrder) -> CompleteOrder:
-        order = Order.model_validate(order)
+        products = []
 
         if order.customer_id is not None:
             await self.__customer_repository.select_by_id(id=order.customer_id)
@@ -48,9 +48,15 @@ class OrderServices:
             product_in_db = await self.__product_repository.select_by_id(
                 id=product.product_id
             )
-            product.name = product_in_db.name
-            product.unit_cost = product_in_db.unit_cost
-            product.unit_price = product_in_db.unit_price
+            products.append(
+                StoredProduct(
+                    product_id=product.product_id,
+                    quantity=product.quantity,
+                    name=product_in_db.name,
+                    unit_cost=product_in_db.unit_cost,
+                    unit_price=product_in_db.unit_price,
+                )
+            )
 
         for tag in order.tags:
             await self.__tag_repository.select_by_id(id=tag)
@@ -64,6 +70,10 @@ class OrderServices:
             ),
         )
 
+        order.products = []
+        order = Order.model_validate(order)
+        order.products = products
+
         order_in_db = await self.__order_repository.create(
             order=order, total_amount=total_amount
         )
@@ -72,12 +82,13 @@ class OrderServices:
 
     async def update(self, id: str, updated_order: UpdateOrder) -> CompleteOrder:
         order_in_db = await self.search_by_id(id=id)
+        updated_fields = {}
 
         if updated_order.customer_id is not None:
             await self.__customer_repository.select_by_id(id=updated_order.customer_id)
 
         if updated_order.products is not None:
-            order_in_db.products = []
+            updated_fields["products"] = []
 
             for product in updated_order.products:
                 product_in_db = await self.__product_repository.select_by_id(
@@ -90,7 +101,9 @@ class OrderServices:
                     unit_cost=product_in_db.unit_cost,
                     unit_price=product_in_db.unit_price,
                 )
-                order_in_db.products.append(stored_product)
+                updated_fields["products"].append(stored_product.model_dump())
+
+            updated_order.products = None
 
         if updated_order.tags is not None:
             temp_tags = updated_order.tags
@@ -139,7 +152,7 @@ class OrderServices:
         is_updated = order_in_db.validate_updated_fields(update_order=updated_order)
 
         if is_updated:
-            updated_fields = updated_order.model_dump(exclude_none=True)
+            updated_fields.update(updated_order.model_dump(exclude_none=True))
             updated_fields["total_amount"] = total_amount
 
             order_in_db = await self.__order_repository.update(
