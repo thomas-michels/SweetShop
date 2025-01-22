@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from typing import List
 
+from app.api.dependencies.email_sender import send_email
 from app.api.exceptions.authentication_exceptions import BadRequestException, UnauthorizedException, UnprocessableEntityException
 from app.crud.organizations.repositories import OrganizationRepository
 from app.crud.shared_schemas.roles import RoleEnum
@@ -57,7 +58,13 @@ class InviteServices:
 
         invite_in_db = await self.__invite_repository.create(invite=invite)
 
-        # TODO add send email here
+        with open("./templates/email.html", mode="r", encoding="UTF-8") as file:
+            message = file.read()
+            message = message.replace("$ORGANIZATION_NAME$", organization_in_db.name)
+            message = message.replace("$USER_NAME$", user_making_request_in_db.name)
+            message = message.replace("$EXPIRES_DATE$", invite_in_db.expires_at.strftime("") if invite_in_db.expires_at else "INDEFINIDO")
+
+        send_email(email_to=[user_in_db.email], title=f"pedidoZ - Você recebeu um convite de {organization_in_db.name}", message=message)
 
         return invite_in_db
 

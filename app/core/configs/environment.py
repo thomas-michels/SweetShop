@@ -40,6 +40,10 @@ class Environment(BaseSettings):
     # SENTRY
     SENTRY_DSN: str | None = None
 
+    # RESEND
+    DEFAULT_EMAIL: str | None = None
+    RESEND_API_KEY: str | None = None
+
     class Config:
         """Load config file"""
 
