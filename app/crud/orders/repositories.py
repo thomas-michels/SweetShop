@@ -67,9 +67,12 @@ class OrderRepository(Repository):
             if fast_order is not None:
                 objects = objects.filter(is_fast_order=fast_order)
 
-            order_model = list(objects.aggregate(OrderModel.get_payments()))[0]
+            order_model = list(objects.aggregate(OrderModel.get_payments()))
 
-            return self.__from_order_model(order_model=order_model)
+            if order_model:
+                return self.__from_order_model(order_model=order_model[0])
+
+            raise NotFoundError(message=f"Order #{id} not found")
 
         except ValidationError:
             raise NotFoundError(message=f"Order #{id} not found")

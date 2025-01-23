@@ -1,5 +1,7 @@
 from datetime import datetime
 from typing import List
+
+from pydantic_core import ValidationError
 from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.core.repositories.base_repository import Repository
@@ -57,6 +59,10 @@ class PaymentRepository(Repository):
 
             return PaymentInDB.model_validate(payment_model)
 
+        except ValidationError:
+            if raise_404:
+                raise NotFoundError(message=f"Payment #{id} not found")
+
         except Exception as error:
             _logger.error(f"Error on select_by_id: {str(error)}")
             if raise_404:
@@ -89,9 +95,12 @@ class PaymentRepository(Repository):
                 is_active=True,
                 organization_id=self.__organization_id
             ).first()
-            payment_model.delete()
+            if payment_model:
+                payment_model.delete()
 
-            return PaymentInDB.model_validate(payment_model)
+                return PaymentInDB.model_validate(payment_model)
+
+            raise NotFoundError(message=f"Payment #{id} not found")
 
         except Exception as error:
             _logger.error(f"Error on delete_by_id: {str(error)}")
