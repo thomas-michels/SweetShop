@@ -121,9 +121,23 @@ class InviteServices:
 
         return complete_invites
 
-    async def delete_by_id(self, id: str) -> InviteInDB:
-        invite_in_db = await self.__invite_repository.delete_by_id(id=id)
-        return invite_in_db
+    async def delete_by_id(self, id: str, user_making_request: str) -> InviteInDB:
+        user_in_db = await self.__user_repository.select_by_id(id=user_making_request)
+
+        invite_in_db = await self.__invite_repository.select_by_id(id=id)
+
+        organization_in_db = await self.__organization_repository.select_by_id(
+            id=invite_in_db.organization_id
+        )
+
+        user_role = organization_in_db.get_user_in_organization(user_id=user_making_request)
+
+        if not user_role:
+            raise UnauthorizedException(detail="You cannot invite someone with this role!")
+
+        if invite_in_db.user_email == user_in_db.email or user_role.role != RoleEnum.MEMBER:
+            invite_in_db = await self.__invite_repository.delete_by_id(id=id)
+            return invite_in_db
 
     async def __build_complete_invite(self, invite: InviteInDB, expand: List[str]) -> CompleteInvite:
         complete_invite = CompleteInvite(**invite.model_dump())

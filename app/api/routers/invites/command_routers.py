@@ -66,7 +66,7 @@ async def delete_invite(
     current_user: UserInDB = Security(decode_jwt, scopes=[]),
     invite_services: InviteServices = Depends(invite_composer),
 ):
-    invite_in_db = await invite_services.delete_by_id(id=invite_id)
+    invite_in_db = await invite_services.delete_by_id(id=invite_id, user_making_request=current_user.user_id)
 
     if invite_in_db:
         return build_response(
@@ -75,5 +75,5 @@ async def delete_invite(
 
     else:
         return build_response(
-            status_code=404, message=f"Invite {invite_id} not found", data=None
+            status_code=400, message="You cannot delete this invitation", data=None
         )
