@@ -132,10 +132,7 @@ class InviteServices:
 
         user_role = organization_in_db.get_user_in_organization(user_id=user_making_request)
 
-        if not user_role:
-            raise UnauthorizedException(detail="You cannot invite someone with this role!")
-
-        if invite_in_db.user_email == user_in_db.email or user_role.role != RoleEnum.MEMBER:
+        if invite_in_db.user_email == user_in_db.email or (user_role and user_role.role != RoleEnum.MEMBER):
             invite_in_db = await self.__invite_repository.delete_by_id(id=id)
             return invite_in_db
 
