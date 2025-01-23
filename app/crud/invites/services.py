@@ -62,7 +62,7 @@ class InviteServices:
             message = file.read()
             message = message.replace("$ORGANIZATION_NAME$", organization_in_db.name)
             message = message.replace("$USER_NAME$", user_making_request_in_db.name)
-            message = message.replace("$EXPIRES_DATE$", invite_in_db.expires_at.strftime("") if invite_in_db.expires_at else "INDEFINIDO")
+            message = message.replace("$EXPIRES_DATE$", invite_in_db.expires_at.strftime("%d/%m/%Y") if invite_in_db.expires_at else "INDEFINIDO")
 
         send_email(email_to=[user_in_db.email], title=f"pedidoZ - Você recebeu um convite de {organization_in_db.name}", message=message)
 
