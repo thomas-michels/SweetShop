@@ -38,7 +38,11 @@ async def update_organization(
     current_user: UserInDB = Security(decode_jwt, scopes=["organization:update"]),
     organization_services: OrganizationServices = Depends(organization_composer),
 ):
-    organization_in_db = await organization_services.update(id=organization_id, updated_organization=organization)
+    organization_in_db = await organization_services.update(
+        id=organization_id,
+        updated_organization=organization,
+        user_making_request=current_user.user_id
+    )
 
     if organization_in_db:
         return build_response(
@@ -66,6 +70,7 @@ async def delete_organization(
         return build_response(
             status_code=200, message="Organization deleted with success", data=organization_in_db
         )
+
     else:
         return build_response(
             status_code=404, message=f"Organization {organization_id} not found", data=None

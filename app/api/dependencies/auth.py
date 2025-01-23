@@ -57,6 +57,7 @@ async def decode_jwt(
         # verify_scopes(
         #     scopes_needed=security_scopes,
         #     user_role=current_user.organizations_roles[organization_id].role,
+        #     current_user=current_user
         # )
 
         return current_user
@@ -70,7 +71,7 @@ async def decode_jwt(
 
 
 def verify_scopes(
-    scopes_needed: SecurityScopes, user_role: RoleEnum
+    scopes_needed: SecurityScopes, user_role: RoleEnum, current_user: UserInDB
 ) -> bool:
     user_scopes = get_role_permissions(role=user_role)
 
@@ -80,6 +81,11 @@ def verify_scopes(
     for scope in scopes_needed.scopes:
         if scope in user_scopes:
             return True
+
+        # Only super users can use that
+        if scope in ["organization:create", "user:get"]:
+            if current_user.app_metadata and current_user.app_metadata.get("superuser", False):
+                return True
 
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,

@@ -33,8 +33,19 @@ class OrganizationServices:
 
         return await self.search_by_id(id=organization_in_db.id)
 
-    async def update(self, id: str, updated_organization: UpdateOrganization) -> OrganizationInDB:
+    async def update(
+            self,
+            id: str,
+            updated_organization: UpdateOrganization,
+            user_making_request: str
+        ) -> OrganizationInDB:
+
         organization_in_db = await self.search_by_id(id=id)
+
+        user_role = organization_in_db.get_user_in_organization(user_id=user_making_request)
+
+        if not user_role or user_role.role not in [RoleEnum.OWNER, RoleEnum.ADMIN]:
+            raise UnauthorizedException(detail="You cannot update this organization!")
 
         is_updated = organization_in_db.validate_updated_fields(update_organization=updated_organization)
 
