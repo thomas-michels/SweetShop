@@ -9,3 +9,4 @@ from .fast_orders import fast_order_router
 from .expenses import expenses_router
 from .invites import invite_router
 from .payments import payment_router
+from .images import images_router

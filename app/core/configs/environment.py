@@ -44,6 +44,13 @@ class Environment(BaseSettings):
     DEFAULT_EMAIL: str | None = None
     RESEND_API_KEY: str | None = None
 
+    # TIGRIS
+    BUCKET_BASE_URL: str | None = None
+    BUCKET_ACCESS_KEY_ID: str | None = None
+    BUCKET_SECRET_KEY: str | None = None
+    BUCKET_NAME: str | None = None
+    BUCKET_URL_EXPIRES_IN_SECONDS: int = 300
+
     class Config:
         """Load config file"""
 

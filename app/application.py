@@ -15,7 +15,8 @@ from app.api.routers import (
     fast_order_router,
     expenses_router,
     invite_router,
-    payment_router
+    payment_router,
+    images_router,
 )
 from app.api.routers.exception_handlers import (
     unprocessable_entity_error_422,
@@ -70,6 +71,7 @@ app.include_router(billing_router, prefix="/api")
 app.include_router(customer_router, prefix="/api")
 app.include_router(tag_router, prefix="/api")
 app.include_router(expenses_router, prefix="/api")
+app.include_router(images_router, prefix="/api")
 
 app.add_exception_handler(HTTPException, http_exception_handler)
 app.add_exception_handler(UnprocessableEntity, unprocessable_entity_error_422)
