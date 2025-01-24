@@ -54,6 +54,7 @@ class Customer(GenericModel):
 
         return is_updated
 
+
 class UpdateCustomer(GenericModel):
     name: Optional[str] = Field(default=None, example="Ted Mosby")
     ddd: Optional[str] = Field(default=None, example="047", max_length=3)

@@ -1,6 +1,6 @@
 import sentry_sdk
 from authlib.integrations.starlette_client import OAuth
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from app.api.dependencies.response import build_response
@@ -23,6 +23,7 @@ from app.api.routers.exception_handlers import (
     not_found_error_404,
     generic_error_400,
 )
+from app.api.routers.exception_handlers.generic_errors import http_exception_handler
 from app.api.shared_schemas.token import Token
 from app.core.db.connection import lifespan
 from app.core.exceptions import UnprocessableEntity, NotFoundError, InvalidPassword
@@ -70,6 +71,7 @@ app.include_router(customer_router, prefix="/api")
 app.include_router(tag_router, prefix="/api")
 app.include_router(expenses_router, prefix="/api")
 
+app.add_exception_handler(HTTPException, http_exception_handler)
 app.add_exception_handler(UnprocessableEntity, unprocessable_entity_error_422)
 app.add_exception_handler(NotFoundError, not_found_error_404)
 app.add_exception_handler(InvalidPassword, generic_error_400)

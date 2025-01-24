@@ -1,4 +1,4 @@
-from fastapi import Request, status
+from fastapi import HTTPException, Request, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
@@ -11,6 +11,15 @@ from app.core.exceptions import (
 from app.core.configs import get_logger
 
 _logger = get_logger(__name__)
+
+
+def http_exception_handler(request: Request, exc: HTTPException):
+    error = MessageResponse(message=exc.detail)
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=jsonable_encoder(error.model_dump()),
+    )
 
 
 def unprocessable_entity_error_422(request: Request, exc: UnprocessableEntity):
