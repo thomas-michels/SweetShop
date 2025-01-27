@@ -149,3 +149,25 @@ async def transfer_organization_ownership(
         return build_response(
             status_code=400, message="Some error happened on transfer the organization", data=None
         )
+
+
+@router.post("/organizations/{organization_id}/leave", responses={200: {"model": OrganizationInDB}})
+async def leave_the_organization(
+    organization_id: str,
+    current_user: UserInDB = Security(decode_jwt, scopes=[]),
+    organization_services: OrganizationServices = Depends(organization_composer),
+):
+    left = await organization_services.leave_the_organization(
+        organization_id=organization_id,
+        user_id=current_user.user_id
+    )
+
+    if left:
+        return build_response(
+            status_code=200, message="You left the organization", data=None
+        )
+
+    else:
+        return build_response(
+            status_code=400, message="Some error happened on left the organization", data=None
+        )

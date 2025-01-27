@@ -265,3 +265,32 @@ class OrganizationServices:
         )
 
         return True
+
+    async def leave_the_organization(self, organization_id: str, user_id: str) -> bool:
+        organization_in_db = await self.search_by_id(id=organization_id)
+
+        user_in_db = await self.__user_repository.select_by_id(id=user_id)
+
+        if not (organization_in_db and user_in_db):
+            return False
+
+        user_role = organization_in_db.get_user_in_organization(user_id=user_id)
+
+        if not user_role:
+            return False
+
+        if user_role.role == RoleEnum.OWNER and len(organization_in_db.users) > 1:
+            raise UnauthorizedException(detail="The owner of the organization cannot leave")
+
+        if len(organization_in_db.users) == 1:
+            return await self.delete_by_id(id=organization_id, user_making_request=user_id)
+
+        else:
+            organization_in_db.delete_user(user_id=user_id)
+
+            await self.__organization_repository.update(
+                organization_id=organization_id,
+                organization=organization_in_db.model_dump()
+            )
+
+        return True
