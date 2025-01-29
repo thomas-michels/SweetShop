@@ -53,9 +53,15 @@ def generic_error_500(request: Request, exc: Exception):
     """Internal error"""
     _logger.error(f"Internal error - {str(exc)} - URL: {request.url.path}")
 
-    error = MessageResponse(message="An unexpected error happen")
+    if hasattr(exc, "detail"):
+        error = MessageResponse(message=exc.detail)
+        status_code = exc.status_code
+
+    else:
+        error = MessageResponse(message="An unexpected error happen")
+        status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
 
     return JSONResponse(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        status_code=status_code,
         content=jsonable_encoder(error.model_dump()),
     )

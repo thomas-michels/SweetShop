@@ -51,6 +51,12 @@ class Environment(BaseSettings):
     BUCKET_NAME: str | None = None
     BUCKET_URL_EXPIRES_IN_SECONDS: int = 300
 
+    # REDIS
+    REDIS_URL: str | None = None
+    REDIS_PORT: int | None = None
+    REDIS_USERNAME: str | None = None
+    REDIS_PASSWORD: str | None = None
+
     class Config:
         """Load config file"""
 
