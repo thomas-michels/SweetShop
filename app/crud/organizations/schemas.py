@@ -5,6 +5,7 @@ from pydantic import Field, model_validator
 
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
+from app.core.utils.validate_document import validate_cnpj, validate_cpf
 from app.crud.shared_schemas.address import Address
 from app.crud.shared_schemas.roles import RoleEnum
 from app.crud.shared_schemas.user_organization import UserOrganization
@@ -25,6 +26,8 @@ class Organization(GenericModel):
     phone_number: str | None = Field(default=None, max_length=9)
     address: Address | None = Field(default=None)
     email: str | None = Field(default=None, example="contact@your_company.com")
+    due_day: int | None = Field(default=None, example=10)
+    document: str | None = Field(default=None, example="111.555.219-99")
 
     @model_validator(mode="after")
     def validate_model(self) -> "Organization":
@@ -41,6 +44,24 @@ class Organization(GenericModel):
         if self.email is not None:
             if not re.match(EMAIL_REGEX, self.email):
                 raise ValueError("Invalid email")
+
+        if self.due_day is not None:
+            if self.due_day not in [5, 10, 15, 20]:
+                raise ValueError("Due day should be day 5, 10, 15 or 20")
+
+        if self.document is not None:
+            self.document = re.sub(r'\D', '', self.document)
+
+            if len(self.document) == 11:
+                if not validate_cpf(self.document):
+                    raise ValueError("Invalid CPF")
+
+            elif len(self.document) == 14:
+                if not validate_cnpj(self.document):
+                    raise ValueError("Invalid CNPJ")
+
+            else:
+                raise ValueError("Document must be a valid CPF or CNPJ")
 
         return self
 
@@ -67,6 +88,14 @@ class Organization(GenericModel):
             self.email = update_organization.email
             is_updated = True
 
+        if update_organization.due_day is not None:
+            self.due_day = update_organization.due_day
+            is_updated = True
+
+        if update_organization.document is not None:
+            self.document = update_organization.document
+            is_updated = True
+
         return is_updated
 
 
@@ -76,6 +105,8 @@ class UpdateOrganization(GenericModel):
     phone_number: Optional[str] = Field(default=None, max_length=9, pattern=r"^\d+$")
     email: Optional[str] = Field(default=None)
     address: Optional[Address] = Field(default=None)
+    due_day: Optional[int] = Field(default=None)
+    document: Optional[str] = Field(default=None)
 
     @model_validator(mode="after")
     def validate_model(self) -> "UpdateOrganization":
@@ -92,6 +123,24 @@ class UpdateOrganization(GenericModel):
         if self.email is not None:
             if not re.match(EMAIL_REGEX, self.email):
                 raise ValueError("Invalid email")
+
+        if self.due_day is not None:
+            if self.due_day not in [5, 10, 15, 20]:
+                raise ValueError("Due day should be day 5, 10, 15 or 20")
+
+        if self.document is not None:
+            self.document = re.sub(r'\D', '', self.document)
+
+            if len(self.document) == 11:
+                if not validate_cpf(self.document):
+                    raise ValueError("Invalid CPF")
+
+            elif len(self.document) == 14:
+                if not validate_cnpj(self.document):
+                    raise ValueError("Invalid CNPJ")
+
+            else:
+                raise ValueError("Document must be a valid CPF or CNPJ")
 
         return self
 
