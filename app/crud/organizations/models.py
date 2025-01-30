@@ -11,7 +11,8 @@ class OrganizationModel(BaseDocument):
     name = StringField(required=True, unique=True)
     ddd = StringField(max_length=3, required=False)
     phone_number = StringField(max_length=9, required=False)
-    address = DictField(required=True)
+    email = StringField(required=False)
+    address = DictField(required=False)
     users = ListField(DictField())
 
     meta = {

@@ -1,3 +1,4 @@
+import re
 from typing import List, Optional, Type
 
 from pydantic import Field, model_validator
@@ -8,6 +9,8 @@ from app.crud.shared_schemas.address import Address
 from app.crud.shared_schemas.roles import RoleEnum
 from app.crud.shared_schemas.user_organization import UserOrganization
 from app.crud.users.schemas import UserInDB
+
+EMAIL_REGEX = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
 
 
 class CompleteUserOrganization(GenericModel):
@@ -20,7 +23,8 @@ class Organization(GenericModel):
     name: str = Field(example="org_123", max_length=100)
     ddd: str | None = Field(default=None, example="047", max_length=3)
     phone_number: str | None = Field(default=None, max_length=9)
-    address: Address = Field()
+    address: Address | None = Field(default=None)
+    email: str | None = Field(default=None, example="contact@your_company.com")
 
     @model_validator(mode="after")
     def validate_model(self) -> "Organization":
@@ -33,6 +37,10 @@ class Organization(GenericModel):
 
             if len(self.phone_number) not in [8, 9]:
                 raise ValueError("Phone number must have 8 or 9 digits")
+
+        if self.email is not None:
+            if not re.match(EMAIL_REGEX, self.email):
+                raise ValueError("Invalid email")
 
         return self
 
@@ -55,6 +63,10 @@ class Organization(GenericModel):
             self.address = update_organization.address
             is_updated = True
 
+        if update_organization.email is not None:
+            self.email = update_organization.email
+            is_updated = True
+
         return is_updated
 
 
@@ -62,6 +74,7 @@ class UpdateOrganization(GenericModel):
     name: Optional[str] = Field(default=None, example="org_123", max_length=100)
     ddd: Optional[str] = Field(default=None, example="047", max_length=3, pattern=r"^\d+$")
     phone_number: Optional[str] = Field(default=None, max_length=9, pattern=r"^\d+$")
+    email: Optional[str] = Field(default=None)
     address: Optional[Address] = Field(default=None)
 
     @model_validator(mode="after")
@@ -75,6 +88,10 @@ class UpdateOrganization(GenericModel):
 
             if len(self.phone_number) not in [8, 9]:
                 raise ValueError("Phone number must have 8 or 9 digits")
+
+        if self.email is not None:
+            if not re.match(EMAIL_REGEX, self.email):
+                raise ValueError("Invalid email")
 
         return self
 
