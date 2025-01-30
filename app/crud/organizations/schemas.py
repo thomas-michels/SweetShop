@@ -101,6 +101,9 @@ class OrganizationInDB(Organization, DatabaseModel):
 
     @model_validator(mode="after")
     def validate_model(self) -> "OrganizationInDB":
+        if isinstance(self.address, dict):
+            self.address = None
+
         if self.users is None:
             self.users = []
 
