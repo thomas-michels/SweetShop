@@ -89,7 +89,7 @@ class FastOrderServices:
                     unit_cost=product_in_db.unit_cost,
                     unit_price=product_in_db.unit_price,
                 )
-                updated_fields["products"].append(stored_product.model_dump())
+                updated_fields["products"].append(stored_product)
 
             updated_fast_order.products = None
 
@@ -124,6 +124,9 @@ class FastOrderServices:
         )
 
         if is_updated:
+            if "products" in updated_fields:
+                updated_fields["products"] = [product.model_dump() for product in updated_fields["products"]]
+
             updated_fields.update(updated_fast_order.model_dump(exclude_none=True))
             updated_fields["total_amount"] = total_amount
 
