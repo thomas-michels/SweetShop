@@ -12,16 +12,15 @@ _logger = get_logger(__name__)
 
 
 class OrganizationPlanRepository(Repository):
-    def __init__(self, organization_id: str) -> None:
-        super().__init__()
-        self.__organization_id = organization_id
-
-    async def create(self, organization_plan: OrganizationPlan) -> OrganizationPlanInDB:
+    async def create(self, organization_plan: OrganizationPlan, organization_id: str) -> OrganizationPlanInDB:
         try:
-            await self.__check_if_is_duplicated(organization_plan=organization_plan)
+            await self.__check_if_is_duplicated(
+                organization_plan=organization_plan,
+                organization_id=organization_id
+            )
 
             organization_plan_model = OrganizationPlanModel(
-                organization_id=self.__organization_id,
+                organization_id=organization_id,
                 created_at=datetime.now(),
                 updated_at=datetime.now(),
                 **organization_plan.model_dump()
@@ -42,7 +41,6 @@ class OrganizationPlanRepository(Repository):
                     Q(start_date__lt=organization_plan.end_date) &
                     Q(end_date__gt=organization_plan.start_date)
                 ),
-                organization_id=self.__organization_id,
                 id__ne=organization_plan.id,
             ).first()
 
@@ -63,11 +61,11 @@ class OrganizationPlanRepository(Repository):
             _logger.error(f"Error on update_organization_plan: {str(error)}")
             raise UnprocessableEntity(message="Error on update OrganizationPlan")
 
-    async def select_by_id(self, id: str, raise_404: bool = True) -> OrganizationPlanInDB:
+    async def select_by_id(self, id: str, organization_id: str, raise_404: bool = True) -> OrganizationPlanInDB:
         try:
             organization_plan_model: OrganizationPlanModel = OrganizationPlanModel.objects(
                 id=id,
-                organization_id=self.__organization_id,
+                organization_id=organization_id,
                 is_active=True,
             ).first()
 
@@ -78,16 +76,16 @@ class OrganizationPlanRepository(Repository):
             if raise_404:
                 raise NotFoundError(message=f"OrganizationPlan #{id} not found")
 
-    async def select_all(self) -> List[OrganizationPlanInDB]:
+    async def select_all(self, organization_id: str) -> List[OrganizationPlanInDB]:
         try:
             organization_plans = []
 
             objects = OrganizationPlanModel.objects(
                 is_active=True,
-                organization_id=self.__organization_id
+                organization_id=organization_id
             )
 
-            for organization_plan_model in objects.order_by("name"):
+            for organization_plan_model in objects.order_by("-end_date"):
                 organization_plans.append(OrganizationPlanInDB.model_validate(organization_plan_model))
 
             return organization_plans
@@ -96,12 +94,12 @@ class OrganizationPlanRepository(Repository):
             _logger.error(f"Error on select_all: {str(error)}")
             raise NotFoundError(message=f"OrganizationPlans not found")
 
-    async def delete_by_id(self, id: str) -> OrganizationPlanInDB:
+    async def delete_by_id(self, id: str, organization_id) -> OrganizationPlanInDB:
         try:
             organization_plan_model: OrganizationPlanModel = OrganizationPlanModel.objects(
                 id=id,
-                is_active=True,
-                organization_id=self.__organization_id
+                organization_id=organization_id,
+                is_active=True
             ).first()
             organization_plan_model.delete()
 
@@ -111,13 +109,13 @@ class OrganizationPlanRepository(Repository):
             _logger.error(f"Error on delete_by_id: {str(error)}")
             raise NotFoundError(message=f"OrganizationPlan #{id} not found")
 
-    async def __check_if_is_duplicated(self, organization_plan: OrganizationPlan) -> None:
+    async def __check_if_is_duplicated(self, organization_plan: OrganizationPlan, organization_id: str) -> None:
         existing_plan = OrganizationPlanModel.objects(
             (
                 Q(start_date__lte=organization_plan.end_date) &
                 Q(end_date__gte=organization_plan.start_date)
             ),
-            organization_id=self.__organization_id
+            organization_id=organization_id
         ).first()
 
         if existing_plan:

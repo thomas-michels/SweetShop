@@ -1,2 +1,2 @@
-from .schemas import User, UpdateUser, UserInDB, ConfirmPassword
+from .schemas import User, UpdateUser, UserInDB, ConfirmPassword, CompleteUserInDB
 from .services import UserServices

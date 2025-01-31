@@ -13,7 +13,7 @@ from app.core.exceptions.users import NotFoundError
 from app.core.utils.permissions import get_role_permissions
 from app.crud.authetication import AuthenticationServices
 from app.crud.shared_schemas.roles import RoleEnum
-from app.crud.users.schemas import UserInDB
+from app.crud.users.schemas import CompleteUserInDB
 
 
 async def decode_jwt(
@@ -21,7 +21,7 @@ async def decode_jwt(
     token: HTTPAuthorizationCredentials = Depends(HTTPBearer()),
     organization_id: str = Depends(check_current_organization),
     authetication_services: AuthenticationServices = Depends(authentication_composer),
-) -> UserInDB:
+) -> CompleteUserInDB:
     try:
         auth_result = await verify_token(
             scopes=security_scopes,
@@ -71,7 +71,7 @@ async def decode_jwt(
 
 
 def verify_scopes(
-    scopes_needed: SecurityScopes, user_role: RoleEnum, current_user: UserInDB
+    scopes_needed: SecurityScopes, user_role: RoleEnum, current_user: CompleteUserInDB
 ) -> bool:
     user_scopes = get_role_permissions(role=user_role)
 

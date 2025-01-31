@@ -6,6 +6,7 @@ from app.crud.users.schemas import UserInDB
 
 from .schemas import CompleteOrganization, Organization, OrganizationInDB, RoleEnum, UpdateOrganization, UserOrganization
 from .repositories import OrganizationRepository
+from app.crud.organization_plans.repositories import OrganizationPlanRepository
 from app.core.configs import get_logger
 
 logger = get_logger(__name__)
@@ -17,8 +18,10 @@ class OrganizationServices:
         self,
         organization_repository: OrganizationRepository,
         user_repository: UserRepository,
+        organization_plan_repository: OrganizationPlanRepository
     ) -> None:
         self.__organization_repository = organization_repository
+        self.__organization_plan_repository = organization_plan_repository
         self.__user_repository = user_repository
 
     async def create(self, organization: Organization, owner: UserInDB) -> OrganizationInDB:
@@ -105,6 +108,10 @@ class OrganizationServices:
             for user in complete_organization.users:
                 user_in_db = await self.__user_repository.select_by_id(id=user.user_id)
                 user.user = user_in_db
+
+        if "plans":
+            organization_plans = await self.__organization_plan_repository.select_all(organization_id=organization.id)
+            complete_organization.plans = organization_plans
 
         return complete_organization
 

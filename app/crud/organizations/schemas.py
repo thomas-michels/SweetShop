@@ -6,6 +6,7 @@ from pydantic import Field, model_validator
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
 from app.core.utils.validate_document import validate_cnpj, validate_cpf
+from app.crud.organization_plans.schemas import OrganizationPlanInDB
 from app.crud.shared_schemas.address import Address
 from app.crud.shared_schemas.roles import RoleEnum
 from app.crud.shared_schemas.user_organization import UserOrganization
@@ -147,6 +148,7 @@ class UpdateOrganization(GenericModel):
 
 class OrganizationInDB(Organization, DatabaseModel):
     users: List[UserOrganization] | None = Field(default=[])
+    plans: List[OrganizationPlanInDB] | None = Field(default=[])
 
     @model_validator(mode="after")
     def validate_model(self) -> "OrganizationInDB":

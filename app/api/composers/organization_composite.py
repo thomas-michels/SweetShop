@@ -1,6 +1,7 @@
 from fastapi import Depends
 from app.api.dependencies.cache_users import get_cached_users
 from app.api.dependencies.get_access_token import get_access_token
+from app.crud.organization_plans.repositories import OrganizationPlanRepository
 from app.crud.organizations.repositories import OrganizationRepository
 from app.crud.organizations.services import OrganizationServices
 from app.crud.users.repositories import UserRepository
@@ -15,8 +16,12 @@ async def organization_composer(
         access_token=access_token,
         cached_users=cached_users
     )
+
+    organization_plan_repository = OrganizationPlanRepository()
+
     organization_services = OrganizationServices(
         organization_repository=organization_repository,
+        organization_plan_repository=organization_plan_repository,
         user_repository=user_repository
     )
     return organization_services
