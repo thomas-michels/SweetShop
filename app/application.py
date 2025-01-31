@@ -16,6 +16,7 @@ from app.api.routers import (
     invite_router,
     payment_router,
     images_router,
+    organization_plan_router,
 )
 from app.api.routers.exception_handlers import (
     unprocessable_entity_error_422,
@@ -61,6 +62,7 @@ app.add_middleware(
 app.add_middleware(RateLimitMiddleware, limit=60, window=60)
 
 app.include_router(organization_router, prefix="/api")
+app.include_router(organization_plan_router, prefix="/api")
 app.include_router(invite_router, prefix="/api")
 app.include_router(user_router, prefix="/api")
 app.include_router(product_router, prefix="/api")

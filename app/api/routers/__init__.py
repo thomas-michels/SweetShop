@@ -10,3 +10,4 @@ from .expenses import expenses_router
 from .invites import invite_router
 from .payments import payment_router
 from .images import images_router
+from .organization_plans import organization_plan_router

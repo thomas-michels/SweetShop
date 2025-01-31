@@ -103,8 +103,8 @@ class FastOrderServices:
 
         total_amount = await self.__calculate_fast_order_total_amount(
             products=(
-                updated_fast_order.products
-                if updated_fast_order.products is not None
+                updated_fields["products"]
+                if updated_fields.get("products") is not None
                 else fast_order_in_db.products
             ),
             discount=(
