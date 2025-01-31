@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Security, Response, statu
 
 from app.api.composers import organization_plan_composer
 from app.api.dependencies import build_response, decode_jwt
+from app.api.dependencies.auth import verify_scopes
 from app.crud.users import CompleteUserInDB
 from app.crud.organization_plans import OrganizationPlanServices, OrganizationPlanInDB
 
@@ -23,6 +24,12 @@ async def get_organization_plan_by_id(
             detail="You cannot access this organization!",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    verify_scopes(
+        scopes_needed=["organization_plan:get"],
+        user_role=current_user.organizations_roles[organization_id].role,
+        current_user=current_user
+    )
 
     organization_plan_in_db = await organization_plan_services.search_by_id(
         id=organization_plan_id,
@@ -52,6 +59,12 @@ async def get_organization_plans(
             detail="You cannot access this organization!",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    verify_scopes(
+        scopes_needed=["organization_plan:get"],
+        user_role=current_user.organizations_roles[organization_id].role,
+        current_user=current_user
+    )
 
     organization_plans = await organization_plan_services.search_all(organization_id=organization_id)
 

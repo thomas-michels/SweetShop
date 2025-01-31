@@ -71,14 +71,22 @@ async def decode_jwt(
 
 
 def verify_scopes(
-    scopes_needed: SecurityScopes, user_role: RoleEnum, current_user: CompleteUserInDB
+    scopes_needed: SecurityScopes | list, user_role: RoleEnum, current_user: CompleteUserInDB
 ) -> bool:
     user_scopes = get_role_permissions(role=user_role)
 
-    if not scopes_needed.scopes:
+    scopes = []
+
+    if isinstance(scopes_needed, SecurityScopes):
+        scopes = scopes_needed.scopes
+
+    else:
+        scopes = scopes_needed
+
+    if not scopes:
         return True
 
-    for scope in scopes_needed.scopes:
+    for scope in scopes:
         if scope in user_scopes:
             return True
 

@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Security, status
 
 from app.api.composers import organization_plan_composer
 from app.api.dependencies import build_response, decode_jwt
+from app.api.dependencies.auth import verify_scopes
 from app.crud.organization_plans import (
     OrganizationPlan,
     OrganizationPlanInDB,
@@ -26,6 +27,12 @@ async def create_organization_plan(
             detail="You cannot access this organization!",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    verify_scopes(
+        scopes_needed=["organization_plan:create"],
+        user_role=current_user.organizations_roles[organization_id].role,
+        current_user=current_user
+    )
 
     organization_plan_in_db = await organization_plan_services.create(
         organization_plan=organization_plan,
@@ -58,6 +65,12 @@ async def update_organization_plan(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    verify_scopes(
+        scopes_needed=["organization_plan:create"],
+        user_role=current_user.organizations_roles[organization_id].role,
+        current_user=current_user
+    )
+
     organization_plan_in_db = await organization_plan_services.update(
         id=organization_plan_id,
         organization_id=organization_id,
@@ -88,6 +101,12 @@ async def delete_organization_plan(
             detail="You cannot access this organization!",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    verify_scopes(
+        scopes_needed=["organization_plan:delete"],
+        user_role=current_user.organizations_roles[organization_id].role,
+        current_user=current_user
+    )
 
     organization_plan_in_db = await organization_plan_services.delete_by_id(
         id=organization_plan_id,
