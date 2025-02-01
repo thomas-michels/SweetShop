@@ -1,5 +1,7 @@
 from typing import List
 
+from app.crud.plans.repositories import PlanRepository
+
 from .schemas import PlanFeature, PlanFeatureInDB, UpdatePlanFeature
 from .repositories import PlanFeatureRepository
 
@@ -8,11 +10,15 @@ class PlanFeatureServices:
 
     def __init__(
             self,
-            plan_feature_repository: PlanFeatureRepository
+            plan_feature_repository: PlanFeatureRepository,
+            plan_repository: PlanRepository,
         ) -> None:
         self.__plan_feature_repository = plan_feature_repository
+        self.__plan_repository = plan_repository
 
     async def create(self, plan_feature: PlanFeature) -> PlanFeatureInDB:
+        await self.__plan_repository.select_by_id(id=plan_feature.plan_id)
+
         plan_feature_in_db = await self.__plan_feature_repository.create(plan_feature=plan_feature)
         return plan_feature_in_db
 

@@ -12,11 +12,17 @@ class PlanFeature(GenericModel):
     name: Feature = Field(example=Feature.DISPLAY_CALENDAR.value)
     value: str = Field(example="123")
     additional_price: float = Field(example=123)
+    allow_additional: bool = Field(default=False, example=False)
 
     @model_validator(mode="after")
     def validate_model(self) -> "UpdatePlanFeature":
-        if self.additional_price <= 0:
-            raise ValueError("additional_price should be grater than zero")
+        if self.allow_additional:
+            if self.additional_price <= 0:
+                raise ValueError("additional_price should be grater than zero")
+
+        else:
+            if self.additional_price != 0:
+                raise ValueError("additional_price should be zero if additionals are allowed")
 
         return self
 
@@ -42,13 +48,22 @@ class UpdatePlanFeature(GenericModel):
     name: Optional[Feature] = Field(default=None, example=Feature.DISPLAY_CALENDAR.value)
     value: Optional[str] = Field(default=None, example="123")
     additional_price: Optional[float] = Field(default=None, example=123)
+    allow_additional: Optional[bool] = Field(default=None, example=False)
 
     @model_validator(mode="after")
     def validate_model(self) -> "UpdatePlanFeature":
-        if self.additional_price <= 0:
-            raise ValueError("additional_price should be grater than zero")
+        if self.allow_additional is not None and self.additional_price is not None:
+            if self.allow_additional:
+                if self.additional_price <= 0:
+                    raise ValueError("additional_price should be grater than zero")
 
-        return self
+            else:
+                if self.additional_price != 0:
+                    raise ValueError("additional_price should be zero if additionals are allowed")
+
+        else:
+            if self.allow_additional is not None or self.additional_price is not None:
+                raise ValueError("allow_additional and additional_price should set together")
 
 
 class PlanFeatureInDB(PlanFeature, DatabaseModel):

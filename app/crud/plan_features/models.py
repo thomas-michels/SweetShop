@@ -1,4 +1,4 @@
-from mongoengine import StringField, FloatField
+from mongoengine import StringField, FloatField, BooleanField
 
 from app.core.models.base_document import BaseDocument
 
@@ -8,6 +8,7 @@ class PlanFeatureModel(BaseDocument):
     name = StringField(required=True)
     value = StringField(required=True)
     additional_price = FloatField(required=True)
+    allow_additional = BooleanField(default=False)
 
     meta = {
         "collection": "plan_features"
