@@ -1,2 +1,2 @@
-from .schemas import Plan, PlanInDB, UpdatePlan
-from .services import PlanServices
+from .schemas import PlanFeature, PlanFeatureInDB, UpdatePlanFeature
+from .services import PlanFeatureServices

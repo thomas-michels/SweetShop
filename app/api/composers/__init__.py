@@ -12,3 +12,4 @@ from .invite_composite import invite_composer
 from .payment_composite import payment_composer
 from .organization_plan_composite import organization_plan_composer
 from .plan_composite import plan_composer
+from .plan_feature_composite import plan_feature_composer

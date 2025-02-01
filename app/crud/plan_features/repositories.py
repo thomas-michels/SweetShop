@@ -50,7 +50,7 @@ class PlanFeatureRepository(Repository):
 
             existing_feature = PlanFeatureModel.objects(
                 plan_id=plan_feature.plan_id,
-                name=plan_feature.name,
+                name=plan_feature.name.value,
                 is_active=True,
                 id__ne=plan_feature.id
             ).first()

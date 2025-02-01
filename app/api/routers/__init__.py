@@ -12,3 +12,4 @@ from .payments import payment_router
 from .images import images_router
 from .organization_plans import organization_plan_router
 from .plans import plan_router
+from .plan_features import plan_feature_router
