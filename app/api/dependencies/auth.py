@@ -100,3 +100,14 @@ def verify_scopes(
         detail="Access denied",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
+
+def verify_super_user(current_user: CompleteUserInDB):
+    if current_user.app_metadata and current_user.app_metadata.get("superuser", False):
+        return True
+
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Access denied",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
