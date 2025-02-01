@@ -1,15 +1,30 @@
 from typing import List
 
+from app.crud.organizations.repositories import OrganizationRepository
+from app.crud.plans.repositories import PlanRepository
+
 from .schemas import OrganizationPlan, OrganizationPlanInDB, UpdateOrganizationPlan
 from .repositories import OrganizationPlanRepository
 
 
 class OrganizationPlanServices:
 
-    def __init__(self, organization_plan_repository: OrganizationPlanRepository) -> None:
+    def __init__(
+        self,
+        organization_plan_repository: OrganizationPlanRepository,
+        plan_repository: PlanRepository,
+        organization_repository: OrganizationRepository,
+    ) -> None:
         self.__organization_plan_repository = organization_plan_repository
+        self.__plan_repository = plan_repository
+        self.__organization_repository = organization_repository
 
     async def create(self, organization_plan: OrganizationPlan, organization_id: str) -> OrganizationPlanInDB:
+        await self.__organization_repository.select_by_id(id=organization_id)
+
+        if organization_plan.plan_id:
+            await self.__plan_repository.select_by_id(id=organization_plan.plan_id)
+
         organization_plan_in_db = await self.__organization_plan_repository.create(
             organization_plan=organization_plan,
             organization_id=organization_id
