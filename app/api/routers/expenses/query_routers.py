@@ -33,8 +33,9 @@ async def get_expense_by_id(
 @router.get("/expenses", responses={200: {"model": List[ExpenseInDB]}})
 async def get_expenses(
     query: str = Query(default=None),
-    start_date: date | None = Query(default=None),
-    end_date: date | None = Query(default=None),
+    start_date: date | None = Query(default=None, alias="startDate"),
+    end_date: date | None = Query(default=None, alias="endDate"),
+    tags: List[str] = Query(default=[]),
     expand: List[str] = Query(default=[]),
     current_user: UserInDB = Security(decode_jwt, scopes=["expense:get"]),
     expense_services: ExpenseServices = Depends(expense_composer),

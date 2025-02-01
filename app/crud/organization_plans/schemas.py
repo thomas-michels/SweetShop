@@ -11,6 +11,7 @@ class OrganizationPlan(GenericModel):
     plan_id: str = Field(example="plan_123")
     start_date: datetime = Field(example=str(datetime.now()))
     end_date: datetime = Field(example=str(datetime.now()))
+    allow_additional: bool = Field(default=False, example=False)
 
     @model_validator(mode="after")
     def validate_model(self) -> "OrganizationPlan":
@@ -28,11 +29,16 @@ class OrganizationPlan(GenericModel):
             self.end_date = update_organization_plan.end_date
             is_updated = True
 
+        if update_organization_plan.allow_additional is not None:
+            self.allow_additional = update_organization_plan.allow_additional
+            is_updated = True
+
         return is_updated
 
 
 class UpdateOrganizationPlan(GenericModel):
     end_date: Optional[datetime] = Field(default=None, example=str(datetime.now()))
+    allow_additional: Optional[bool] = Field(default=None, example=False)
 
     @model_validator(mode="after")
     def validate_model(self) -> "UpdateOrganizationPlan":

@@ -1,0 +1,55 @@
+from typing import Optional
+
+from pydantic import Field, model_validator
+
+from app.core.models import DatabaseModel
+from app.core.models.base_schema import GenericModel
+from app.core.utils.features import Feature
+
+
+class PlanFeature(GenericModel):
+    plan_id: str = Field(example="plan_123")
+    name: Feature = Field(example=Feature.DISPLAY_CALENDAR.value)
+    value: str = Field(example="123")
+    additional_price: float = Field(example=123)
+
+    @model_validator(mode="after")
+    def validate_model(self) -> "UpdatePlanFeature":
+        if self.additional_price <= 0:
+            raise ValueError("additional_price should be grater than zero")
+
+        return self
+
+    def validate_updated_fields(self, update_plan_feature: "UpdatePlanFeature") -> bool:
+        is_updated = False
+
+        if update_plan_feature.name is not None:
+            self.name = update_plan_feature.name
+            is_updated = True
+
+        if update_plan_feature.value is not None:
+            self.value = update_plan_feature.value
+            is_updated = True
+
+        if update_plan_feature.additional_price is not None:
+            self.additional_price = update_plan_feature.additional_price
+            is_updated = True
+
+        return is_updated
+
+
+class UpdatePlanFeature(GenericModel):
+    name: Optional[Feature] = Field(default=None, example=Feature.DISPLAY_CALENDAR.value)
+    value: Optional[str] = Field(default=None, example="123")
+    additional_price: Optional[float] = Field(default=None, example=123)
+
+    @model_validator(mode="after")
+    def validate_model(self) -> "UpdatePlanFeature":
+        if self.additional_price <= 0:
+            raise ValueError("additional_price should be grater than zero")
+
+        return self
+
+
+class PlanFeatureInDB(PlanFeature, DatabaseModel):
+    ...

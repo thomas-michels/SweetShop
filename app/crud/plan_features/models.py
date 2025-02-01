@@ -1,17 +1,16 @@
-from mongoengine import StringField, DateTimeField, BooleanField
+from mongoengine import StringField, FloatField
 
 from app.core.models.base_document import BaseDocument
 
 
-class OrganizationPlanModel(BaseDocument):
-    organization_id = StringField(required=True)
+class PlanFeatureModel(BaseDocument):
     plan_id = StringField(required=True)
-    start_date = DateTimeField(required=True)
-    end_date = DateTimeField(required=True)
-    allow_additional = BooleanField(default=False)
+    name = StringField(required=True)
+    value = StringField(required=True)
+    additional_price = FloatField(required=True)
 
     meta = {
-        "collection": "organization_plans"
+        "collection": "plan_features"
     }
 
     def update(self, **kwargs):
