@@ -56,6 +56,20 @@ class PlanRepository(Repository):
             if raise_404:
                 raise NotFoundError(message=f"Plan #{id} not found")
 
+    async def select_by_name(self, name: str, raise_404: bool = True) -> PlanInDB:
+        try:
+            plan_model: PlanModel = PlanModel.objects(
+                name=name,
+                is_active=True,
+            ).first()
+
+            return PlanInDB.model_validate(plan_model)
+
+        except Exception as error:
+            _logger.error(f"Error on select_by_name: {str(error)}")
+            if raise_404:
+                raise NotFoundError(message=f"Plan with name {name} not found")
+
     async def select_all(self) -> List[PlanInDB]:
         try:
             plans = []

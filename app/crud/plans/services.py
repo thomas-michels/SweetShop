@@ -27,6 +27,10 @@ class PlanServices:
         plan_in_db = await self.__plan_repository.select_by_id(id=id)
         return plan_in_db
 
+    async def search_by_name(self, name: str) -> PlanInDB:
+        plan_in_db = await self.__plan_repository.select_by_name(name=name)
+        return plan_in_db
+
     async def search_all(self) -> List[PlanInDB]:
         plans = await self.__plan_repository.select_all()
         return plans

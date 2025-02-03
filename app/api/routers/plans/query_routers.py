@@ -11,6 +11,21 @@ from app.crud.plans import PlanServices, PlanInDB
 router = APIRouter(tags=["Plans"])
 
 
+@router.get("/plans", responses={200: {"model": List[PlanInDB]}})
+async def get_plans(
+    plan_services: PlanServices = Depends(plan_composer),
+):
+    plans = await plan_services.search_all()
+
+    if plans:
+        return build_response(
+            status_code=200, message="Plans found with success", data=plans
+        )
+
+    else:
+        return Response(status_code=204)
+
+
 @router.get("/plans/{plan_id}", responses={200: {"model": PlanInDB}})
 async def get_plan_by_id(
     plan_id: str,
@@ -32,19 +47,22 @@ async def get_plan_by_id(
         )
 
 
-@router.get("/plans", responses={200: {"model": List[PlanInDB]}})
-async def get_plans(
+@router.get("/plans/name/{name}", responses={200: {"model": PlanInDB}})
+async def get_plan_by_name(
+    name: str,
     current_user: CompleteUserInDB = Security(decode_jwt, scopes=[]),
     plan_services: PlanServices = Depends(plan_composer),
 ):
     verify_super_user(current_user=current_user)
 
-    plans = await plan_services.search_all()
+    plan_in_db = await plan_services.search_by_name(name=name)
 
-    if plans:
+    if plan_in_db:
         return build_response(
-            status_code=200, message="Plans found with success", data=plans
+            status_code=200, message="Plan found with success", data=plan_in_db
         )
 
     else:
-        return Response(status_code=204)
+        return build_response(
+            status_code=404, message=f"Plan with name {name} not found", data=None
+        )
