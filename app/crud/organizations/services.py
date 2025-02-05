@@ -109,9 +109,13 @@ class OrganizationServices:
                 user_in_db = await self.__user_repository.select_by_id(id=user.user_id)
                 user.user = user_in_db
 
-        if "plans":
+        if "plan":
             organization_plans = await self.__organization_plan_repository.select_all(organization_id=organization.id)
-            complete_organization.plans = organization_plans
+
+            for organization_plan in organization_plans:
+                if organization_plan.active_plan:
+                    complete_organization.plan = organization_plan
+                    break
 
         return complete_organization
 
@@ -153,7 +157,7 @@ class OrganizationServices:
 
         await self.__organization_repository.update(
             organization_id=organization_id,
-            organization=organization_in_db.model_dump()
+            organization=organization_in_db.model_dump(exclude={"plan"})
         )
 
         return True

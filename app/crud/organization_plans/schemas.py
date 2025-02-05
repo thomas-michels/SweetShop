@@ -54,6 +54,7 @@ class OrganizationPlanInDB(OrganizationPlan, DatabaseModel):
     organization_id: str = Field(example="org_123")
 
     @computed_field
+    @property
     def active_plan(self) -> bool:
         now = datetime.now()
         return self.start_date <= now <= self.end_date

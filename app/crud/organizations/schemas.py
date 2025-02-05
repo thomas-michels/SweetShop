@@ -148,7 +148,7 @@ class UpdateOrganization(GenericModel):
 
 class OrganizationInDB(Organization, DatabaseModel):
     users: List[UserOrganization] | None = Field(default=[])
-    plans: List[OrganizationPlanInDB] | None = Field(default=[])
+    plan: OrganizationPlanInDB | None = Field(default=None)
 
     @model_validator(mode="after")
     def validate_model(self) -> "OrganizationInDB":
