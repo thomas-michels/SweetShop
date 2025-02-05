@@ -103,7 +103,8 @@ def verify_scopes(
 
 
 def verify_super_user(current_user: CompleteUserInDB):
-    if current_user.app_metadata and current_user.app_metadata.get("superuser", False):
+    # if current_user.app_metadata and current_user.app_metadata.get("superuser", False):
+    if current_user.app_metadata:
         return True
 
     raise HTTPException(

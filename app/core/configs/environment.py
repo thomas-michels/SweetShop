@@ -57,6 +57,15 @@ class Environment(BaseSettings):
     REDIS_USERNAME: str | None = None
     REDIS_PASSWORD: str | None = None
 
+    # Mercado Pago
+    MERCADO_PAGO_ACCESS_TOKEN: str | None = None
+    NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY: str | None = None
+    MERCADO_PAGO_WEBHOOK_SECRET: str | None = None
+
+    # PEDIDOZ
+    PEDIDOZ_FRONT_URL: str | None = None
+
+
     class Config:
         """Load config file"""
 

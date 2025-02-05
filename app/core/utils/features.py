@@ -14,3 +14,18 @@ class Feature(str, Enum):
     DISPLAY_CALENDAR = "DISPLAY_CALENDAR"
     DISPLAY_DASHBOARD = "DISPLAY_DASHBOARD"
     DISPLAY_DELINQUENCY = "DISPLAY_DELINQUENCY"
+
+
+def get_translation(name: Feature) -> str:
+    translations = {
+        Feature.MAX_USERS: "Usuários",
+        Feature.MAX_PRODUCTS: "Produtos",
+        Feature.MAX_TAGS: "Tags",
+        Feature.MAX_ORDERS: "Pedidos",
+        Feature.MAX_CUSTOMERS: "Clientes",
+        Feature.MAX_EXPANSES: "Despesas",
+        Feature.DISPLAY_CALENDAR: "Calendário",
+        Feature.DISPLAY_DASHBOARD: "Painel financeiro",
+        Feature.DISPLAY_DELINQUENCY: "Inadimplência",
+    }
+    return translations.get(name, "Recurso não encontrada")

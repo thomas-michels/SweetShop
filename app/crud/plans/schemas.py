@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import Field, model_validator
 
@@ -49,5 +49,10 @@ class UpdatePlan(GenericModel):
         return self
 
 
-class PlanInDB(Plan, DatabaseModel):
-    ...
+class PlanInDB(Plan, DatabaseModel): ...
+
+
+from app.crud.plan_features.schemas import PlanFeatureInDB
+
+class CompletePlanInDB(Plan, DatabaseModel):
+    features: List[PlanFeatureInDB] = Field(default=[], example=[])

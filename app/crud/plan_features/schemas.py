@@ -4,12 +4,13 @@ from pydantic import Field, model_validator
 
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
-from app.core.utils.features import Feature
+from app.core.utils.features import Feature, get_translation
 
 
 class PlanFeature(GenericModel):
     plan_id: str = Field(example="plan_123")
     name: Feature = Field(example=Feature.DISPLAY_CALENDAR.value)
+    display_name: str | None = Field(default=None)
     value: str = Field(example="123")
     additional_price: float = Field(example=123)
     allow_additional: bool = Field(default=False, example=False)
@@ -23,6 +24,8 @@ class PlanFeature(GenericModel):
         else:
             if self.additional_price != 0:
                 raise ValueError("additional_price should be zero if additionals are allowed")
+
+        self.display_name = get_translation(name=self.name)
 
         return self
 

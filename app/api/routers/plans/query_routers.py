@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, Security, Response
+from fastapi import APIRouter, Depends, Query, Security, Response
 
 from app.api.composers import plan_composer
 from app.api.dependencies import build_response, decode_jwt
@@ -13,9 +13,10 @@ router = APIRouter(tags=["Plans"])
 
 @router.get("/plans", responses={200: {"model": List[PlanInDB]}})
 async def get_plans(
+    expand: List[str] = Query(default=[]),
     plan_services: PlanServices = Depends(plan_composer),
 ):
-    plans = await plan_services.search_all()
+    plans = await plan_services.search_all(expand=expand)
 
     if plans:
         return build_response(
@@ -29,12 +30,16 @@ async def get_plans(
 @router.get("/plans/{plan_id}", responses={200: {"model": PlanInDB}})
 async def get_plan_by_id(
     plan_id: str,
+    expand: List[str] = Query(default=[]),
     current_user: CompleteUserInDB = Security(decode_jwt, scopes=[]),
     plan_services: PlanServices = Depends(plan_composer),
 ):
     verify_super_user(current_user=current_user)
 
-    plan_in_db = await plan_services.search_by_id(id=plan_id)
+    plan_in_db = await plan_services.search_by_id(
+        id=plan_id,
+        expand=expand
+    )
 
     if plan_in_db:
         return build_response(
@@ -50,12 +55,16 @@ async def get_plan_by_id(
 @router.get("/plans/name/{name}", responses={200: {"model": PlanInDB}})
 async def get_plan_by_name(
     name: str,
+    expand: List[str] = Query(default=[]),
     current_user: CompleteUserInDB = Security(decode_jwt, scopes=[]),
     plan_services: PlanServices = Depends(plan_composer),
 ):
     verify_super_user(current_user=current_user)
 
-    plan_in_db = await plan_services.search_by_name(name=name)
+    plan_in_db = await plan_services.search_by_name(
+        name=name,
+        expand=expand
+    )
 
     if plan_in_db:
         return build_response(
