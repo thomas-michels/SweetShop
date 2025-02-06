@@ -14,3 +14,4 @@ from .organization_plans import organization_plan_router
 from .plans import plan_router
 from .plan_features import plan_feature_router
 from .mercado_pago import mercado_pago_router
+from .subscriptions import subscription_router

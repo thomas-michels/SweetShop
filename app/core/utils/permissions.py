@@ -23,6 +23,7 @@ def get_role_permissions(role: RoleEnum) -> Set[str]:
             "expense:get",
             "customer:create",
             "customer:get",
+            "subscription:get",
         ]
     )
 
@@ -76,7 +77,9 @@ def get_role_permissions(role: RoleEnum) -> Set[str]:
             [
                 "organization:delete",
                 "organization_plan:create",
-                "organization_plan:delete"
+                "organization_plan:delete",
+                "subscription:create",
+                "subscription:delete",
             ]
         )
     )

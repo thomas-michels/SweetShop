@@ -30,6 +30,9 @@ class OrganizationPlanRepository(Repository):
 
             return OrganizationPlanInDB.model_validate(organization_plan_model)
 
+        except UnprocessableEntity as error:
+            raise error
+
         except Exception as error:
             _logger.error(f"Error on create_organization_plan: {str(error)}")
             raise UnprocessableEntity(message="Error on create new OrganizationPlan")
