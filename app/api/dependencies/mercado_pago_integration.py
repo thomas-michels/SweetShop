@@ -54,7 +54,12 @@ class MercadoPagoIntegration:
 
         response = self.mp.preapproval().get(preapproval_id)
 
-        return MPSubscriptionModel(**response)
+        match response.get("status"):
+            case 200:
+                return MPSubscriptionModel(**response["response"])
+
+            case _:
+                raise Exception("Error on get subscription")
 
     def cancel_subscription(self, preapproval_id: str) -> MPSubscriptionModel:
         """
@@ -66,4 +71,23 @@ class MercadoPagoIntegration:
         response = self.mp.preapproval().update(preapproval_id, {"status": "cancelled"})
 
         _logger.info("Subscription cancelled")
-        return MPSubscriptionModel(**response)
+        match response.get("status"):
+            case 200:
+                return MPSubscriptionModel(**response["response"])
+
+            case _:
+                raise Exception("Error on cancel subscription")
+
+    def get_payment(self, payment_id: str) -> dict:
+        """
+        Obtém os detalhes de um pagamento no Mercado Pago.
+        :param payment_id: ID do pagamento.
+        """
+        _logger.info(f"Calling get_payment - payment_id: {payment_id}")
+
+        response = self.mp.payment().get(payment_id)
+
+        if response.get("status") == 200:
+            return response["response"]
+        else:
+            raise Exception("Error fetching payment details")

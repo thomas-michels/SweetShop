@@ -46,6 +46,13 @@ class InvoiceServices:
         )
         return invoice_in_db
 
+    async def search_by_integration(self, integration_id: str, integration_type: str) -> InvoiceInDB:
+        invoice_in_db = await self.__invoice_repository.select_by_integration(
+            integration_id=integration_id,
+            integration_type=integration_type
+        )
+        return invoice_in_db
+
     async def search_all(self) -> List[InvoiceInDB]:
         invoices = await self.__invoice_repository.select_all()
         return invoices

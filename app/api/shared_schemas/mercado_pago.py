@@ -1,14 +1,15 @@
-from pydantic import BaseModel, Field
-from typing import Optional, Union
 from datetime import datetime
+from pydantic import Field
+from typing import Optional, Union
+from app.core.models.base_schema import GenericModel
 
 
-class FreeTrial(BaseModel):
+class FreeTrial(GenericModel):
     frequency: Optional[int] = Field(None, example=1)
     frequency_type: Optional[str] = Field(None, example="months")
 
 
-class AutoRecurring(BaseModel):
+class AutoRecurring(GenericModel):
     frequency: int = Field(..., example=12)
     frequency_type: str = Field(..., example="months")
     transaction_amount: float = Field(..., example=29.9)
@@ -18,7 +19,7 @@ class AutoRecurring(BaseModel):
     free_trial: Optional[Union[str, FreeTrial]] = Field(None, example="None")
 
 
-class Summarized(BaseModel):
+class Summarized(GenericModel):
     quotas: int = Field(..., example=1)
     charged_quantity: Optional[Union[int, str]] = Field(None, example="None")
     pending_charge_quantity: int = Field(..., example=1)
@@ -29,7 +30,7 @@ class Summarized(BaseModel):
     last_charged_amount: Optional[Union[float, str]] = Field(None, example="None")
 
 
-class MPSubscriptionModel(BaseModel):
+class MPSubscriptionModel(GenericModel):
     id: str = Field(..., example="d0ad894de0094460a9ee3e2650031709")
     payer_id: int = Field(..., example=2026160636)
     payer_email: Optional[str] = Field(None, example="")
@@ -49,3 +50,18 @@ class MPSubscriptionModel(BaseModel):
     first_invoice_offset: Optional[str] = Field(None, example="None")
     subscription_id: str = Field(..., example="d0ad894de0094460a9ee3e2650031709")
     owner: Optional[str] = Field(None, example="None")
+
+
+class WebhookData(GenericModel):
+    id: Optional[str] = Field(None, example="123456")
+
+
+class WebhookPayload(GenericModel):
+    action: Optional[str] = Field(None, example="updated")
+    application_id: Optional[str] = Field(None, example="8659230194855501")
+    data: Optional[WebhookData] = None
+    date: Optional[datetime] = Field(None, example="2021-11-01T02:02:02Z")
+    entity: Optional[str] = Field(None, example="preapproval")
+    id: Optional[str] = Field(None, example="123456")
+    type: Optional[str] = Field(None, example="subscription_preapproval")
+    version: Optional[int] = Field(None, example=8)

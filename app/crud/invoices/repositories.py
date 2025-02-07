@@ -13,15 +13,15 @@ _logger = get_logger(__name__)
 class InvoiceRepository(Repository):
     async def create(self, invoice: Invoice) -> InvoiceInDB:
         try:
-            plan_model = InvoiceModel(
+            invoice_model = InvoiceModel(
                 created_at=datetime.now(),
                 updated_at=datetime.now(),
                 **invoice.model_dump()
             )
 
-            plan_model.save()
+            invoice_model.save()
 
-            return InvoiceInDB.model_validate(plan_model)
+            return InvoiceInDB.model_validate(invoice_model)
 
         except Exception as error:
             _logger.error(f"Error on create_invoice: {str(error)}")
@@ -29,12 +29,12 @@ class InvoiceRepository(Repository):
 
     async def update(self, invoice: InvoiceInDB) -> InvoiceInDB:
         try:
-            plan_model: InvoiceModel = InvoiceModel.objects(
+            invoice_model: InvoiceModel = InvoiceModel.objects(
                 id=invoice.id,
                 is_active=True,
             ).first()
 
-            plan_model.update(**invoice.model_dump())
+            invoice_model.update(**invoice.model_dump())
 
             return await self.select_by_id(id=invoice.id)
 
@@ -44,12 +44,12 @@ class InvoiceRepository(Repository):
 
     async def select_by_id(self, id: str, raise_404: bool = True) -> InvoiceInDB:
         try:
-            plan_model: InvoiceModel = InvoiceModel.objects(
+            invoice_model: InvoiceModel = InvoiceModel.objects(
                 id=id,
                 is_active=True,
             ).first()
 
-            return InvoiceInDB.model_validate(plan_model)
+            return InvoiceInDB.model_validate(invoice_model)
 
         except Exception as error:
             _logger.error(f"Error on select_by_id: {str(error)}")
@@ -58,15 +58,30 @@ class InvoiceRepository(Repository):
 
     async def select_by_organization_plan_id(self, organization_plan_id: str, raise_404: bool = True) -> InvoiceInDB:
         try:
-            plan_model: InvoiceModel = InvoiceModel.objects(
+            invoice_model: InvoiceModel = InvoiceModel.objects(
                 organization_plan_id=organization_plan_id,
                 is_active=True,
             ).first()
 
-            return InvoiceInDB.model_validate(plan_model)
+            return InvoiceInDB.model_validate(invoice_model)
 
         except Exception as error:
             _logger.error(f"Error on select_by_organization_plan_id: {str(error)}")
+            if raise_404:
+                raise NotFoundError(message=f"Invoice not found")
+
+    async def select_by_integration(self, integration_id: str, integration_type: str, raise_404: bool = True) -> InvoiceInDB:
+        try:
+            invoice_model: InvoiceModel = InvoiceModel.objects(
+                integration_id=integration_id,
+                integration_type=integration_type,
+                is_active=True,
+            ).first()
+
+            return InvoiceInDB.model_validate(invoice_model)
+
+        except Exception as error:
+            _logger.error(f"Error on select_by_integration: {str(error)}")
             if raise_404:
                 raise NotFoundError(message=f"Invoice not found")
 
@@ -76,8 +91,8 @@ class InvoiceRepository(Repository):
 
             objects = InvoiceModel.objects(is_active=True)
 
-            for plan_model in objects:
-                plans.append(InvoiceInDB.model_validate(plan_model))
+            for invoice_model in objects:
+                plans.append(InvoiceInDB.model_validate(invoice_model))
 
             return plans
 
@@ -87,13 +102,13 @@ class InvoiceRepository(Repository):
 
     async def delete_by_id(self, id: str) -> InvoiceInDB:
         try:
-            plan_model: InvoiceModel = InvoiceModel.objects(
+            invoice_model: InvoiceModel = InvoiceModel.objects(
                 id=id,
                 is_active=True
             ).first()
-            plan_model.delete()
+            invoice_model.delete()
 
-            return InvoiceInDB.model_validate(plan_model)
+            return InvoiceInDB.model_validate(invoice_model)
 
         except Exception as error:
             _logger.error(f"Error on delete_by_id: {str(error)}")

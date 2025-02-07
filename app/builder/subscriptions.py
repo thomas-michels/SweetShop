@@ -1,7 +1,8 @@
 from datetime import datetime, timedelta
 from app.api.dependencies.mercado_pago_integration import MercadoPagoIntegration
+from app.api.shared_schemas.mercado_pago import WebhookPayload
 from app.api.shared_schemas.subscription import RequestSubscription, ResponseSubscription
-from app.crud.invoices.schemas import Invoice
+from app.crud.invoices.schemas import Invoice, InvoiceInDB, InvoiceStatus, UpdateInvoice
 from app.crud.invoices.services import InvoiceServices
 from app.crud.organization_plans.schemas import OrganizationPlan, OrganizationPlanInDB
 from app.crud.organization_plans.services import OrganizationPlanServices
@@ -55,8 +56,47 @@ class SubscriptionBuilder:
             init_point=mp_sub.init_point,
         )
 
-    async def get_subscription(self, subscription_id: str):
-        ...
+    async def update_payment(self, payment_id: str, payload: WebhookPayload) -> InvoiceInDB:
+        payment_data = self.__mp_integration.get_payment(payment_id)
+        payment_status = payment_data.get("status")
+
+        status_map = {
+            "approved": InvoiceStatus.PAID,
+            "pending": InvoiceStatus.PENDING,
+            "rejected": InvoiceStatus.REJECTED,
+            "cancelled": InvoiceStatus.CANCELLED
+        }
+
+        internal_status = status_map.get(payment_status)
+
+        invoice_in_db = await self.__invoice_service.search_by_integration(
+            integration_id=payment_id,
+            integration_type="mercado-pago"
+        )
+
+        update_invoice = UpdateInvoice(
+            status=internal_status
+        )
+
+        if internal_status == InvoiceStatus.PAID:
+            update_invoice.paid_at = datetime.now()
+            update_invoice.amount_paid = invoice_in_db.amount
+
+        updated_invoice = await self.__invoice_service.update(
+            id=invoice_in_db.id,
+            updated_invoice=update_invoice
+        )
+
+        return updated_invoice
+
+    async def get_subscription(self, organization_id: str) -> InvoiceInDB:
+        organization_plan_in_db = await self.__organization_plan_service.search_active_plan(organization_id=organization_id)
+
+        invoice_in_db = await self.__invoice_service.search_by_organization_plan_id(
+            organization_plan_id=organization_plan_in_db.id
+        )
+
+        return invoice_in_db
 
     async def unsubscribe(self, subscription_id: str):
         ...
