@@ -27,28 +27,54 @@ class SubscriptionBuilder:
         plan_in_db = await self.__plan_service.search_by_id(id=subscription.plan_id)
         annual_price = round(plan_in_db.price * 12, 2)
 
-        organization_plan_in_db = await self.__create_organization_plan(subscription)
-
-        mp_sub = self.__mp_integration.create_subscription(
-            reason=f"pedidoZ - {plan_in_db.name}",
-            price_monthly=plan_in_db.price,
-            user_info={
-                "email": user.email,
-                "nome": user.name
-            }
-        )
-
-        invoice = Invoice(
-            organization_plan_id=organization_plan_in_db.id,
-            integration_id=mp_sub.id,
-            integration_type="mercado-pago",
-            amount=annual_price
-        )
-
-        invoice_in_db = await self.__invoice_service.create(
-            invoice=invoice,
+        invoice_in_db = await self.__check_if_has_pending_payment(
             organization_id=subscription.organization_id
         )
+
+        if invoice_in_db:
+            mp_sub = self.__mp_integration.create_subscription(
+                reason=f"pedidoZ - {plan_in_db.name}",
+                price_monthly=plan_in_db.price,
+                user_info={
+                    "email": user.email,
+                    "nome": user.name
+                }
+            )
+
+            update_invoice = UpdateInvoice(
+                status=InvoiceStatus.PENDING
+            )
+
+            invoice_in_db = await self.__invoice_service.update(
+                id=invoice_in_db.id,
+                updated_invoice=update_invoice
+            )
+
+        else:
+            organization_plan_in_db = await self.__create_organization_plan(
+                subscription=subscription
+            )
+
+            mp_sub = self.__mp_integration.create_subscription(
+                reason=f"pedidoZ - {plan_in_db.name}",
+                price_monthly=plan_in_db.price,
+                user_info={
+                    "email": user.email,
+                    "nome": user.name
+                }
+            )
+
+            invoice = Invoice(
+                organization_plan_id=organization_plan_in_db.id,
+                integration_id=mp_sub.id,
+                integration_type="mercado-pago",
+                amount=annual_price
+            )
+
+            invoice_in_db = await self.__invoice_service.create(
+                invoice=invoice,
+                organization_id=subscription.organization_id
+            )
 
         return ResponseSubscription(
             invoice_id=invoice_in_db.id,
@@ -119,3 +145,17 @@ class SubscriptionBuilder:
         )
 
         return organization_plan_in_db
+
+    async def __check_if_has_pending_payment(self, organization_id: str) -> InvoiceInDB:
+        organization_plan = await self.__organization_plan_service.search_active_plan(
+            organization_id=organization_id
+        )
+
+        if organization_plan:
+            invoice_in_db = await self.__invoice_service.search_by_organization_plan_id(
+                organization_plan_id=organization_plan.id,
+                raise_404=False
+            )
+
+            if invoice_in_db and invoice_in_db.status != InvoiceStatus.PAID:
+                return invoice_in_db

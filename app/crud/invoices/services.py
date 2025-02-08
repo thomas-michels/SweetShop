@@ -40,9 +40,10 @@ class InvoiceServices:
         invoice_in_db = await self.__invoice_repository.select_by_id(id=id)
         return invoice_in_db
 
-    async def search_by_organization_plan_id(self, organization_plan_id: str) -> InvoiceInDB:
+    async def search_by_organization_plan_id(self, organization_plan_id: str, raise_404: bool = True) -> InvoiceInDB:
         invoice_in_db = await self.__invoice_repository.select_by_organization_plan_id(
-            organization_plan_id=organization_plan_id
+            organization_plan_id=organization_plan_id,
+            raise_404=raise_404
         )
         return invoice_in_db
 
