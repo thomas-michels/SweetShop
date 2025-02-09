@@ -10,7 +10,7 @@ router = APIRouter(prefix="/mercado-pago", tags=["Mercado Pago"])
 
 @router.post("/webhook")
 async def webhook(
-    data: Request,
+    request: Request,
     event_type: str = Query(alias="type"),
     payment_id: str = Query(alias="data.id"),
     subscription_builder: SubscriptionBuilder = Depends(subscription_composer),
@@ -18,9 +18,9 @@ async def webhook(
     """
     Webhook para capturar notificações de pagamento do Mercado Pago.
     """
-    body = await data.body()
+    data = await request.json()
+    _logger.info("MP event received:", data)
 
-    _logger.info("MP event received:", body.decode("utf-8"))
     subscription_in_db = None
 
     if event_type == "payment" and payment_id:
