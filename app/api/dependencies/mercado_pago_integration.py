@@ -1,7 +1,9 @@
 import mercadopago
 from datetime import datetime, timedelta, timezone
+from app.api.exceptions.authentication_exceptions import InternalErrorException
 from app.api.shared_schemas.mercado_pago import MPSubscriptionModel
 from app.core.configs import get_environment, get_logger
+from app.core.exceptions.users import NotFoundError
 
 _logger = get_logger(__name__)
 _env = get_environment()
@@ -84,11 +86,22 @@ class MercadoPagoIntegration:
         :param payment_id: ID do pagamento.
         """
         _logger.info(f"Calling get_payment - payment_id: {payment_id}")
+        try:
 
-        response = self.mp.payment().get(payment_id)
+            response = self.mp.payment().get(payment_id)
 
-        if response.get("status") == 200:
-            return response["response"]
+            if response.get("status") == 200:
+                _logger.info(f"Payment {payment_id} found")
+                return response["response"]
 
-        else:
-            raise Exception("Error fetching payment details")
+            elif response.get("status") == 404:
+                _logger.warning(f"Payment {payment_id} NOT found")
+                raise NotFoundError(f"PaymentId not found {payment_id}")
+
+            else:
+                _logger.error(f"Error on get payment - Status: {response.get('status')} - Response: {response.get('response')}")
+                raise InternalErrorException("Error fetching payment details")
+
+        except Exception as error:
+            _logger.error(f"Error on get_payment: {str(error)}")
+            raise NotFoundError(f"PaymentId not found {payment_id}")
