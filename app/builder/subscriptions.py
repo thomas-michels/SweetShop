@@ -40,13 +40,12 @@ class SubscriptionBuilder:
                 }
             )
 
-            update_invoice = UpdateInvoice(
-                status=InvoiceStatus.PENDING
-            )
+            invoice_in_db.status = InvoiceStatus.PENDING
+            invoice_in_db.integration_id = mp_sub.id
 
             invoice_in_db = await self.__invoice_service.update(
                 id=invoice_in_db.id,
-                updated_invoice=update_invoice
+                updated_invoice=invoice_in_db
             )
 
         else:
