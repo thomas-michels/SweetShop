@@ -32,7 +32,7 @@ class MercadoPagoIntegration:
                     "end_date": (datetime.now(timezone.utc) + timedelta(days=365)).isoformat() + "Z"
                 },
                 # "payer_email": user_info["email"],
-                "payer_email": "TESTUSER153652602",
+                "payer_email": "test_user_153652602@testuser.com",
                 "back_url": f"{_env.PEDIDOZ_FRONT_URL}/", # TODO change to the thank you route soon
                 "reason": reason
             }
