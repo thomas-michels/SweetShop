@@ -95,9 +95,10 @@ class SubscriptionBuilder:
         }
 
         internal_status = status_map.get(payment_status)
+        integration_id = payment_data["metadata"]["preapproval_id"]
 
         invoice_in_db = await self.__invoice_service.search_by_integration(
-            integration_id=payment_id,
+            integration_id=integration_id,
             integration_type="mercado-pago"
         )
 
