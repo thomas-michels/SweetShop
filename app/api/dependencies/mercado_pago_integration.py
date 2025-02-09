@@ -20,32 +20,37 @@ class MercadoPagoIntegration:
         :param user_info: Informações do usuário (email, nome, etc.).
         """
         _logger.info(f"Calling create_subscription for user {user_info}")
+        try:
+            data = {
+                "status": "pending",
+                "auto_recurring": {
+                    "frequency": 12,
+                    "frequency_type": "months",
+                    "transaction_amount": price_monthly,
+                    "currency_id": "BRL",
+                    "start_date": (datetime.now(timezone.utc) + timedelta(minutes=1)).isoformat() + "Z",
+                    "end_date": (datetime.now(timezone.utc) + timedelta(days=365)).isoformat() + "Z"
+                },
+                "payer_email": user_info["email"],
+                "back_url": f"{_env.PEDIDOZ_FRONT_URL}/", # TODO change to the thank you route soon
+                "reason": reason
+            }
 
-        data = {
-            "status": "pending",
-            "auto_recurring": {
-                "frequency": 12,
-                "frequency_type": "months",
-                "transaction_amount": price_monthly,
-                "currency_id": "BRL",
-                "start_date": (datetime.now(timezone.utc) + timedelta(minutes=1)).isoformat() + "Z",
-                "end_date": (datetime.now(timezone.utc) + timedelta(days=365)).isoformat() + "Z"
-            },
-            "payer_email": user_info["email"],
-            "back_url": f"{_env.PEDIDOZ_FRONT_URL}/", # TODO change to the thank you route soon
-            "reason": reason
-        }
+            response = self.mp.preapproval().create(data)
 
-        response = self.mp.preapproval().create(data)
+            _logger.info(f"Subscription created - {response['status']}")
 
-        _logger.info(f"Subscription created - {response['status']}")
+            match response.get("status"):
+                case 201:
+                    return MPSubscriptionModel(**response["response"])
 
-        match response.get("status"):
-            case 201:
-                return MPSubscriptionModel(**response["response"])
+                case _:
+                    _logger.error(f"Error on create subscription - Status: {response.get('status')} - Response: {response.get('response')}")
+                    raise InternalErrorException("Error create subscription")
 
-            case _:
-                raise Exception("Error on create subscription")
+        except Exception as error:
+            _logger.error(f"Error on create_subscription: {str(error)}")
+            raise InternalErrorException("Error create subscription")
 
     def get_subscription(self, preapproval_id: str) -> MPSubscriptionModel:
         """
