@@ -31,13 +31,13 @@ async def create_subscription(
         )
 
 
-@router.delete("/subscriptions/{subscription_id}", responses={200: {"model": RequestSubscription}})
+@router.delete("/organizations/{organization_id}/subscriptions", responses={200: {"model": RequestSubscription}})
 async def delete_product(
-    subscription_id: str,
+    organization_id: str,
     current_user: UserInDB = Security(decode_jwt, scopes=["subscription:delete"]),
     subscription_builder: SubscriptionBuilder = Depends(subscription_composer),
 ):
-    subscription_in_db = await subscription_builder.unsubscribe(subscription_id=subscription_id)
+    subscription_in_db = await subscription_builder.unsubscribe(organization_id=organization_id)
 
     if subscription_in_db:
         return build_response(
@@ -46,5 +46,5 @@ async def delete_product(
 
     else:
         return build_response(
-            status_code=404, message=f"Subscription {subscription_id} not found", data=None
+            status_code=404, message=f"Subscription for organization {organization_id} not found", data=None
         )

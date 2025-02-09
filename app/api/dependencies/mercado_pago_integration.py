@@ -31,9 +31,8 @@ class MercadoPagoIntegration:
                     "start_date": (datetime.now(timezone.utc) + timedelta(minutes=1)).isoformat() + "Z",
                     "end_date": (datetime.now(timezone.utc) + timedelta(days=365)).isoformat() + "Z"
                 },
-                # "payer_email": user_info["email"],
-                "payer_email": "test_user_153652602@testuser.com",
-                "back_url": f"{_env.PEDIDOZ_FRONT_URL}/", # TODO change to the thank you route soon
+                "payer_email": user_info["email"] if _env.ENVIRONMENT != "prod" else _env.MP_TEST_EMAIL,
+                "back_url": f"{_env.PEDIDOZ_FRONT_URL}/",
                 "reason": reason
             }
 
@@ -59,15 +58,23 @@ class MercadoPagoIntegration:
         :param preapproval_id: ID da assinatura.
         """
         _logger.info(f"Calling get_subscription - preapproval_id: {preapproval_id}")
+        try:
+            response = self.mp.preapproval().get(preapproval_id)
 
-        response = self.mp.preapproval().get(preapproval_id)
-
-        match response.get("status"):
-            case 200:
+            if response.get("status") == 200:
                 return MPSubscriptionModel(**response["response"])
 
-            case _:
-                raise Exception("Error on get subscription")
+            elif response.get("status") == 404:
+                _logger.warning(f"Subscription {preapproval_id} NOT found")
+                raise NotFoundError(f"Subscription {preapproval_id} not found")
+
+            else:
+                _logger.error(f"Error fetching subscription - Status: {response.get('status')} - Response: {response.get('response')}")
+                raise InternalErrorException(f"Error fetching subscription {preapproval_id}")
+
+        except Exception as error:
+            _logger.error(f"Error on get_subscription: {str(error)}")
+            raise InternalErrorException(f"Error fetching subscription {preapproval_id}")
 
     def cancel_subscription(self, preapproval_id: str) -> MPSubscriptionModel:
         """
@@ -75,16 +82,24 @@ class MercadoPagoIntegration:
         :param preapproval_id: ID da assinatura no Mercado Pago.
         """
         _logger.info(f"Calling cancel_subscription - preapproval_id: {preapproval_id}")
+        try:
+            response = self.mp.preapproval().update(preapproval_id, {"status": "cancelled"})
 
-        response = self.mp.preapproval().update(preapproval_id, {"status": "cancelled"})
-
-        _logger.info("Subscription cancelled")
-        match response.get("status"):
-            case 200:
+            _logger.info("Subscription cancelled")
+            if response.get("status") == 200:
                 return MPSubscriptionModel(**response["response"])
 
-            case _:
-                raise Exception("Error on cancel subscription")
+            elif response.get("status") == 404:
+                _logger.warning(f"Subscription {preapproval_id} NOT found")
+                raise NotFoundError(f"Subscription {preapproval_id} not found")
+
+            else:
+                _logger.error(f"Error on cancel subscription - Status: {response.get('status')} - Response: {response.get('response')}")
+                raise InternalErrorException(f"Error canceling subscription {preapproval_id}")
+
+        except Exception as error:
+            _logger.error(f"Error on cancel_subscription: {str(error)}")
+            raise InternalErrorException(f"Error canceling subscription {preapproval_id}")
 
     def get_payment(self, payment_id: str) -> dict:
         """
@@ -93,7 +108,6 @@ class MercadoPagoIntegration:
         """
         _logger.info(f"Calling get_payment - payment_id: {payment_id}")
         try:
-
             response = self.mp.payment().get(payment_id)
 
             if response.get("status") == 200:
@@ -110,4 +124,4 @@ class MercadoPagoIntegration:
 
         except Exception as error:
             _logger.error(f"Error on get_payment: {str(error)}")
-            raise NotFoundError(f"PaymentId not found {payment_id}")
+            raise InternalErrorException("Error fetching payment details")

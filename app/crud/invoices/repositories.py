@@ -56,19 +56,23 @@ class InvoiceRepository(Repository):
             if raise_404:
                 raise NotFoundError(message=f"Invoice #{id} not found")
 
-    async def select_by_organization_plan_id(self, organization_plan_id: str, raise_404: bool = True) -> InvoiceInDB:
+    async def select_by_organization_plan_id(self, organization_plan_id: str) -> List[InvoiceInDB]:
         try:
-            invoice_model: InvoiceModel = InvoiceModel.objects(
+            invoices = []
+
+            objects: List[InvoiceModel] = InvoiceModel.objects(
                 organization_plan_id=organization_plan_id,
                 is_active=True,
-            ).first()
+            )
 
-            return InvoiceInDB.model_validate(invoice_model)
+            for invoice_model in objects:
+                invoices.append(InvoiceInDB.model_validate(invoice_model))
+
+            return invoices
 
         except Exception as error:
             _logger.error(f"Error on select_by_organization_plan_id: {str(error)}")
-            if raise_404:
-                raise NotFoundError(message=f"Invoice not found")
+            return []
 
     async def select_by_integration(self, integration_id: str, integration_type: str, raise_404: bool = True) -> InvoiceInDB:
         try:
@@ -87,14 +91,14 @@ class InvoiceRepository(Repository):
 
     async def select_all(self) -> List[InvoiceInDB]:
         try:
-            plans = []
+            invoices = []
 
             objects = InvoiceModel.objects(is_active=True)
 
             for invoice_model in objects:
-                plans.append(InvoiceInDB.model_validate(invoice_model))
+                invoices.append(InvoiceInDB.model_validate(invoice_model))
 
-            return plans
+            return invoices
 
         except Exception as error:
             _logger.error(f"Error on select_all: {str(error)}")

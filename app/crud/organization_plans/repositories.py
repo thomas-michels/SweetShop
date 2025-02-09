@@ -45,6 +45,7 @@ class OrganizationPlanRepository(Repository):
                     Q(end_date__gt=organization_plan.start_date)
                 ),
                 id__ne=organization_plan.id,
+                organization_id=organization_plan.organization_id,
             ).first()
 
             if conflicting_plan:
@@ -52,13 +53,16 @@ class OrganizationPlanRepository(Repository):
 
             organization_plan_model: OrganizationPlanModel = OrganizationPlanModel.objects(
                 id=organization_plan.id,
-                organization_id=self.__organization_id,
+                organization_id=organization_plan.organization_id,
                 is_active=True,
             ).first()
 
-            organization_plan_model.update(**organization_plan.model_dump())
+            organization_plan_model.update(**organization_plan.model_dump(exclude=["active_plan"]))
 
-            return await self.select_by_id(id=organization_plan.id)
+            return await self.select_by_id(
+                id=organization_plan.id,
+                organization_id=organization_plan.organization_id
+            )
 
         except Exception as error:
             _logger.error(f"Error on update_organization_plan: {str(error)}")

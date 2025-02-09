@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from app.api.dependencies.mercado_pago_integration import MercadoPagoIntegration
+from app.api.shared_schemas.mercado_pago import MPSubscriptionModel
 from app.api.shared_schemas.subscription import RequestSubscription, ResponseSubscription
 from app.crud.invoices.schemas import Invoice, InvoiceInDB, InvoiceStatus, UpdateInvoice
 from app.crud.invoices.services import InvoiceServices
@@ -26,56 +27,40 @@ class SubscriptionBuilder:
         plan_in_db = await self.__plan_service.search_by_id(id=subscription.plan_id)
         annual_price = round(plan_in_db.price * 12, 2)
 
-        invoice_in_db = await self.__check_if_has_pending_payment(
+        organization_plan_in_db = await self.__organization_plan_service.search_active_plan(
             organization_id=subscription.organization_id
         )
 
-        if invoice_in_db:
-            mp_sub = self.__mp_integration.create_subscription(
-                reason=f"pedidoZ - {plan_in_db.name}",
-                price_monthly=plan_in_db.price,
-                user_info={
-                    "email": user.email,
-                    "nome": user.name
-                }
+        if organization_plan_in_db:
+            await self.__cancel_pending_payments(
+                organization_plan_id=organization_plan_in_db.id
             )
 
-            invoice_in_db.status = InvoiceStatus.PENDING
-            invoice_in_db.integration_id = mp_sub.id
+        organization_plan_in_db = await self.__create_or_update_organization_plan(
+            subscription=subscription
+        )
 
-            invoice_in_db = await self.__invoice_service.update(
-                id=invoice_in_db.id,
-                updated_invoice=invoice_in_db
-            )
+        mp_sub = self.__mp_integration.create_subscription(
+            reason=f"pedidoZ - {plan_in_db.name}",
+            price_monthly=plan_in_db.price,
+            user_info={
+                "email": user.email,
+                "name": user.name
+            }
+        )
 
-        else:
-            organization_plan_in_db = await self.__create_organization_plan(
-                subscription=subscription
-            )
+        invoice = Invoice(
+            organization_plan_id=organization_plan_in_db.id,
+            integration_id=mp_sub.id,
+            integration_type="mercado-pago",
+            amount=annual_price,
+            observation={}
+        )
 
-            mp_sub = self.__mp_integration.create_subscription(
-                reason=f"pedidoZ - {plan_in_db.name}",
-                price_monthly=plan_in_db.price,
-                user_info={
-                    "email": user.email,
-                    "nome": user.name
-                }
-            )
-
-            invoice = Invoice(
-                organization_plan_id=organization_plan_in_db.id,
-                integration_id=mp_sub.id,
-                integration_type="mercado-pago",
-                amount=annual_price,
-                observation={}
-            )
-
-            invoice_in_db = await self.__invoice_service.create(
-                invoice=invoice,
-                organization_id=subscription.organization_id
-            )
-
-        print(f"MP Sub - {mp_sub.model_dump_json()}")
+        invoice_in_db = await self.__invoice_service.create(
+            invoice=invoice,
+            organization_id=subscription.organization_id
+        )
 
         return ResponseSubscription(
             invoice_id=invoice_in_db.id,
@@ -117,47 +102,80 @@ class SubscriptionBuilder:
 
         return updated_invoice
 
-    async def get_subscription(self, organization_id: str) -> InvoiceInDB:
-        organization_plan_in_db = await self.__organization_plan_service.search_active_plan(organization_id=organization_id)
+    async def get_subscription(self, organization_id: str) -> MPSubscriptionModel:
+        invoice_in_db = await self.__get_active_invoice(organization_id=organization_id)
 
-        invoice_in_db = await self.__invoice_service.search_by_organization_plan_id(
-            organization_plan_id=organization_plan_in_db.id
-        )
+        if invoice_in_db:
+            mp_sub = self.__mp_integration.get_subscription(preapproval_id=invoice_in_db.integration_id)
+            return mp_sub
 
-        return invoice_in_db
+    async def unsubscribe(self, organization_id: str) -> MPSubscriptionModel:
+        invoice_in_db = await self.__get_active_invoice(organization_id=organization_id)
 
-    async def unsubscribe(self, subscription_id: str):
-        ...
+        if invoice_in_db:
+            mp_sub = self.__mp_integration.cancel_subscription(preapproval_id=invoice_in_db.integration_id)
+            return mp_sub
 
-    async def __create_organization_plan(self, subscription: RequestSubscription) -> OrganizationPlanInDB:
+    async def __create_or_update_organization_plan(self, subscription: RequestSubscription) -> OrganizationPlanInDB:
         now = datetime.now()
         today = datetime(year=now.year, month=now.month, day=now.day)
         sub_end = today + timedelta(days=365)
-
-        organization_plan = OrganizationPlan(
-            plan_id=subscription.plan_id,
-            allow_additional=subscription.allow_additional,
-            start_date=today,
-            end_date=sub_end
-        )
-
-        organization_plan_in_db = await self.__organization_plan_service.create(
-            organization_plan=organization_plan,
+        organization_plan_in_db = await self.__organization_plan_service.search_active_plan(
             organization_id=subscription.organization_id
         )
 
+        if organization_plan_in_db:
+            organization_plan_in_db.start_date = today
+            organization_plan_in_db.end_date = sub_end
+            organization_plan_in_db.allow_additional = subscription.allow_additional
+            organization_plan_in_db.plan_id = subscription.plan_id
+
+            organization_plan_in_db = await self.__organization_plan_service.update(
+                id=organization_plan_in_db.id,
+                organization_id=organization_plan_in_db.organization_id,
+                updated_organization_plan=organization_plan_in_db
+            )
+
+        else:
+            organization_plan = OrganizationPlan(
+                plan_id=subscription.plan_id,
+                allow_additional=subscription.allow_additional,
+                start_date=today,
+                end_date=sub_end
+            )
+
+            organization_plan_in_db = await self.__organization_plan_service.create(
+                organization_plan=organization_plan,
+                organization_id=subscription.organization_id
+            )
+
         return organization_plan_in_db
 
-    async def __check_if_has_pending_payment(self, organization_id: str) -> InvoiceInDB:
-        organization_plan = await self.__organization_plan_service.search_active_plan(
+    async def __cancel_pending_payments(self, organization_plan_id: str) -> bool:
+        invoices = await self.__invoice_service.search_by_organization_plan_id(
+            organization_plan_id=organization_plan_id
+        )
+
+        for invoice_in_db in invoices:
+            if invoice_in_db and invoice_in_db.status not in [InvoiceStatus.CANCELLED, InvoiceStatus.PAID]:
+                invoice_in_db.status = InvoiceStatus.CANCELLED
+
+                invoice_in_db = await self.__invoice_service.update(
+                    id=invoice_in_db.id,
+                    updated_invoice=invoice_in_db
+                )
+
+        return True
+
+    async def __get_active_invoice(self, organization_id: str) -> InvoiceInDB:
+        organization_plan_in_db = await self.__organization_plan_service.search_active_plan(
             organization_id=organization_id
         )
 
-        if organization_plan:
-            invoice_in_db = await self.__invoice_service.search_by_organization_plan_id(
-                organization_plan_id=organization_plan.id,
-                raise_404=False
-            )
+        invoices = await self.__invoice_service.search_by_organization_plan_id(
+            organization_plan_id=organization_plan_in_db.id
+        )
 
-            if invoice_in_db and invoice_in_db.status != InvoiceStatus.PAID:
+        for invoice_in_db in invoices:
+            if invoice_in_db.status == InvoiceStatus.PAID:
                 return invoice_in_db
