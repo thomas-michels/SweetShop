@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta
 from app.api.dependencies.mercado_pago_integration import MercadoPagoIntegration
-from app.api.shared_schemas.mercado_pago import WebhookPayload
 from app.api.shared_schemas.subscription import RequestSubscription, ResponseSubscription
 from app.crud.invoices.schemas import Invoice, InvoiceInDB, InvoiceStatus, UpdateInvoice
 from app.crud.invoices.services import InvoiceServices
@@ -82,7 +81,7 @@ class SubscriptionBuilder:
             init_point=mp_sub.init_point,
         )
 
-    async def update_payment(self, payment_id: str, payload: WebhookPayload) -> InvoiceInDB:
+    async def update_payment(self, payment_id: str) -> InvoiceInDB:
         payment_data = self.__mp_integration.get_payment(payment_id)
         payment_status = payment_data.get("status")
 
