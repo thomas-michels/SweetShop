@@ -75,7 +75,7 @@ class SubscriptionBuilder:
                 organization_id=subscription.organization_id
             )
 
-        print(f"MP Sub - {mp_sub.model_dump()}")
+        print(f"MP Sub - {mp_sub.model_dump_json()}")
 
         return ResponseSubscription(
             invoice_id=invoice_in_db.id,

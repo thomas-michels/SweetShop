@@ -39,6 +39,10 @@ class Invoice(GenericModel):
     def validate_updated_fields(self, update_invoice: "UpdateInvoice") -> bool:
         is_updated = False
 
+        if update_invoice.integration_id is not None:
+            self.integration_id = update_invoice.integration_id
+            is_updated = True
+
         if update_invoice.amount is not None:
             self.amount = update_invoice.amount
             is_updated = True
@@ -63,6 +67,7 @@ class Invoice(GenericModel):
 
 
 class UpdateInvoice(GenericModel):
+    integration_id: Optional[str] = Field(default=None, example="org_plan_123")
     amount: Optional[float] = Field(default=None, example=39.9)
     amount_paid: Optional[float] = Field(default=None, example=39.9)
     paid_at: Optional[datetime] = Field(default=None, example=str(datetime.now()))
