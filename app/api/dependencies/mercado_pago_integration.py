@@ -30,7 +30,7 @@ class MercadoPagoIntegration:
                 "end_date": (datetime.now(timezone.utc) + timedelta(days=365)).isoformat() + "Z"
             },
             "payer_email": user_info["email"],
-            "back_url": user_info.get("back_url", f"{_env.PEDIDOZ_FRONT_URL}/"), # TODO change to the thank you route soon
+            "back_url": f"{_env.PEDIDOZ_FRONT_URL}/", # TODO change to the thank you route soon
             "reason": reason
         }
 
@@ -89,5 +89,6 @@ class MercadoPagoIntegration:
 
         if response.get("status") == 200:
             return response["response"]
+
         else:
             raise Exception("Error fetching payment details")

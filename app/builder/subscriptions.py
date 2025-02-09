@@ -67,7 +67,8 @@ class SubscriptionBuilder:
                 organization_plan_id=organization_plan_in_db.id,
                 integration_id=mp_sub.id,
                 integration_type="mercado-pago",
-                amount=annual_price
+                amount=annual_price,
+                observation={}
             )
 
             invoice_in_db = await self.__invoice_service.create(
