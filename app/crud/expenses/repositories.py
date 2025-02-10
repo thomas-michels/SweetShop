@@ -67,7 +67,7 @@ class ExpenseRepository(Repository):
             if raise_404:
                 raise NotFoundError(message=f"Expense #{id} not found")
 
-    async def select_all(self, query: str, start_date: date = None, end_date: date = None) -> List[ExpenseInDB]:
+    async def select_all(self, query: str, start_date: date = None, end_date: date = None, tags: List[str] = None) -> List[ExpenseInDB]:
         try:
             expenses = []
 
@@ -84,6 +84,9 @@ class ExpenseRepository(Repository):
 
             if end_date:
                 query_filter["expense_date__lte"] = end_date
+
+            if tags:
+                query_filter["tags__in"] = tags
 
             objects = ExpenseModel.objects(**query_filter).order_by("-expense_date")
 

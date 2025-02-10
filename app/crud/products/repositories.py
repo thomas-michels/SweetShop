@@ -66,22 +66,20 @@ class ProductRepository(Repository):
             if raise_404:
                 raise NotFoundError(message=f"Product #{id} not found")
 
-    async def select_all(self, query: str) -> List[ProductInDB]:
+    async def select_all(self, query: str, tags: List[str] = []) -> List[ProductInDB]:
         try:
             products = []
 
-            if query:
-                objects = ProductModel.objects(
-                    is_active=True,
-                    name__iregex=query,
-                    organization_id=self.organization_id
-                )
+            objects = ProductModel.objects(
+                is_active=True,
+                organization_id=self.organization_id
+            )
 
-            else:
-                objects = ProductModel.objects(
-                    is_active=True,
-                    organization_id=self.organization_id
-                )
+            if query:
+                objects = objects.filter(name__iregex=query)
+
+            if tags:
+                objects = objects.filter(tags__in=tags)
 
             for product_model in objects.order_by("name"):
                 products.append(ProductInDB.model_validate(product_model))

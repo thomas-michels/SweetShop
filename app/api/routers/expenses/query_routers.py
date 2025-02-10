@@ -44,6 +44,7 @@ async def get_expenses(
         query=query,
         start_date=start_date,
         end_date=end_date,
+        tags=tags,
         expand=expand
     )
 

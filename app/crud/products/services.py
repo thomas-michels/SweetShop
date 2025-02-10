@@ -40,8 +40,11 @@ class ProductServices:
         product_in_db = await self.__product_repository.select_by_id(id=id)
         return product_in_db
 
-    async def search_all(self, query: str, expand: List[str] = []) -> List[ProductInDB]:
-        products = await self.__product_repository.select_all(query=query)
+    async def search_all(self, query: str, tags: List[str] = [], expand: List[str] = []) -> List[ProductInDB]:
+        products = await self.__product_repository.select_all(
+            query=query,
+            tags=tags
+        )
 
         if not expand:
             return products

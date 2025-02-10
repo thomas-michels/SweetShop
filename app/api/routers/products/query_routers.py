@@ -32,11 +32,16 @@ async def get_product_by_id(
 @router.get("/products", responses={200: {"model": List[ProductInDB]}})
 async def get_products(
     query: str = Query(default=None),
+    tags: List[str] = Query(default=[]),
     expand: List[str] = Query(default=[]),
     current_user: UserInDB = Security(decode_jwt, scopes=["product:get"]),
     product_services: ProductServices = Depends(product_composer),
 ):
-    products = await product_services.search_all(query=query, expand=expand)
+    products = await product_services.search_all(
+        query=query,
+        tags=tags,
+        expand=expand
+    )
 
     if products:
         return build_response(

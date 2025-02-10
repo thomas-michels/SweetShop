@@ -59,11 +59,12 @@ class ExpenseServices:
         expense_in_db = await self.__expense_repository.select_by_id(id=id)
         return expense_in_db
 
-    async def search_all(self, query: str, start_date: date = None, end_date: date = None, expand: List[str] = []) -> List[ExpenseInDB | CompleteExpense]:
+    async def search_all(self, query: str, start_date: date = None, end_date: date = None, tags: List[str] = [], expand: List[str] = []) -> List[ExpenseInDB | CompleteExpense]:
         expenses = await self.__expense_repository.select_all(
             query=query,
             start_date=start_date,
-            end_date=end_date
+            end_date=end_date,
+            tags=tags
         )
 
         if not expand:
