@@ -7,6 +7,7 @@ class PlanModel(BaseDocument):
     name = StringField(required=True)
     description = StringField(required=True)
     price = FloatField(required=True)
+    hide = FloatField(default=False, required=False)
 
     meta = {
         "collection": "plans"

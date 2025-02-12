@@ -46,8 +46,8 @@ class PlanServices:
 
         return await self.__mount_complete_plan(plan=plan_in_db, expand=expand)
 
-    async def search_all(self, expand: List[str] = []) -> List[PlanInDB | CompletePlanInDB]:
-        plans = await self.__plan_repository.select_all()
+    async def search_all(self, hide: bool = False, expand: List[str] = []) -> List[PlanInDB | CompletePlanInDB]:
+        plans = await self.__plan_repository.select_all(hide=hide)
 
         if not expand:
             return plans

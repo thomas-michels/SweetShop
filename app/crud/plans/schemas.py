@@ -10,6 +10,7 @@ class Plan(GenericModel):
     name: str = Field(example="Advanced")
     description: str = Field(example="Description")
     price: float = Field(example=123)
+    hide: bool = Field(default=False, example=False)
 
     @model_validator(mode="after")
     def validate_model(self) -> "UpdatePlan":
@@ -33,6 +34,10 @@ class Plan(GenericModel):
             self.price = update_plan.price
             is_updated = True
 
+        if update_plan.hide is not None:
+            self.hide = update_plan.hide
+            is_updated = True
+
         return is_updated
 
 
@@ -40,6 +45,7 @@ class UpdatePlan(GenericModel):
     name: Optional[str] = Field(default=None, example="Advanced")
     description: Optional[str] = Field(default=None, example="Description")
     price: Optional[float] = Field(default=None, example=123)
+    hide: Optional[bool] = Field(default=None, example=False)
 
     @model_validator(mode="after")
     def validate_model(self) -> "UpdatePlan":

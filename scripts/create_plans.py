@@ -19,8 +19,8 @@ PLAN_FEATURES = {
         {"name": "MAX_ORDERS", "value": "200"},
         {"name": "MAX_CUSTOMERS", "value": "100"},
         {"name": "MAX_EXPANSES", "value": "100"},
-        {"name": "DISPLAY_CALENDAR", "value": "1"},
-        {"name": "DISPLAY_DASHBOARD", "value": "1"},
+        {"name": "DISPLAY_CALENDAR", "value": "true"},
+        {"name": "DISPLAY_DASHBOARD", "value": "true"},
     ],
     "Avançado": [
         {"name": "MAX_USERS", "value": "10", "allowAdditional": True, "additionalPrice": 5.00},
@@ -29,9 +29,9 @@ PLAN_FEATURES = {
         {"name": "MAX_ORDERS", "value": "500", "allowAdditional": True, "additionalPrice": 0.10},
         {"name": "MAX_CUSTOMERS", "value": "300", "allowAdditional": True, "additionalPrice": 0.20},
         {"name": "MAX_EXPANSES", "value": "300", "allowAdditional": True, "additionalPrice": 0.05},
-        {"name": "DISPLAY_CALENDAR", "value": "1"},
-        {"name": "DISPLAY_DASHBOARD", "value": "1"},
-        {"name": "DISPLAY_DELINQUENCY", "value": "1"},
+        {"name": "DISPLAY_CALENDAR", "value": "true"},
+        {"name": "DISPLAY_DASHBOARD", "value": "true"},
+        {"name": "DISPLAY_DELINQUENCY", "value": "true"},
     ],
 }
 

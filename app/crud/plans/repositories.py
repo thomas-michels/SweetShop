@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import List
+from mongoengine import Q
 from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.core.repositories.base_repository import Repository
@@ -70,11 +71,17 @@ class PlanRepository(Repository):
             if raise_404:
                 raise NotFoundError(message=f"Plan with name {name} not found")
 
-    async def select_all(self) -> List[PlanInDB]:
+    async def select_all(self, hide: bool = False) -> List[PlanInDB]:
         try:
             plans = []
 
             objects = PlanModel.objects(is_active=True)
+
+            if not hide:
+                objects = objects.filter(Q(hide=hide) | Q(hide=None))
+
+            else:
+                objects = objects.filter(hide=hide)
 
             for plan_model in objects.order_by("price"):
                 plans.append(PlanInDB.model_validate(plan_model))
