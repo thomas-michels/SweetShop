@@ -71,6 +71,14 @@ class SubscriptionBuilder:
     async def update_subscription(self, subscription_id: str, data: dict) -> InvoiceInDB:
         print(f"subscription_id: {subscription_id}")
         print(f"data: {data}")
+        mp_sub = self.__mp_integration.get_subscription(preapproval_id=subscription_id)
+        print(f"MP Sub: {mp_sub.model_dump_json()}")
+
+    async def update_subscription_payment(self, authorized_payment_id: str, data: dict) -> InvoiceInDB:
+        print(f"authorized_payment_id: {authorized_payment_id}")
+        print(f"data: {data}")
+        mp_sub = self.__mp_integration.get_authorized_payments(authorized_payment_id=authorized_payment_id)
+        print(f"MP Sub: {mp_sub}")
 
     async def update_payment(self, payment_id: str) -> InvoiceInDB:
         payment_data = self.__mp_integration.get_payment(payment_id)

@@ -28,9 +28,15 @@ async def webhook(
             payment_id=event_id
         )
 
-    elif "subscription" in event_type and event_id:
+    elif event_type == "subscription_preapproval" and event_id:
         subscription_in_db = await subscription_builder.update_subscription(
             subscription_id=event_id,
+            data=data
+        )
+
+    elif event_type == "subscription_authorized_payment" and event_id:
+        subscription_in_db = await subscription_builder.update_subscription_payment(
+            payment_id=event_id,
             data=data
         )
 

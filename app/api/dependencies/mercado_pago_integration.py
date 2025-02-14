@@ -125,3 +125,28 @@ class MercadoPagoIntegration:
         except Exception as error:
             _logger.error(f"Error on get_payment: {str(error)}")
             raise InternalErrorException("Error fetching payment details")
+
+    def get_authorized_payments(self, authorized_payment_id: str) -> dict:
+        """
+        Obtém os detalhes de um pagamento autorizado.
+        :param authorized_payment_id: ID do pagamento autorizado.
+        """
+        _logger.info(f"Calling get_authorized_payments - authorized_payment_id: {authorized_payment_id}")
+        try:
+            response = self.mp.get(f"/v1/authorized_payments/{authorized_payment_id}")
+
+            if response.get("status") == 200:
+                _logger.info(f"Authorized payment {authorized_payment_id} found")
+                return response["response"]
+
+            elif response.get("status") == 404:
+                _logger.warning(f"Authorized payment {authorized_payment_id} NOT found")
+                raise NotFoundError(f"Authorized payment {authorized_payment_id} not found")
+
+            else:
+                _logger.error(f"Error on get authorized payment - Status: {response.get('status')} - Response: {response.get('response')}")
+                raise InternalErrorException("Error fetching authorized payment details")
+
+        except Exception as error:
+            _logger.error(f"Error on get_authorized_payments: {str(error)}")
+            raise InternalErrorException("Error fetching authorized payment details")
