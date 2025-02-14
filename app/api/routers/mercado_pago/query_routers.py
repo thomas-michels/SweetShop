@@ -12,7 +12,7 @@ router = APIRouter(prefix="/mercado-pago", tags=["Mercado Pago"])
 async def webhook(
     request: Request,
     event_type: str = Query(alias="type"),
-    payment_id: str = Query(alias="data.id"),
+    event_id: str = Query(alias="data.id"),
     subscription_builder: SubscriptionBuilder = Depends(subscription_composer),
 ):
     """
@@ -23,9 +23,15 @@ async def webhook(
 
     subscription_in_db = None
 
-    if event_type == "payment" and payment_id:
+    if event_type == "payment" and event_id:
         subscription_in_db = await subscription_builder.update_payment(
-            payment_id=payment_id
+            payment_id=event_id
+        )
+
+    elif "subscription" in event_type and event_id:
+        subscription_in_db = await subscription_builder.update_subscription(
+            subscription_id=event_id,
+            data=data
         )
 
     else:

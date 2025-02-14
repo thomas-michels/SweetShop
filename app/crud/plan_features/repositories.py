@@ -27,7 +27,7 @@ class PlanFeatureRepository(Repository):
             plan_feature_model = PlanFeatureModel(
                 created_at=datetime.now(),
                 updated_at=datetime.now(),
-                **plan_feature.model_dump()
+                **plan_feature.model_dump(exclude=["display_name"])
             )
 
             plan_feature_model.save()
@@ -60,7 +60,7 @@ class PlanFeatureRepository(Repository):
                     message="This feature already exists for this plan!"
                 )
 
-            plan_feature_model.update(**plan_feature.model_dump())
+            plan_feature_model.update(**plan_feature.model_dump(exclude=["display_name"]))
 
             return await self.select_by_id(id=plan_feature.id)
 

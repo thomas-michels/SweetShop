@@ -31,7 +31,7 @@ class MercadoPagoIntegration:
                     "start_date": (datetime.now(timezone.utc) + timedelta(minutes=1)).isoformat() + "Z",
                     "end_date": (datetime.now(timezone.utc) + timedelta(days=365)).isoformat() + "Z"
                 },
-                "payer_email": user_info["email"] if _env.ENVIRONMENT != "prod" else _env.MP_TEST_EMAIL,
+                "payer_email": user_info["email"] if _env.ENVIRONMENT == "prod" else _env.MP_TEST_EMAIL,
                 "back_url": f"{_env.PEDIDOZ_FRONT_URL}/",
                 "reason": reason
             }

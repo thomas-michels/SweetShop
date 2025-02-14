@@ -68,6 +68,10 @@ class SubscriptionBuilder:
             init_point=mp_sub.init_point,
         )
 
+    async def update_subscription(self, subscription_id: str, data: dict) -> InvoiceInDB:
+        print(f"subscription_id: {subscription_id}")
+        print(f"data: {data}")
+
     async def update_payment(self, payment_id: str) -> InvoiceInDB:
         payment_data = self.__mp_integration.get_payment(payment_id)
         payment_status = payment_data.get("status")
