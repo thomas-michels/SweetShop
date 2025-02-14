@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, Query, Request
+from app.api.dependencies.validate_x_signature import validate_signature
 from app.core.configs import get_logger
 from app.api.composers.subscription_composite import subscription_composer
 from app.api.dependencies.response import build_response
@@ -18,6 +19,10 @@ async def webhook(
     """
     Webhook para capturar notificações de pagamento do Mercado Pago.
     """
+    if not validate_signature(request):
+        _logger.warning("Invalid webhook signature")
+        return build_response(status_code=403, message="Invalid signature", data=None)
+
     data = await request.json()
     _logger.info("MP event received:", data)
 
