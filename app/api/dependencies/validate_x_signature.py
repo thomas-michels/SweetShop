@@ -44,7 +44,12 @@ def validate_signature(request: Request) -> bool:
         hmac_obj = hmac.new(secret.encode(), msg=manifest.encode(), digestmod=hashlib.sha256)
         sha = hmac_obj.hexdigest()
 
-        return sha == hash_value
+        if sha == hash_value:
+            _logger.info(f"Valid signature {data_id}")
+            return True
+
+        _logger.warning(f"Invalid signature {data_id}")
+        return False
 
     except Exception as e:
         _logger.error(f"Error validating signature: {str(e)}")

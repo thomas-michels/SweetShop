@@ -56,7 +56,7 @@ class SubscriptionBuilder:
         }
 
         mp_sub = self.__mp_integration.create_subscription(
-            reason=f"pedidoZ - {plan_in_db.name}",
+            reason=f"pedidoZ - {plan_in_db.name} - Anual",
             price_monthly=plan_in_db.price,
             user_info=user_info
         )
