@@ -6,6 +6,7 @@ from app.crud.invoices.schemas import Invoice, InvoiceInDB, InvoiceStatus, Updat
 from app.crud.invoices.services import InvoiceServices
 from app.crud.organization_plans.schemas import OrganizationPlan, OrganizationPlanInDB
 from app.crud.organization_plans.services import OrganizationPlanServices
+from app.crud.organizations.services import OrganizationServices
 from app.crud.plans.services import PlanServices
 from app.crud.users.schemas import UserInDB
 
@@ -15,10 +16,12 @@ class SubscriptionBuilder:
     def __init__(
             self,
             invoice_service: InvoiceServices,
+            organization_service: OrganizationServices,
             plan_service: PlanServices,
             organization_plan_service: OrganizationPlanServices,
         ) -> None:
         self.__invoice_service = invoice_service
+        self.__organization_service = organization_service
         self.__plan_service = plan_service
         self.__organization_plan_service = organization_plan_service
         self.__mp_integration = MercadoPagoIntegration()
@@ -36,6 +39,10 @@ class SubscriptionBuilder:
                 organization_plan_id=organization_plan_in_db.id
             )
 
+        organization_in_db = await self.__organization_service.search_by_id(
+            id=subscription.organization_id
+        )
+
         organization_plan_in_db = await self.__create_or_update_organization_plan(
             subscription=subscription
         )
@@ -44,7 +51,7 @@ class SubscriptionBuilder:
             reason=f"pedidoZ - {plan_in_db.name}",
             price_monthly=plan_in_db.price,
             user_info={
-                "email": user.email,
+                "email": organization_in_db.email if organization_in_db.email else user.email,
                 "name": user.name
             }
         )
