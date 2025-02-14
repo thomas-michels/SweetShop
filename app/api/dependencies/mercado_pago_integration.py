@@ -26,7 +26,7 @@ class MercadoPagoIntegration:
                 "auto_recurring": {
                     "frequency": 12,
                     "frequency_type": "months",
-                    "transaction_amount": price_monthly,
+                    "transaction_amount": round((12 * price_monthly), 2),
                     "currency_id": "BRL",
                     "start_date": (datetime.now(timezone.utc) + timedelta(minutes=1)).isoformat() + "Z",
                     "end_date": (datetime.now(timezone.utc) + timedelta(days=365)).isoformat() + "Z"

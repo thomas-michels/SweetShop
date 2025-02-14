@@ -9,6 +9,9 @@ from app.crud.organization_plans.services import OrganizationPlanServices
 from app.crud.organizations.services import OrganizationServices
 from app.crud.plans.services import PlanServices
 from app.crud.users.schemas import UserInDB
+from app.core.configs import get_logger
+
+_logger = get_logger(__name__)
 
 
 class SubscriptionBuilder:
@@ -47,13 +50,15 @@ class SubscriptionBuilder:
             subscription=subscription
         )
 
+        user_info = {
+            "email": organization_in_db.email if organization_in_db.email else user.email,
+            "name": user.name
+        }
+
         mp_sub = self.__mp_integration.create_subscription(
             reason=f"pedidoZ - {plan_in_db.name}",
             price_monthly=plan_in_db.price,
-            user_info={
-                "email": organization_in_db.email if organization_in_db.email else user.email,
-                "name": user.name
-            }
+            user_info=user_info
         )
 
         invoice = Invoice(
@@ -73,19 +78,28 @@ class SubscriptionBuilder:
             invoice_id=invoice_in_db.id,
             integration_id=mp_sub.id,
             init_point=mp_sub.init_point,
+            email=user_info["email"]
         )
 
     async def update_subscription(self, subscription_id: str, data: dict) -> InvoiceInDB:
-        print(f"subscription_id: {subscription_id}")
-        print(f"data: {data}")
         mp_sub = self.__mp_integration.get_subscription(preapproval_id=subscription_id)
-        print(f"MP Sub: {mp_sub.model_dump_json()}")
+        invoice_in_db = await self.__invoice_service.search_by_integration(
+            integration_id=mp_sub.id,
+            integration_type="mercado-pago"
+        )
+        return invoice_in_db
 
     async def update_subscription_payment(self, authorized_payment_id: str, data: dict) -> InvoiceInDB:
-        print(f"authorized_payment_id: {authorized_payment_id}")
-        print(f"data: {data}")
-        mp_sub = self.__mp_integration.get_authorized_payments(authorized_payment_id=authorized_payment_id)
-        print(f"MP Sub: {mp_sub}")
+        authorized_payment = self.__mp_integration.get_authorized_payments(authorized_payment_id=authorized_payment_id)
+
+        _logger.info(f"Authorized payment {authorized_payment['payment']['status']}")
+
+        invoice_in_db = await self.__invoice_service.search_by_integration(
+            integration_id=authorized_payment["preapproval_id"],
+            integration_type="mercado-pago"
+        )
+
+        return invoice_in_db
 
     async def update_payment(self, payment_id: str) -> InvoiceInDB:
         payment_data = self.__mp_integration.get_payment(payment_id)

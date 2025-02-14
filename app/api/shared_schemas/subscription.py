@@ -13,3 +13,4 @@ class ResponseSubscription(GenericModel):
     invoice_id: str = Field(example="inv_123")
     integration_id: str = Field(example="int_123")
     init_point: str = Field(example="www.mercadopago.com.br")
+    email: str = Field(example="email@gmail.com")
