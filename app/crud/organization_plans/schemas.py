@@ -62,6 +62,7 @@ class UpdateOrganizationPlan(GenericModel):
 
 class OrganizationPlanInDB(OrganizationPlan, DatabaseModel):
     organization_id: str = Field(example="org_123")
+    has_paid_invoice: bool | None = Field(default=None, example=True)
 
     @computed_field
     @property

@@ -110,7 +110,7 @@ class OrganizationServices:
                 user.user = user_in_db
 
         if "plan":
-            organization_plans = await self.__organization_plan_repository.select_all(organization_id=organization.id)
+            organization_plans = await self.__organization_plan_repository.select_active_plan(organization_id=organization.id)
 
             for organization_plan in organization_plans:
                 if organization_plan.active_plan:

@@ -116,6 +116,63 @@ class OrganizationPlanRepository(Repository):
             _logger.error(f"Error on delete_by_id: {str(error)}")
             raise NotFoundError(message=f"OrganizationPlan #{id} not found")
 
+    async def select_active_plan(self, organization_id: str) -> List[OrganizationPlanInDB]:
+        try:
+            pipeline = [
+                {
+                    "$match": {
+                        "is_active": True,
+                        "organization_id": organization_id
+                    }
+                },
+                {
+                    "$lookup": {
+                        "from": "invoices",
+                        "let": { "orgPlanId": "$_id" },
+                        "pipeline": [
+                            {
+                                "$match": {
+                                    "$expr": {
+                                        "$and": [
+                                            { "$eq": ["$organization_plan_id", "$$orgPlanId"] },
+                                            { "$eq": ["$status", "PAID"] }
+                                        ]
+                                    }
+                                }
+                            },
+                            { "$limit": 1 }
+                        ],
+                        "as": "paid_invoice"
+                    }
+                },
+                {
+                    "$addFields": {
+                        "has_paid_invoice": { "$gt": [{ "$size": "$paid_invoice" }, 0] },
+                        "id": "$_id"
+                    }
+                },
+                {
+                    "$project": {
+                        "paid_invoice": 0,
+                        "_id": 0
+                    }
+                },
+                {
+                    "$sort": { "end_date": -1 }
+                }
+            ]
+
+            results = list(OrganizationPlanModel.objects.aggregate(pipeline))
+
+            if not results:
+                return []
+
+            return [OrganizationPlanInDB.model_validate(organization_plan) for organization_plan in results]
+
+        except Exception as error:
+            _logger.error(f"Error on select_active_plan: {str(error)}")
+            raise NotFoundError(message="OrganizationPlans not found")
+
     async def __check_if_is_duplicated(self, organization_plan: OrganizationPlan, organization_id: str) -> None:
         existing_plan = OrganizationPlanModel.objects(
             (
