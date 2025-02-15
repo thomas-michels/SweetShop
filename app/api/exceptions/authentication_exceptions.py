@@ -52,3 +52,13 @@ class TooManyRequestException(HTTPException):
         super().__init__(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=detail
         )
+
+
+class PaymentRequiredException(HTTPException):
+    def __init__(self, detail: str = None) -> None:
+        if not detail:
+            detail = "Payment required"
+
+        super().__init__(
+            status_code=status.HTTP_402_PAYMENT_REQUIRED, detail=detail
+        )

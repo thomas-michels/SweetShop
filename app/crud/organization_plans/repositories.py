@@ -116,7 +116,7 @@ class OrganizationPlanRepository(Repository):
             _logger.error(f"Error on delete_by_id: {str(error)}")
             raise NotFoundError(message=f"OrganizationPlan #{id} not found")
 
-    async def select_active_plan(self, organization_id: str) -> List[OrganizationPlanInDB]:
+    async def select_active_plan(self, organization_id: str) -> OrganizationPlanInDB:
         try:
             pipeline = [
                 {
@@ -165,9 +165,12 @@ class OrganizationPlanRepository(Repository):
             results = list(OrganizationPlanModel.objects.aggregate(pipeline))
 
             if not results:
-                return []
+                return
 
-            return [OrganizationPlanInDB.model_validate(organization_plan) for organization_plan in results]
+            for organization_plan in results:
+                organization_plan_in_db = OrganizationPlanInDB.model_validate(organization_plan)
+                if organization_plan_in_db.active_plan:
+                    return organization_plan_in_db
 
         except Exception as error:
             _logger.error(f"Error on select_active_plan: {str(error)}")

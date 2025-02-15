@@ -3,6 +3,7 @@ from typing import List
 from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.core.repositories.base_repository import Repository
+from app.core.utils.features import Feature
 
 from .models import PlanFeatureModel
 from .schemas import PlanFeature, PlanFeatureInDB
@@ -81,6 +82,20 @@ class PlanFeatureRepository(Repository):
             _logger.error(f"Error on select_by_id: {str(error)}")
             if raise_404:
                 raise NotFoundError(message=f"PlanFeature #{id} not found")
+
+    async def select_by_name(self, name: Feature, raise_404: bool = True) -> PlanFeatureInDB:
+        try:
+            plan_feature_model: PlanFeatureModel = PlanFeatureModel.objects(
+                name=name.value,
+                is_active=True,
+            ).first()
+
+            return PlanFeatureInDB.model_validate(plan_feature_model)
+
+        except Exception as error:
+            _logger.error(f"Error on select_by_name: {str(error)}")
+            if raise_404:
+                raise NotFoundError(message=f"PlanFeature with name {name.value} not found")
 
     async def select_all(self, plan_id: str) -> List[PlanFeatureInDB]:
         try:

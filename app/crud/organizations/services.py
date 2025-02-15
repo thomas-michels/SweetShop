@@ -1,6 +1,8 @@
 from typing import List
 
+from app.api.dependencies.get_plan_feature import get_plan_feature
 from app.api.exceptions.authentication_exceptions import UnauthorizedException
+from app.core.utils.features import Feature
 from app.crud.users.repositories import UserRepository
 from app.crud.users.schemas import UserInDB
 
@@ -35,6 +37,17 @@ class OrganizationServices:
         )
 
         return await self.search_by_id(id=organization_in_db.id)
+
+    async def check_if_can_add_more_users(self, organization_id: str) -> None:
+        organization_in_db = await self.search_by_id(id=organization_id)
+
+        plan_feature = await get_plan_feature(
+            organization_id=organization_id,
+            feature_name=Feature.MAX_USERS
+        )
+
+        if (len(organization_in_db.users) + 1) >= int(plan_feature.value):
+            raise UnauthorizedException(detail=f"Maximum number of users reached, Max value: {plan_feature.value}")
 
     async def update(
             self,
@@ -110,12 +123,8 @@ class OrganizationServices:
                 user.user = user_in_db
 
         if "plan":
-            organization_plans = await self.__organization_plan_repository.select_active_plan(organization_id=organization.id)
-
-            for organization_plan in organization_plans:
-                if organization_plan.active_plan:
-                    complete_organization.plan = organization_plan
-                    break
+            organization_plan = await self.__organization_plan_repository.select_active_plan(organization_id=organization.id)
+            complete_organization.plan = organization_plan
 
         return complete_organization
 

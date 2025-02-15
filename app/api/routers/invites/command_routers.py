@@ -18,8 +18,13 @@ router = APIRouter(tags=["Invites"])
 async def create_invite(
     invite: Invite,
     invite_services: InviteServices = Depends(invite_composer),
+    organization_services: OrganizationServices = Depends(organization_composer),
     current_user: UserInDB = Security(decode_jwt, scopes=["invite:create"]),
 ):
+    await organization_services.check_if_can_add_more_users(
+        organization_id=invite.organization_id
+    )
+
     invite_in_db = await invite_services.create(invite=invite, user_making_request=current_user.user_id)
 
     if invite_in_db:
