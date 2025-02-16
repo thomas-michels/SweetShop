@@ -30,7 +30,7 @@ class BillingServices:
             feature_name=Feature.DISPLAY_DASHBOARD
         )
 
-        if not plan_feature.value.startswith("t"):
+        if not plan_feature or not plan_feature.value.startswith("t"):
             raise UnauthorizedException(detail=f"You cannot access this feature")
 
         return await self.__generate_monthly_billing(month=month, year=year)
@@ -41,7 +41,7 @@ class BillingServices:
             feature_name=Feature.DISPLAY_DASHBOARD
         )
 
-        if not plan_feature.value.startswith("t"):
+        if not plan_feature or not plan_feature.value.startswith("t"):
             raise UnauthorizedException(detail=f"You cannot access this feature")
 
         billings = []
@@ -60,7 +60,7 @@ class BillingServices:
             feature_name=Feature.DISPLAY_DASHBOARD
         )
 
-        if not plan_feature.value.startswith("t"):
+        if not plan_feature or not plan_feature.value.startswith("t"):
             raise UnauthorizedException(detail=f"You cannot access this feature")
 
         start_date, end_date = self.__get_start_and_end_date(month=month, year=year)
@@ -111,7 +111,7 @@ class BillingServices:
             feature_name=Feature.DISPLAY_DASHBOARD
         )
 
-        if not plan_feature.value.startswith("t"):
+        if not plan_feature or not plan_feature.value.startswith("t"):
             raise UnauthorizedException(detail=f"You cannot access this feature")
 
         start_date, end_date = self.__get_start_and_end_date(month=month, year=year)
@@ -149,7 +149,7 @@ class BillingServices:
             feature_name=Feature.DISPLAY_DASHBOARD
         )
 
-        if not plan_feature.value.startswith("t"):
+        if not plan_feature or not plan_feature.value.startswith("t"):
             raise UnauthorizedException(detail=f"You cannot access this feature")
 
         start_date, end_date = self.__get_start_and_end_date(month=month, year=year)

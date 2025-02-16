@@ -56,7 +56,7 @@ class OrderServices:
             end_date=end_date
         )
 
-        if (quantity + 1) >= int(plan_feature.value):
+        if not plan_feature or (quantity + 1) >= int(plan_feature.value):
             raise UnauthorizedException(detail=f"Maximum number of orders reached, Max value: {plan_feature.value}")
 
         products = []

@@ -20,7 +20,7 @@ class TagServices:
 
         quantity = await self.__repository.select_count()
 
-        if (quantity + 1) >= int(plan_feature.value):
+        if not plan_feature or (quantity + 1) >= int(plan_feature.value):
             raise UnauthorizedException(detail=f"Maximum number of tags reached, Max value: {plan_feature.value}")
 
         tag_in_db = await self.__repository.create(tag=tag, system_tag=system_tag)

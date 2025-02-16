@@ -46,7 +46,7 @@ class OrganizationServices:
             feature_name=Feature.MAX_USERS
         )
 
-        if (len(organization_in_db.users) + 1) >= int(plan_feature.value):
+        if not plan_feature or (len(organization_in_db.users) + 1) >= int(plan_feature.value):
             raise UnauthorizedException(detail=f"Maximum number of users reached, Max value: {plan_feature.value}")
 
     async def update(

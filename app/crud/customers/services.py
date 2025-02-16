@@ -26,7 +26,7 @@ class CustomerServices:
 
         quantity = await self.__repository.select_count()
 
-        if (quantity + 1) >= int(plan_feature.value):
+        if not plan_feature or (quantity + 1) >= int(plan_feature.value):
             raise UnauthorizedException(detail=f"Maximum number of customers reached, Max value: {plan_feature.value}")
 
         for tag in customer.tags:
