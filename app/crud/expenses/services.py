@@ -1,7 +1,10 @@
 from datetime import date
 from typing import List
 
-from app.api.exceptions.authentication_exceptions import UnprocessableEntityException
+from app.api.dependencies.get_plan_feature import get_plan_feature
+from app.api.exceptions.authentication_exceptions import UnauthorizedException, UnprocessableEntityException
+from app.core.utils.features import Feature
+from app.core.utils.get_current_month import get_current_month_date_range
 from app.crud.shared_schemas.payment import Payment
 from app.crud.tags.repositories import TagRepository
 from .schemas import CompleteExpense, Expense, ExpenseInDB, UpdateExpense
@@ -19,6 +22,21 @@ class ExpenseServices:
         self.__tag_repository = tag_repository
 
     async def create(self, expense: Expense) -> ExpenseInDB:
+        plan_feature = await get_plan_feature(
+            organization_id=self.__expense_repository.organization_id,
+            feature_name=Feature.MAX_EXPANSES
+        )
+
+        start_date, end_date = get_current_month_date_range()
+
+        quantity = await self.__expense_repository.select_count_by_date(
+            start_date=start_date,
+            end_date=end_date
+        )
+
+        if (quantity + 1) >= int(plan_feature.value):
+            raise UnauthorizedException(detail=f"Maximum number of expenses reached, Max value: {plan_feature.value}")
+
         for tag in expense.tags:
             await self.__tag_repository.select_by_id(id=tag)
 

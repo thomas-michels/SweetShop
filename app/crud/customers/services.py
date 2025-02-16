@@ -1,5 +1,8 @@
 from typing import List
 
+from app.api.dependencies.get_plan_feature import get_plan_feature
+from app.api.exceptions.authentication_exceptions import UnauthorizedException
+from app.core.utils.features import Feature
 from app.crud.tags.repositories import TagRepository
 from .schemas import CompleteCustomerInDB, Customer, CustomerInDB, UpdateCustomer
 from .repositories import CustomerRepository
@@ -16,6 +19,16 @@ class CustomerServices:
         self.__tag_repository = tag_repository
 
     async def create(self, customer: Customer) -> CompleteCustomerInDB:
+        plan_feature = await get_plan_feature(
+            organization_id=self.__repository.organization_id,
+            feature_name=Feature.MAX_CUSTOMERS
+        )
+
+        quantity = await self.__repository.select_count()
+
+        if (quantity + 1) >= int(plan_feature.value):
+            raise UnauthorizedException(detail=f"Maximum number of customers reached, Max value: {plan_feature.value}")
+
         for tag in customer.tags:
             await self.__tag_repository.select_by_id(id=tag)
 

@@ -1,8 +1,12 @@
 from datetime import datetime
 from typing import List
 
+from app.api.dependencies.get_plan_feature import get_plan_feature
+from app.api.exceptions.authentication_exceptions import UnauthorizedException
 from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
+from app.core.utils.features import Feature
+from app.core.utils.get_current_month import get_current_month_date_range
 from app.crud.customers.repositories import CustomerRepository
 from app.crud.products.repositories import ProductRepository
 from app.crud.shared_schemas.payment import PaymentStatus
@@ -37,8 +41,24 @@ class OrderServices:
         self.__product_repository = product_repository
         self.__tag_repository = tag_repository
         self.__customer_repository = customer_repository
+        self.organization_id = self.__order_repository.organization_id
 
     async def create(self, order: RequestOrder) -> CompleteOrder:
+        plan_feature = await get_plan_feature(
+            organization_id=self.__order_repository.organization_id,
+            feature_name=Feature.MAX_ORDERS
+        )
+
+        start_date, end_date = get_current_month_date_range()
+
+        quantity = await self.__order_repository.select_count_by_date(
+            start_date=start_date,
+            end_date=end_date
+        )
+
+        if (quantity + 1) >= int(plan_feature.value):
+            raise UnauthorizedException(detail=f"Maximum number of orders reached, Max value: {plan_feature.value}")
+
         products = []
 
         if order.customer_id is not None:

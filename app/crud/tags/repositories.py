@@ -14,12 +14,12 @@ _logger = get_logger(__name__)
 class TagRepository(Repository):
     def __init__(self, organization_id: str) -> None:
         super().__init__()
-        self.__organization_id = organization_id
+        self.organization_id = organization_id
 
     async def create(self, tag: Tag, system_tag: bool = False) -> TagInDB:
         try:
             tag_model = TagModel(
-                organization_id=self.__organization_id,
+                organization_id=self.organization_id,
                 system_tag=system_tag,
                 created_at=datetime.now(),
                 updated_at=datetime.now(),
@@ -45,7 +45,7 @@ class TagRepository(Repository):
                 id=tag.id,
                 system_tag=False,
                 is_active=True,
-                organization_id=self.__organization_id
+                organization_id=self.organization_id
             ).first()
             tag.name = tag.name.title()
 
@@ -57,12 +57,25 @@ class TagRepository(Repository):
             _logger.error(f"Error on update_tag: {str(error)}")
             raise UnprocessableEntity(message="Error on update Tag")
 
+    async def select_count(self) -> int:
+        try:
+            count = TagModel.objects(
+                is_active=True,
+                organization_id=self.organization_id,
+            ).count()
+
+            return count if count else 0
+
+        except Exception as error:
+            _logger.error(f"Error on select_count: {str(error)}")
+            return 0
+
     async def select_by_id(self, id: str, raise_404: bool = True) -> TagInDB:
         try:
             tag_model: TagModel = TagModel.objects(
                 id=id,
                 is_active=True,
-                organization_id=self.__organization_id
+                organization_id=self.organization_id
             ).first()
 
             return self.__build_tag(tag_model=tag_model)
@@ -78,7 +91,7 @@ class TagRepository(Repository):
             tag_model: TagModel = TagModel.objects(
                 name=name,
                 is_active=True,
-                organization_id=self.__organization_id
+                organization_id=self.organization_id
             ).first()
 
             return self.__build_tag(tag_model=tag_model)
@@ -95,12 +108,12 @@ class TagRepository(Repository):
                 objects = TagModel.objects(
                     name__iregex=query,
                     is_active=True,
-                    organization_id=self.__organization_id
+                    organization_id=self.organization_id
                 )
 
             else:
                 objects = TagModel.objects(
-                    organization_id=self.__organization_id,
+                    organization_id=self.organization_id,
                     is_active=True
                 )
 
@@ -121,7 +134,7 @@ class TagRepository(Repository):
                 id=id,
                 system_tag=False,
                 is_active=True,
-                organization_id=self.__organization_id
+                organization_id=self.organization_id
             ).first()
             tag_model.delete()
 

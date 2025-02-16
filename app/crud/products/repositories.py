@@ -51,6 +51,19 @@ class ProductRepository(Repository):
             _logger.error(f"Error on update_product: {str(error)}")
             raise UnprocessableEntity(message="Error on update product")
 
+    async def select_count(self) -> int:
+        try:
+            count = ProductModel.objects(
+                is_active=True,
+                organization_id=self.organization_id,
+            ).count()
+
+            return count if count else 0
+
+        except Exception as error:
+            _logger.error(f"Error on select_count: {str(error)}")
+            return 0
+
     async def select_by_id(self, id: str, raise_404: bool = True) -> ProductInDB:
         try:
             product_model: ProductModel = ProductModel.objects(

@@ -17,13 +17,13 @@ _logger = get_logger(__name__)
 class OrderRepository(Repository):
     def __init__(self, organization_id: str) -> None:
         super().__init__()
-        self.__organization_id = organization_id
+        self.organization_id = organization_id
 
     async def create(self, order: Order, total_amount: float) -> OrderInDB:
         try:
             order_model = OrderModel(
                 total_amount=total_amount,
-                organization_id=self.__organization_id,
+                organization_id=self.organization_id,
                 payment_status=PaymentStatus.PENDING,
                 is_fast_order=False,
                 created_at=datetime.now(),
@@ -44,7 +44,7 @@ class OrderRepository(Repository):
             order_model: OrderModel = OrderModel.objects(
                 id=order_id,
                 is_active=True,
-                organization_id=self.__organization_id,
+                organization_id=self.organization_id,
             ).first()
 
             order_model.update(**order)
@@ -56,12 +56,27 @@ class OrderRepository(Repository):
             _logger.error(f"Error on update_order: {str(error)}")
             raise UnprocessableEntity(message="Error on update order")
 
+    async def select_count_by_date(self, start_date: datetime, end_date: datetime) -> int:
+        try:
+            count = OrderModel.objects(
+                is_active=True,
+                organization_id=self.organization_id,
+                created_at__gte=start_date,
+                created_at__lte=end_date
+            ).count()
+
+            return count if count else 0
+
+        except Exception as error:
+            _logger.error(f"Error on select_count_by_date: {str(error)}")
+            return 0
+
     async def select_by_id(self, id: str, fast_order: bool = False) -> OrderInDB:
         try:
             objects = OrderModel.objects(
                 id=id,
                 is_active=True,
-                organization_id=self.__organization_id,
+                organization_id=self.organization_id,
             )
 
             if fast_order is not None:
@@ -99,7 +114,7 @@ class OrderRepository(Repository):
             objects = OrderModel.objects(
                 is_active=True,
                 is_fast_order=False,
-                organization_id=self.__organization_id,
+                organization_id=self.organization_id,
             )
 
             if customer_id:
@@ -151,7 +166,7 @@ class OrderRepository(Repository):
                 id=id,
                 is_active=True,
                 is_fast_order=False,
-                organization_id=self.__organization_id,
+                organization_id=self.organization_id,
             ).first()
             order_model.delete()
 

@@ -1,5 +1,8 @@
 from datetime import datetime
 from typing import Dict, List, Tuple
+from app.api.dependencies.get_plan_feature import get_plan_feature
+from app.api.exceptions.authentication_exceptions import UnauthorizedException
+from app.core.utils.features import Feature
 from app.crud.expenses.services import ExpenseServices
 from app.crud.fast_orders.services import FastOrderServices
 from app.crud.orders.schemas import PaymentInOrder
@@ -22,9 +25,25 @@ class BillingServices:
         self.expenses_services = expenses_services
 
     async def get_billing_for_dashboard(self, month: int, year: int) -> Billing:
+        plan_feature = await get_plan_feature(
+            organization_id=self.order_services.organization_id,
+            feature_name=Feature.DISPLAY_DASHBOARD
+        )
+
+        if not plan_feature.value.startswith("t"):
+            raise UnauthorizedException(detail=f"You cannot access this feature")
+
         return await self.__generate_monthly_billing(month=month, year=year)
 
     async def get_monthly_billings(self, last_months: int) -> List[Billing]:
+        plan_feature = await get_plan_feature(
+            organization_id=self.order_services.organization_id,
+            feature_name=Feature.DISPLAY_DASHBOARD
+        )
+
+        if not plan_feature.value.startswith("t"):
+            raise UnauthorizedException(detail=f"You cannot access this feature")
+
         billings = []
 
         for i in range(last_months):
@@ -36,6 +55,14 @@ class BillingServices:
         return billings
 
     async def get_best_selling_products(self, month: int, year: int) -> List[SellingProduct]:
+        plan_feature = await get_plan_feature(
+            organization_id=self.order_services.organization_id,
+            feature_name=Feature.DISPLAY_DASHBOARD
+        )
+
+        if not plan_feature.value.startswith("t"):
+            raise UnauthorizedException(detail=f"You cannot access this feature")
+
         start_date, end_date = self.__get_start_and_end_date(month=month, year=year)
 
         orders = await self.order_services.search_all(
@@ -79,6 +106,14 @@ class BillingServices:
         return selling_products[:5]
 
     async def get_expanses_categories(self, month: int, year: int) -> List[ExpanseCategory]:
+        plan_feature = await get_plan_feature(
+            organization_id=self.order_services.organization_id,
+            feature_name=Feature.DISPLAY_DASHBOARD
+        )
+
+        if not plan_feature.value.startswith("t"):
+            raise UnauthorizedException(detail=f"You cannot access this feature")
+
         start_date, end_date = self.__get_start_and_end_date(month=month, year=year)
 
         expenses = await self.expenses_services.search_all(
@@ -109,6 +144,14 @@ class BillingServices:
         return category_list[:5]
 
     async def get_best_places(self, month: int, year: int) -> List[BestPlace]:
+        plan_feature = await get_plan_feature(
+            organization_id=self.order_services.organization_id,
+            feature_name=Feature.DISPLAY_DASHBOARD
+        )
+
+        if not plan_feature.value.startswith("t"):
+            raise UnauthorizedException(detail=f"You cannot access this feature")
+
         start_date, end_date = self.__get_start_and_end_date(month=month, year=year)
 
         orders = await self.order_services.search_all(

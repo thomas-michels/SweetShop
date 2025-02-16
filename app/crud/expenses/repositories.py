@@ -52,6 +52,21 @@ class ExpenseRepository(Repository):
             _logger.error(f"Error on update_expense: {str(error)}")
             raise UnprocessableEntity(message="Error on update expense")
 
+    async def select_count_by_date(self, start_date: datetime, end_date: datetime) -> int:
+        try:
+            count = ExpenseModel.objects(
+                is_active=True,
+                organization_id=self.organization_id,
+                created_at__gte=start_date,
+                created_at__lte=end_date
+            ).count()
+
+            return count if count else 0
+
+        except Exception as error:
+            _logger.error(f"Error on select_count_by_date: {str(error)}")
+            return 0
+
     async def select_by_id(self, id: str, raise_404: bool = True) -> ExpenseInDB:
         try:
             expense_model: ExpenseModel = ExpenseModel.objects(

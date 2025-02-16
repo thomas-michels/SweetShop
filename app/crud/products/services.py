@@ -1,5 +1,8 @@
 from typing import List
 
+from app.api.dependencies.get_plan_feature import get_plan_feature
+from app.api.exceptions.authentication_exceptions import UnauthorizedException
+from app.core.utils.features import Feature
 from app.crud.tags.repositories import TagRepository
 from .schemas import CompleteProduct, Product, ProductInDB, UpdateProduct
 from .repositories import ProductRepository
@@ -16,6 +19,16 @@ class ProductServices:
         self.__tag_repository = tag_repository
 
     async def create(self, product: Product) -> ProductInDB:
+        plan_feature = await get_plan_feature(
+            organization_id=self.__product_repository.organization_id,
+            feature_name=Feature.MAX_PRODUCTS
+        )
+
+        quantity = await self.__product_repository.select_count()
+
+        if (quantity + 1) >= int(plan_feature.value):
+            raise UnauthorizedException(detail=f"Maximum number of products reached, Max value: {plan_feature.value}")
+
         for tag in product.tags:
             await self.__tag_repository.select_by_id(id=tag)
 
