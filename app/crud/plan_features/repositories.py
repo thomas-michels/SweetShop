@@ -83,10 +83,11 @@ class PlanFeatureRepository(Repository):
             if raise_404:
                 raise NotFoundError(message=f"PlanFeature #{id} not found")
 
-    async def select_by_name(self, name: Feature, raise_404: bool = True) -> PlanFeatureInDB:
+    async def select_by_name(self, name: Feature, plan_id: str, raise_404: bool = True) -> PlanFeatureInDB:
         try:
             plan_feature_model: PlanFeatureModel = PlanFeatureModel.objects(
                 name=name.value,
+                plan_id=plan_id,
                 is_active=True,
             ).first()
 
