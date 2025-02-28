@@ -41,10 +41,8 @@ class OrganizationPlanServices:
         return organization_plan_in_db
 
     async def search_active_plan(self, organization_id: str) -> OrganizationPlanInDB:
-        organization_plans = await self.__organization_plan_repository.select_all(organization_id=organization_id)
-        for organization_plan in organization_plans:
-            if organization_plan.active_plan:
-                return organization_plan
+        organization_plan = await self.__organization_plan_repository.select_active_plan(organization_id=organization_id)
+        return organization_plan
 
     async def search_all(self, organization_id: str) -> List[OrganizationPlanInDB]:
         organization_plans = await self.__organization_plan_repository.select_all(organization_id=organization_id)

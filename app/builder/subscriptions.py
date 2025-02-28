@@ -1,7 +1,10 @@
 from datetime import datetime, timedelta
+from typing import List
 from app.api.dependencies.mercado_pago_integration import MercadoPagoIntegration
+from app.api.exceptions.authentication_exceptions import BadRequestException
 from app.api.shared_schemas.mercado_pago import MPSubscriptionModel
 from app.api.shared_schemas.subscription import RequestSubscription, ResponseSubscription
+from app.core.utils.get_start_and_end_day_of_month import get_start_and_end_day_of_month
 from app.crud.invoices.schemas import Invoice, InvoiceInDB, InvoiceStatus, UpdateInvoice
 from app.crud.invoices.services import InvoiceServices
 from app.crud.organization_plans.schemas import OrganizationPlan, OrganizationPlanInDB
@@ -58,6 +61,7 @@ class SubscriptionBuilder:
         mp_sub = self.__mp_integration.create_subscription(
             reason=f"pedidoZ - {plan_in_db.name} - Anual",
             price_monthly=plan_in_db.price,
+            discount=0,
             user_info=user_info
         )
 
@@ -80,6 +84,120 @@ class SubscriptionBuilder:
             init_point=mp_sub.init_point,
             email=user_info["email"]
         )
+
+    async def recreate_subscription(self, subscription: RequestSubscription, user: UserInDB) -> ResponseSubscription:
+        plan_in_db = await self.__plan_service.search_by_id(id=subscription.plan_id)
+        annual_price = round(plan_in_db.price * 12, 2)
+
+        organization_plan_in_db = await self.__organization_plan_service.search_active_plan(
+            organization_id=subscription.organization_id
+        )
+
+        if not organization_plan_in_db or not organization_plan_in_db.has_paid_invoice:
+            _logger.warning(f"Organization {subscription.organization_id} without an active plan")
+            return
+
+        if organization_plan_in_db.plan_id == subscription.plan_id:
+            raise BadRequestException("You cannot update the organization plan with the same plan")
+
+        await self.__cancel_pending_payments(organization_plan_id=organization_plan_in_db.id)
+
+        old_invoices = await self.__invoice_service.search_by_organization_plan_id(
+            organization_plan_id=organization_plan_in_db.id
+        )
+
+        old_invoice_in_db = self._get_invoice(invoices=old_invoices)
+
+        credits = self._calculate_remaining_credits(
+            organization_plan=organization_plan_in_db,
+            amount_paid=old_invoice_in_db.amount_paid
+        )
+
+        _logger.info(f"R${credits} were generated for the next plan - organization {subscription.organization_id}")
+
+        organization_plan_in_db.end_date = self._adjust_end_date(organization_plan_in_db.end_date)
+        organization_plan_in_db = await self.__organization_plan_service.update(
+            id=organization_plan_in_db.id,
+            organization_id=organization_plan_in_db.organization_id,
+            updated_organization_plan=organization_plan_in_db
+        )
+        _logger.info(f"Organization plan set to finish on {organization_plan_in_db.end_date}")
+
+        start_date, end_date = self._get_next_plan_dates(organization_plan_in_db.end_date)
+
+        new_organization_plan = await self.__create_or_update_organization_plan(
+            subscription=subscription,
+            start_date=start_date,
+            end_date=end_date
+        )
+
+        organization_in_db = await self.__organization_service.search_by_id(
+            id=subscription.organization_id
+        )
+
+        user_info = {
+            "email": organization_in_db.email if organization_in_db.email else user.email,
+            "name": user.name
+        }
+
+        mp_sub = self.__mp_integration.create_subscription(
+            reason=f"pedidoZ - {plan_in_db.name} - Anual",
+            price_monthly=plan_in_db.price,
+            discount=credits,
+            user_info=user_info
+        )
+
+        invoice = Invoice(
+            organization_plan_id=new_organization_plan.id,
+            integration_id=mp_sub.id,
+            integration_type="mercado-pago",
+            amount=max(annual_price - credits, 0),
+            observation={}
+        )
+
+        invoice_in_db = await self.__invoice_service.create(
+            invoice=invoice,
+            organization_id=subscription.organization_id
+        )
+
+        return ResponseSubscription(
+            invoice_id=invoice_in_db.id,
+            integration_id=mp_sub.id,
+            init_point=mp_sub.init_point,
+            email=user_info["email"]
+        )
+
+    def _calculate_remaining_credits(self, organization_plan: OrganizationPlan, amount_paid: float) -> float:
+        """Calcula os créditos restantes com base no tempo restante do plano."""
+        today = datetime.today()
+        remaining_days = (organization_plan.end_date - today).days
+        total_days = (organization_plan.end_date - organization_plan.start_date).days
+        if total_days <= 0:
+            return 0
+        return round((remaining_days / total_days) * amount_paid, 2)
+
+    def _adjust_end_date(self, current_end_date: datetime) -> datetime:
+        """Ajusta a data de término do plano para o final do mês, se necessário."""
+        end_of_month = self._get_end_of_current_month()
+        return min(current_end_date, end_of_month)
+
+    def _get_next_plan_dates(self, reference_date: datetime) -> tuple:
+        """Obtém a data de início e fim do próximo plano."""
+        next_month = reference_date.month % 12 + 1
+        next_year = reference_date.year if next_month > 1 else reference_date.year + 1
+        start_date, end_date = get_start_and_end_day_of_month(year=next_year, month=next_month)
+        return start_date, end_date + timedelta(days=365)
+
+    def _get_end_of_current_month(self) -> datetime:
+        """Retorna a data do último dia do mês atual."""
+        today = datetime.today()
+        next_month = today.replace(day=28) + timedelta(days=4)  # Garante que passamos para o próximo mês
+        return next_month - timedelta(days=next_month.day)
+
+    def _get_invoice(self, invoices: List[InvoiceInDB]) -> InvoiceInDB:
+        for old_invoice_in_db in invoices:
+            if old_invoice_in_db.status == InvoiceStatus.PAID:
+                return old_invoice_in_db
 
     async def update_subscription(self, subscription_id: str, data: dict) -> InvoiceInDB:
         mp_sub = self.__mp_integration.get_subscription(preapproval_id=subscription_id)
@@ -149,10 +267,17 @@ class SubscriptionBuilder:
             mp_sub = self.__mp_integration.cancel_subscription(preapproval_id=invoice_in_db.integration_id)
             return mp_sub
 
-    async def __create_or_update_organization_plan(self, subscription: RequestSubscription) -> OrganizationPlanInDB:
-        now = datetime.now()
+    async def __create_or_update_organization_plan(
+            self,
+            subscription: RequestSubscription,
+            start_date: datetime = None,
+            end_date: datetime = None
+        ) -> OrganizationPlanInDB:
+
+        now = datetime.now() if not start_date else start_date
         today = datetime(year=now.year, month=now.month, day=now.day)
-        sub_end = today + timedelta(days=365)
+        sub_end = today + timedelta(days=365) if not end_date else end_date
+
         organization_plan_in_db = await self.__organization_plan_service.search_active_plan(
             organization_id=subscription.organization_id
         )

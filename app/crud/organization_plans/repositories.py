@@ -57,7 +57,7 @@ class OrganizationPlanRepository(Repository):
                 is_active=True,
             ).first()
 
-            organization_plan_model.update(**organization_plan.model_dump(exclude=["active_plan"]))
+            organization_plan_model.update(**organization_plan.model_dump(exclude=["active_plan", "has_paid_invoice"]))
 
             return await self.select_by_id(
                 id=organization_plan.id,

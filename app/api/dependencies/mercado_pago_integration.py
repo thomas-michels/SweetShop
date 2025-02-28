@@ -13,20 +13,23 @@ class MercadoPagoIntegration:
     def __init__(self):
         self.mp = mercadopago.SDK(_env.MERCADO_PAGO_ACCESS_TOKEN)
 
-    def create_subscription(self, reason: str, price_monthly: float, user_info: dict) -> MPSubscriptionModel:
+    def create_subscription(self, reason: str, price_monthly: float, user_info: dict, discount: float = 0) -> MPSubscriptionModel:
         """
         Cria uma assinatura anual no Mercado Pago.
         :param price_monthly: Preço mensal da assinatura.
         :param user_info: Informações do usuário (email, nome, etc.).
         """
         _logger.info(f"Calling create_subscription for user {user_info}")
+
+        annual_price = round(((12 * price_monthly) - discount), 2)
+
         try:
             data = {
                 "status": "pending",
                 "auto_recurring": {
                     "frequency": 12,
                     "frequency_type": "months",
-                    "transaction_amount": round((12 * price_monthly), 2),
+                    "transaction_amount": annual_price,
                     "currency_id": "BRL",
                     "start_date": (datetime.now(timezone.utc) + timedelta(minutes=1)).isoformat() + "Z",
                     "end_date": (datetime.now(timezone.utc) + timedelta(days=365)).isoformat() + "Z"

@@ -31,6 +31,28 @@ async def create_subscription(
         )
 
 
+@router.put("/subscriptions", responses={201: {"model": ResponseSubscription}})
+async def update_subscription(
+    subscription: RequestSubscription,
+    current_user: UserInDB = Security(decode_jwt, scopes=["subscription:create"]),
+    subscription_builder: SubscriptionBuilder = Depends(subscription_composer),
+):
+    subscription_in_db = await subscription_builder.recreate_subscription(
+        subscription=subscription,
+        user=current_user
+    )
+
+    if subscription_in_db:
+        return build_response(
+            status_code=201, message="Subscription recreated with success", data=subscription_in_db
+        )
+
+    else:
+        return build_response(
+            status_code=400, message="Some error happened on recreate a subscription", data=None
+        )
+
+
 @router.delete("/organizations/{organization_id}/subscriptions", responses={200: {"model": RequestSubscription}})
 async def delete_product(
     organization_id: str,

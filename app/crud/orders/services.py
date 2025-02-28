@@ -6,7 +6,7 @@ from app.api.exceptions.authentication_exceptions import UnauthorizedException
 from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.core.utils.features import Feature
-from app.core.utils.get_current_month import get_current_month_date_range
+from app.core.utils.get_start_and_end_day_of_month import get_start_and_end_day_of_month
 from app.crud.customers.repositories import CustomerRepository
 from app.crud.products.repositories import ProductRepository
 from app.crud.shared_schemas.payment import PaymentStatus
@@ -46,18 +46,19 @@ class OrderServices:
     async def create(self, order: RequestOrder) -> CompleteOrder:
         plan_feature = await get_plan_feature(
             organization_id=self.__order_repository.organization_id,
-            feature_name=Feature.MAX_ORDERS
+            feature_name=Feature.MAX_ORDERS,
         )
 
-        start_date, end_date = get_current_month_date_range()
+        start_date, end_date = get_start_and_end_day_of_month()
 
         quantity = await self.__order_repository.select_count_by_date(
-            start_date=start_date,
-            end_date=end_date
+            start_date=start_date, end_date=end_date
         )
 
         if not plan_feature or (quantity + 1) >= int(plan_feature.value):
-            raise UnauthorizedException(detail=f"Maximum number of orders reached, Max value: {plan_feature.value}")
+            raise UnauthorizedException(
+                detail=f"Maximum number of orders reached, Max value: {plan_feature.value}"
+            )
 
         products = []
 
@@ -173,7 +174,9 @@ class OrderServices:
 
         if is_updated:
             if "products" in updated_fields:
-                updated_fields["products"] = [product.model_dump() for product in updated_fields["products"]]
+                updated_fields["products"] = [
+                    product.model_dump() for product in updated_fields["products"]
+                ]
 
             updated_fields.update(updated_order.model_dump(exclude_none=True))
             updated_fields["total_amount"] = total_amount

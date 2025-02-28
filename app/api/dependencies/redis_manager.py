@@ -83,11 +83,13 @@ class RedisManager:
         Incrementa um valor no Redis e define um tempo de expiração se necessário.
         """
         try:
-            _logger.info(f"Incrementing key '{key}' in Redis...")
+            _logger.debug(f"Incrementing key '{key}' in Redis...")
             value = self.client.incr(key)
             if value == 1:
                 self.client.expire(key, expiration)
+
             return value
+
         except Exception as error:
             _logger.error(f"Error incrementing key '{key}': {error}")
             return 0
