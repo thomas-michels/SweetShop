@@ -21,6 +21,7 @@ from app.api.routers import (
     plan_feature_router,
     mercado_pago_router,
     subscription_router,
+    coupon_router,
 )
 from app.api.routers.exception_handlers import (
     unprocessable_entity_error_422,
@@ -80,6 +81,7 @@ app.include_router(billing_router, prefix="/api")
 app.include_router(customer_router, prefix="/api")
 app.include_router(tag_router, prefix="/api")
 app.include_router(expenses_router, prefix="/api")
+app.include_router(coupon_router, prefix="/api")
 app.include_router(images_router, prefix="/api")
 app.include_router(mercado_pago_router, prefix="/api")
 
