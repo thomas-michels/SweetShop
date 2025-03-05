@@ -65,7 +65,7 @@ class CouponRepository(Repository):
             if (coupon_model.usage_count + quantity) <= coupon_model.limit:
                 coupon_model.usage_count += quantity
 
-                coupon_model.update()
+                coupon_model.save()
 
                 return await self.select_by_id(id=coupon_id)
 

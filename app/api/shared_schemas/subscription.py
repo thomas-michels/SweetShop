@@ -7,6 +7,7 @@ class RequestSubscription(GenericModel):
     plan_id: str = Field(example="plan_123")
     organization_id: str= Field(example="org_123")
     allow_additional: bool = Field(default=False, example=False)
+    cupoun_id: str | None = Field(default=None, example="cou_123")
 
 
 class ResponseSubscription(GenericModel):

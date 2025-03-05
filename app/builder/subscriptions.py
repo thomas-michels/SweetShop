@@ -5,6 +5,7 @@ from app.api.exceptions.authentication_exceptions import BadRequestException
 from app.api.shared_schemas.mercado_pago import MPSubscriptionModel
 from app.api.shared_schemas.subscription import RequestSubscription, ResponseSubscription
 from app.core.utils.get_start_and_end_day_of_month import get_start_and_end_day_of_month
+from app.crud.coupons.services import CouponServices
 from app.crud.invoices.schemas import Invoice, InvoiceInDB, InvoiceStatus, UpdateInvoice
 from app.crud.invoices.services import InvoiceServices
 from app.crud.organization_plans.schemas import OrganizationPlan, OrganizationPlanInDB
@@ -25,11 +26,13 @@ class SubscriptionBuilder:
             organization_service: OrganizationServices,
             plan_service: PlanServices,
             organization_plan_service: OrganizationPlanServices,
+            coupon_service: CouponServices,
         ) -> None:
         self.__invoice_service = invoice_service
         self.__organization_service = organization_service
         self.__plan_service = plan_service
         self.__organization_plan_service = organization_plan_service
+        self.__coupon_service = coupon_service
         self.__mp_integration = MercadoPagoIntegration()
 
     async def subscribe(self, subscription: RequestSubscription, user: UserInDB) -> ResponseSubscription:
@@ -58,10 +61,28 @@ class SubscriptionBuilder:
             "name": user.name
         }
 
+        discount = 0
+        observation = {}
+
+        if subscription.cupoun_id:
+            coupon_in_db = await self.__coupon_service.search_by_id(id=subscription.cupoun_id)
+
+            coupon_in_db = await self.__coupon_service.update_usage(
+                coupon_id=coupon_in_db.id,
+                quantity=1
+            )
+
+            discount = coupon_in_db.calculate_discount(price=annual_price)
+
+            _logger.info(f"Generating R${discount} of discount using coupon {subscription.cupoun_id}")
+
+            observation["discount"] = discount
+            observation["coupon_id"] = subscription.cupoun_id
+
         mp_sub = self.__mp_integration.create_subscription(
             reason=f"pedidoZ - {plan_in_db.name} - Anual",
             price_monthly=plan_in_db.price,
-            discount=0,
+            discount=discount,
             user_info=user_info
         )
 
@@ -69,8 +90,8 @@ class SubscriptionBuilder:
             organization_plan_id=organization_plan_in_db.id,
             integration_id=mp_sub.id,
             integration_type="mercado-pago",
-            amount=annual_price,
-            observation={}
+            amount=annual_price - discount,
+            observation=observation
         )
 
         invoice_in_db = await self.__invoice_service.create(
@@ -92,6 +113,9 @@ class SubscriptionBuilder:
         organization_plan_in_db = await self.__organization_plan_service.search_active_plan(
             organization_id=subscription.organization_id
         )
+
+        if subscription.cupoun_id is not None:
+            raise BadRequestException("You cannot use coupons when updating your plan")
 
         if not organization_plan_in_db or not organization_plan_in_db.has_paid_invoice:
             _logger.warning(f"Organization {subscription.organization_id} without an active plan")
@@ -152,7 +176,7 @@ class SubscriptionBuilder:
             integration_id=mp_sub.id,
             integration_type="mercado-pago",
             amount=max(annual_price - credits, 0),
-            observation={}
+            observation={"credits": credits}
         )
 
         invoice_in_db = await self.__invoice_service.create(

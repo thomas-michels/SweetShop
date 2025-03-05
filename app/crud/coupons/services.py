@@ -35,6 +35,10 @@ class CouponServices:
 
         return coupon_in_db
 
+    async def update_usage(self, coupon_id: str, quantity: int) -> CouponInDB:
+        coupon_in_db = await self.__coupon_repository.update_usage(coupon_id=coupon_id, quantity=quantity)
+        return coupon_in_db
+
     async def search_by_id(self, id: str) -> CouponInDB:
         coupon_in_db = await self.__coupon_repository.select_by_id(id=id)
         return coupon_in_db

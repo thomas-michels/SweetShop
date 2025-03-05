@@ -19,12 +19,12 @@ class Coupon(GenericModel):
 
         if self.is_percent:
             part_price = price / 100
-            new_price = price - (part_price * self.value)
+            discount = part_price * self.value
 
         else:
-            new_price = price - self.value
+            discount = self.value
 
-        return max(new_price, 0)
+        return max(discount, 0)
 
     @model_validator(mode="after")
     def validate_model(self) -> "Coupon":
