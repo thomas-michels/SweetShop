@@ -85,8 +85,8 @@ class InvoiceRepository(Repository):
             return InvoiceInDB.model_validate(invoice_model)
 
         except Exception as error:
-            _logger.error(f"Error on select_by_integration: {str(error)}")
             if raise_404:
+                _logger.error(f"Error on select_by_integration: {str(error)}")
                 raise NotFoundError(message=f"Invoice not found")
 
     async def select_all(self) -> List[InvoiceInDB]:

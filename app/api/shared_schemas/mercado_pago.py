@@ -41,7 +41,7 @@ class MPSubscriptionModel(GenericModel):
     reason: str = Field(..., example="pedidoZ - Básico")
     date_created: datetime = Field(..., example="2025-02-06T01:13:13.495-04:00")
     last_modified: datetime = Field(..., example="2025-02-06T01:13:13.686-04:00")
-    init_point: str = Field(..., example="https://www.mercadopago.com.br/subscriptions/checkout?preapproval_id=d0ad894de0094460a9ee3e2650031709")
+    init_point: str | None = Field(default=None, example="https://www.mercadopago.com.br/subscriptions/checkout?preapproval_id=d0ad894de0094460a9ee3e2650031709")
     auto_recurring: AutoRecurring
     summarized: Summarized
     next_payment_date: datetime = Field(..., example="2025-02-06T01:13:13.000-04:00")
