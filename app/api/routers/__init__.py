@@ -16,3 +16,4 @@ from .plan_features import plan_feature_router
 from .mercado_pago import mercado_pago_router
 from .subscriptions import subscription_router
 from .coupons import coupon_router
+from .marketing_emails import marketing_email_router
