@@ -7,4 +7,4 @@ class MessageResponse(BaseModel):
 
 
 class Response(MessageResponse):
-    data: SerializeAsAny[BaseModel] | SerializeAsAny[List[BaseModel]] = Field()
+    data: SerializeAsAny[BaseModel] | SerializeAsAny[List[BaseModel]] | None = Field()

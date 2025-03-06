@@ -11,7 +11,11 @@ from app.api.shared_schemas.responses import MessageResponse, Response
 def build_response(
     status_code: status, message: str, data: BaseModel | List[BaseModel]
 ) -> JSONResponse:
-    if data:
+    if isinstance(data, int):
+        raw_response = Response(message=message, data=None)
+        raw_response.data = data
+
+    elif data:
         raw_response = Response(message=message, data=data)
 
     else:

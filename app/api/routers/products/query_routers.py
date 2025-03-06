@@ -50,3 +50,19 @@ async def get_products(
 
     else:
         return Response(status_code=204)
+
+
+@router.get("/products/count/get", responses={200: {"model": List[ProductInDB]}})
+async def get_products_count(
+    current_user: UserInDB = Security(decode_jwt, scopes=["product:get"]),
+    product_services: ProductServices = Depends(product_composer),
+):
+    quantity = await product_services.search_count()
+
+    if quantity:
+        return build_response(
+            status_code=200, message="Products count found with success", data=quantity
+        )
+
+    else:
+        return Response(status_code=204)

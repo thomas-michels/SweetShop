@@ -49,6 +49,9 @@ class ProductServices:
 
         return product_in_db
 
+    async def search_count(self) -> int:
+        return await self.__product_repository.select_count()
+
     async def search_by_id(self, id: str) -> ProductInDB:
         product_in_db = await self.__product_repository.select_by_id(id=id)
         return product_in_db

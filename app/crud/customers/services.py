@@ -51,6 +51,9 @@ class CustomerServices:
 
         return await self.__build_complete_customer(customer_in_db=customer_in_db)
 
+    async def search_count(self) -> int:
+        return await self.__repository.select_count()
+
     async def search_by_id(self, id: str, expand: List[str] = []) -> CompleteCustomerInDB:
         customer_in_db = await self.__repository.select_by_id(id=id)
         return await self.__build_complete_customer(customer_in_db=customer_in_db, expand=expand)
