@@ -8,6 +8,7 @@ class MarketingEmailModel(Document):
     name = StringField(required=True)
     email = StringField(required=True, unique=True)
     reason = StringField(required=True)
+    description = StringField(required=False)
 
     meta = {
         "collection": "marketing_emails"
