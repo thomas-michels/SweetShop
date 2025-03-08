@@ -8,16 +8,17 @@ from app.crud.organizations.schemas import EMAIL_REGEX
 
 
 class ReasonEnum(str, Enum):
-    DIRECT_MESSAGE = "Mensagem Privada"
-    INSTAGRAM = "Instagram"
-    FACEBOOK = "Facebook"
-    TIKTOK = "Tiktok"
+    OTHER = "OTHER"
+    INSTAGRAM = "INSTAGRAM"
+    FACEBOOK = "FACEBOOK"
+    TIKTOK = "TIKTOK"
 
 
 class MarketingEmail(GenericModel):
     name: str = Field(example="Ted Mosby")
     email: str = Field(example="ted@contact.com")
-    reason: ReasonEnum = Field(example=ReasonEnum.DIRECT_MESSAGE.value)
+    reason: ReasonEnum = Field(example=ReasonEnum.TIKTOK.value)
+    description: str | None = Field(default=None, example="pinterest")
 
     @model_validator(mode="after")
     def validate_model(self) -> "MarketingEmail":
