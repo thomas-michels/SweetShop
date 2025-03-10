@@ -17,3 +17,4 @@ from .mercado_pago import mercado_pago_router
 from .subscriptions import subscription_router
 from .coupons import coupon_router
 from .marketing_emails import marketing_email_router
+from .calendar import calendar_router

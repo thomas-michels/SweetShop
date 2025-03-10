@@ -107,6 +107,7 @@ class OrderRepository(Repository):
         end_date: datetime,
         min_total_amount: float,
         max_total_amount: float,
+        order_by: str = None
     ) -> List[OrderInDB]:
         try:
             orders = []
@@ -147,7 +148,10 @@ class OrderRepository(Repository):
             if max_total_amount:
                 objects = objects.filter(total_amount__lte=max_total_amount)
 
-            objects = objects.order_by("-order_date").aggregate(
+            if not order_by:
+                order_by = "order_date"
+
+            objects = objects.order_by(f"-{order_by}").aggregate(
                 OrderModel.get_payments()
             )
 

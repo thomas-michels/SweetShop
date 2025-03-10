@@ -45,6 +45,7 @@ async def get_orders(
     min_total_amount: float | None = Query(default=None, alias="minTotalAmount"),
     max_total_amount: float | None = Query(default=None, alias="maxTotalAmount"),
     expand: List[str] = Query(default=[]),
+    order_by: str | None = Query(default=None),
     current_user: UserInDB = Security(decode_jwt, scopes=["order:get"]),
     order_services: OrderServices = Depends(order_composer),
 ):
@@ -59,6 +60,7 @@ async def get_orders(
         min_total_amount=min_total_amount,
         max_total_amount=max_total_amount,
         expand=expand,
+        order_by=order_by,
     )
 
     if orders:

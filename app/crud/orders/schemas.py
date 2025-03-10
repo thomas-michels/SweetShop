@@ -7,9 +7,8 @@ from pydantic import Field, model_validator
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
 from app.crud.customers.schemas import CustomerInDB
-from app.crud.products.schemas import ProductInDB
 from app.crud.shared_schemas.address import Address
-from app.crud.shared_schemas.payment import Payment, PaymentMethod, PaymentStatus
+from app.crud.shared_schemas.payment import PaymentMethod, PaymentStatus
 from app.crud.tags.schemas import TagInDB
 
 

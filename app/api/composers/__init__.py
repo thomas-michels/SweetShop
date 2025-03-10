@@ -16,3 +16,4 @@ from .plan_feature_composite import plan_feature_composer
 from .subscription_composite import subscription_composer
 from .coupon_composite import coupon_composer
 from .marketing_email_composite import marketing_email_composer
+from .calendar_composite import calendar_composer

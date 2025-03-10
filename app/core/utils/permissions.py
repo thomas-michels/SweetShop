@@ -25,6 +25,7 @@ def get_role_permissions(role: RoleEnum) -> Set[str]:
             "customer:create",
             "customer:get",
             "subscription:get",
+            "calendar:get",
         ]
     )
 
