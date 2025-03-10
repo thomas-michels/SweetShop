@@ -116,7 +116,7 @@ class CouponRepository(Repository):
             )
 
             if query:
-                objects = objects.filter(name__iregex=query)
+                objects = objects.filter(name=query.upper())
 
             for coupon_model in objects.order_by("name"):
                 coupons.append(CouponInDB.model_validate(coupon_model))

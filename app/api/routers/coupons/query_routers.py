@@ -48,22 +48,3 @@ async def get_coupons_by_id(
         return build_response(
             status_code=404, message=f"Coupon {coupon_id} not found", data=None
         )
-
-
-@router.get("/coupons/name/get", responses={200: {"model": CouponInDB}})
-async def get_coupons_by_name(
-    coupon_name: str,
-    current_user: UserInDB = Security(decode_jwt, scopes=[]),
-    coupons_services: CouponServices = Depends(coupon_composer),
-):
-    coupons_in_db = await coupons_services.search_by_name(name=coupon_name)
-
-    if coupons_in_db:
-        return build_response(
-            status_code=200, message="Coupon found with success", data=coupons_in_db
-        )
-
-    else:
-        return build_response(
-            status_code=404, message=f"Coupon with name {coupon_name} not found", data=None
-        )
