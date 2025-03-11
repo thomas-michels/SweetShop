@@ -14,10 +14,6 @@ _logger = get_logger(__name__)
 class OrganizationPlanRepository(Repository):
     async def create(self, organization_plan: OrganizationPlan, organization_id: str) -> OrganizationPlanInDB:
         try:
-            await self.__check_if_is_duplicated(
-                organization_plan=organization_plan,
-                organization_id=organization_id
-            )
 
             organization_plan_model = OrganizationPlanModel(
                 organization_id=organization_id,
@@ -39,18 +35,6 @@ class OrganizationPlanRepository(Repository):
 
     async def update(self, organization_plan: OrganizationPlanInDB) -> OrganizationPlanInDB:
         try:
-            conflicting_plan = OrganizationPlanModel.objects(
-                (
-                    Q(start_date__lt=organization_plan.end_date) &
-                    Q(end_date__gt=organization_plan.start_date)
-                ),
-                id__ne=organization_plan.id,
-                organization_id=organization_plan.organization_id,
-            ).first()
-
-            if conflicting_plan:
-                raise UnprocessableEntity(message="There is already an active plan for this period")
-
             organization_plan_model: OrganizationPlanModel = OrganizationPlanModel.objects(
                 id=organization_plan.id,
                 organization_id=organization_plan.organization_id,
@@ -176,14 +160,17 @@ class OrganizationPlanRepository(Repository):
             _logger.error(f"Error on select_active_plan: {str(error)}")
             raise NotFoundError(message="OrganizationPlans not found")
 
-    async def __check_if_is_duplicated(self, organization_plan: OrganizationPlan, organization_id: str) -> None:
+    async def check_if_period_is_available(self, start_date: datetime, end_date: datetime, organization_id: str) -> OrganizationPlanInDB:
         existing_plan = OrganizationPlanModel.objects(
             (
-                Q(start_date__lte=organization_plan.end_date) &
-                Q(end_date__gte=organization_plan.start_date)
+                Q(start_date__lte=end_date) &
+                Q(end_date__gte=start_date)
             ),
             organization_id=organization_id
         ).first()
 
         if existing_plan:
-            raise UnprocessableEntity(message="There is already an active plan for this period")
+            return await self.select_by_id(
+                id=existing_plan.id,
+                organization_id=organization_id
+            )

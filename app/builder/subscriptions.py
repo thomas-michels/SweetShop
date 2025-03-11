@@ -115,9 +115,9 @@ class SubscriptionBuilder:
         )
 
         if subscription.cupoun_id is not None:
-            raise BadRequestException("You cannot use coupons when updating your plan")
+            raise BadRequestException("You cannot use coupons when you are updating your plan")
 
-        if not organization_plan_in_db or not organization_plan_in_db.has_paid_invoice:
+        if not organization_plan_in_db:
             _logger.warning(f"Organization {subscription.organization_id} without an active plan")
             return
 
@@ -126,34 +126,63 @@ class SubscriptionBuilder:
 
         await self.__cancel_pending_payments(organization_plan_id=organization_plan_in_db.id)
 
+        # Calculating remaining credits
         old_invoices = await self.__invoice_service.search_by_organization_plan_id(
             organization_plan_id=organization_plan_in_db.id
         )
 
         old_invoice_in_db = self._get_invoice(invoices=old_invoices)
 
-        credits = self._calculate_remaining_credits(
-            organization_plan=organization_plan_in_db,
-            amount_paid=old_invoice_in_db.amount_paid
-        )
+        credits = 0
 
-        _logger.info(f"R${credits} were generated for the next plan - organization {subscription.organization_id}")
+        if old_invoice_in_db:
+            credits = self._calculate_remaining_credits(
+                organization_plan=organization_plan_in_db,
+                amount_paid=old_invoice_in_db.amount_paid
+            )
 
-        organization_plan_in_db.end_date = self._adjust_end_date(organization_plan_in_db.end_date)
-        organization_plan_in_db = await self.__organization_plan_service.update(
-            id=organization_plan_in_db.id,
-            organization_id=organization_plan_in_db.organization_id,
-            updated_organization_plan=organization_plan_in_db
-        )
-        _logger.info(f"Organization plan set to finish on {organization_plan_in_db.end_date}")
+            _logger.info(f"R${credits} were generated for the next plan - organization {subscription.organization_id}")
 
-        start_date, end_date = self._get_next_plan_dates(organization_plan_in_db.end_date)
+            # Adjusting current organization plan to the end of the month
+            organization_plan_in_db.end_date = self._adjust_end_date(organization_plan_in_db.end_date)
+            organization_plan_in_db = await self.__organization_plan_service.update(
+                id=organization_plan_in_db.id,
+                organization_id=organization_plan_in_db.organization_id,
+                updated_organization_plan=organization_plan_in_db
+            )
 
-        new_organization_plan = await self.__create_or_update_organization_plan(
-            subscription=subscription,
-            start_date=start_date,
-            end_date=end_date
-        )
+            # Adjusting current organization plan to the end of the month
+            organization_plan_in_db.end_date = self._adjust_end_date(organization_plan_in_db.end_date)
+            organization_plan_in_db = await self.__organization_plan_service.update(
+                id=organization_plan_in_db.id,
+                organization_id=organization_plan_in_db.organization_id,
+                updated_organization_plan=organization_plan_in_db
+            )
+            _logger.info(f"Organization plan set to finish on {organization_plan_in_db.end_date}")
+
+            start_date, end_date = self._get_next_plan_dates(organization_plan_in_db.end_date)
+
+            # Getting next plan dates (Next month)
+            start_date, end_date = self._get_next_plan_dates(organization_plan_in_db.end_date)
+
+            organization_plan_in_db = await self.__create_or_update_organization_plan(
+                subscription=subscription,
+                start_date=start_date,
+                end_date=end_date
+            )
+
+        else:
+            # Updating plan not payed yet
+            organization_plan_in_db.plan_id = subscription.plan_id
+            organization_plan_in_db.end_date = datetime.now() + timedelta(days=365)
+
+            organization_plan_in_db = await self.__organization_plan_service.update(
+                id=organization_plan_in_db.id,
+                organization_id=organization_plan_in_db.organization_id,
+                updated_organization_plan=organization_plan_in_db
+            )
+
+            _logger.info(f"Organization plan updated to finish on {organization_plan_in_db.end_date}")
 
         organization_in_db = await self.__organization_service.search_by_id(
             id=subscription.organization_id
@@ -172,7 +201,7 @@ class SubscriptionBuilder:
         )
 
         invoice = Invoice(
-            organization_plan_id=new_organization_plan.id,
+            organization_plan_id=organization_plan_in_db.id,
             integration_id=mp_sub.id,
             integration_type="mercado-pago",
             amount=max(annual_price - credits, 0),
@@ -194,10 +223,14 @@ class SubscriptionBuilder:
     def _calculate_remaining_credits(self, organization_plan: OrganizationPlan, amount_paid: float) -> float:
         """Calcula os créditos restantes com base no tempo restante do plano."""
         today = datetime.today()
+        if not amount_paid:
+            amount_paid = 0
+
         remaining_days = (organization_plan.end_date - today).days
         total_days = (organization_plan.end_date - organization_plan.start_date).days
         if total_days <= 0:
             return 0
+
         return round((remaining_days / total_days) * amount_paid, 2)
 
     def _adjust_end_date(self, current_end_date: datetime) -> datetime:
@@ -216,7 +249,15 @@ class SubscriptionBuilder:
         """Retorna a data do último dia do mês atual."""
         today = datetime.today()
         next_month = today.replace(day=28) + timedelta(days=4)  # Garante que passamos para o próximo mês
-        return next_month - timedelta(days=next_month.day)
+        day = (next_month - timedelta(days=next_month.day))
+        return datetime(
+            year=day.year,
+            month=day.month,
+            day=day.day,
+            hour=23,
+            minute=59,
+            second=59
+        )
 
     def _get_invoice(self, invoices: List[InvoiceInDB]) -> InvoiceInDB:
         for old_invoice_in_db in invoices:
@@ -306,7 +347,7 @@ class SubscriptionBuilder:
             organization_id=subscription.organization_id
         )
 
-        if organization_plan_in_db:
+        if organization_plan_in_db and not start_date and not end_date:
             organization_plan_in_db.start_date = today
             organization_plan_in_db.end_date = sub_end
             organization_plan_in_db.allow_additional = subscription.allow_additional
