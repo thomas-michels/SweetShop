@@ -29,9 +29,14 @@ class Organization(GenericModel):
     email: str | None = Field(default=None, example="contact@your_company.com")
     due_day: int | None = Field(default=None, example=10)
     document: str | None = Field(default=None, example="111.555.219-99")
+    marketing_email_consent: bool = Field(example=True)
+    terms_of_use_accepted: bool = Field(example=True)
 
     @model_validator(mode="after")
     def validate_model(self) -> "Organization":
+        if not self.terms_of_use_accepted:
+            raise ValueError("Terms of use should be accepted to create an organization")
+
         if self.ddd is not None and self.phone_number is not None:
             if not self.ddd.isdigit() or not self.phone_number.isdigit():
                 raise ValueError("DDD or phone number must be only numbers")

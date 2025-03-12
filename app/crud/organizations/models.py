@@ -3,7 +3,8 @@ from mongoengine import (
     StringField,
     DictField,
     ListField,
-    IntField
+    IntField,
+    BooleanField
 )
 from app.core.models.base_document import BaseDocument
 
@@ -17,6 +18,8 @@ class OrganizationModel(BaseDocument):
     document = StringField(required=False, default=None)
     due_day = IntField(required=False, default=10)
     users = ListField(DictField())
+    marketing_email_consent = BooleanField(required=True)
+    terms_of_use_accepted = BooleanField(required=True)
 
     meta = {
         "collection": "organizations"
