@@ -13,19 +13,20 @@ client = MongoClient(mongo_uri)
 db_name = "prod"
 db = client[db_name]
 
-# Nome da coleção
-collection_name = "organizations"
-collection = db[collection_name]
-
-# Definir os campos a serem adicionados
-update_fields = {
-    "$set": {
-        "marketing_email_consent": True,
-        "terms_of_use_accepted": True
+# Definir os campos a serem removidos
+remove_fields = {
+    "$unset": {
+        "marketing_email_consent": "",
+        "terms_of_use_accepted": ""
     }
 }
 
-# Atualizar todos os documentos da coleção
-result = collection.update_many({}, update_fields)
+# Iterar sobre todas as coleções do banco de dados
+total_modified = 0
+for collection_name in db.list_collection_names():
+    collection = db[collection_name]
+    result = collection.update_many({}, remove_fields)
+    print(f"{result.modified_count} documentos atualizados na coleção '{collection_name}'")
+    total_modified += result.modified_count
 
-print(f"{result.modified_count} documentos atualizados na coleção '{collection_name}'")
+print(f"Total de documentos modificados: {total_modified}")
