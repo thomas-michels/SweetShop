@@ -11,7 +11,7 @@ class S3BucketManager:
     Classe para gerenciamento de operações com o bucket S3.
     """
 
-    def __init__(self):
+    def __init__(self, mode: str = "private"):
         self.client = boto3.client(
             "s3",
             endpoint_url=_env.BUCKET_BASE_URL,
@@ -24,7 +24,12 @@ class S3BucketManager:
             aws_access_key_id=_env.BUCKET_ACCESS_KEY_ID,
             aws_secret_access_key=_env.BUCKET_SECRET_KEY,
         )
-        self.bucket_name = _env.BUCKET_NAME
+
+        if mode == "private":
+            self.bucket_name = _env.PRIVATE_BUCKET_NAME
+
+        else:
+            self.bucket_name = _env.PUBLIC_BUCKET_NAME
 
     def upload_file(self, local_path: str, bucket_path: str) -> str:
         """

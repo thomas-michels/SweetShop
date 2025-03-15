@@ -48,7 +48,8 @@ class Environment(BaseSettings):
     BUCKET_BASE_URL: str | None = None
     BUCKET_ACCESS_KEY_ID: str | None = None
     BUCKET_SECRET_KEY: str | None = None
-    BUCKET_NAME: str | None = None
+    PRIVATE_BUCKET_NAME: str | None = None
+    PUBLIC_BUCKET_NAME: str | None = None
     BUCKET_URL_EXPIRES_IN_SECONDS: int = 300
 
     # REDIS

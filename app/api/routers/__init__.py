@@ -18,3 +18,4 @@ from .subscriptions import subscription_router
 from .coupons import coupon_router
 from .marketing_emails import marketing_email_router
 from .calendar import calendar_router
+from .terms_of_use import term_of_use_router

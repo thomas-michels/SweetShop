@@ -4,7 +4,6 @@ from mongoengine import (
     DictField,
     ListField,
     IntField,
-    BooleanField
 )
 from app.core.models.base_document import BaseDocument
 
