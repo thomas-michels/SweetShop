@@ -6,6 +6,7 @@ from app.crud.shared_schemas.roles import RoleEnum
 def get_role_permissions(role: RoleEnum) -> Set[str]:
     # Only superusers
     # user:get
+
     # Everyone 
     # organization:create
 

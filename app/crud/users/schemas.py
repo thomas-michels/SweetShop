@@ -2,7 +2,7 @@ import re
 from datetime import datetime
 from typing import Dict, List
 from passlib.context import CryptContext
-from pydantic import Field, SecretStr
+from pydantic import ConfigDict, Field, SecretStr
 from app.core.exceptions import InvalidPassword, UnprocessableEntity
 from app.core.models.base_schema import GenericModel
 from app.crud.shared_schemas.user_organization import UserOrganization
@@ -53,6 +53,8 @@ class UserInDB(User):
     last_login: datetime | None = Field(default=None, example=str(datetime.now()))
     created_at: datetime = Field(example=str(datetime.now()))
     updated_at: datetime = Field(example=str(datetime.now()))
+
+    model_config = ConfigDict(extra="allow", from_attributes=True)
 
 
 class UpdateUser(GenericModel):

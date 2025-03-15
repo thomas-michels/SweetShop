@@ -90,7 +90,7 @@ def verify_scopes(
             return True
 
         # Only super users can use that
-        if scope in ["organization:create", "user:get"]:
+        if scope in ["user:get"]:
             if current_user.app_metadata and current_user.app_metadata.get("superuser", False):
                 return True
 

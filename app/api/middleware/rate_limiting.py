@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from app.api.exceptions.authentication_exceptions import TooManyRequestException
 from app.core.configs import get_logger
