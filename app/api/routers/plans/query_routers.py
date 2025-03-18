@@ -31,11 +31,8 @@ async def get_plans(
 async def get_plan_by_id(
     plan_id: str,
     expand: List[str] = Query(default=[]),
-    current_user: CompleteUserInDB = Security(decode_jwt, scopes=[]),
     plan_services: PlanServices = Depends(plan_composer),
 ):
-    verify_super_user(current_user=current_user)
-
     plan_in_db = await plan_services.search_by_id(
         id=plan_id,
         expand=expand
