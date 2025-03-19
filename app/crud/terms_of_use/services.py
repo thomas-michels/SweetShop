@@ -5,6 +5,7 @@ from typing import List
 
 from fastapi import UploadFile
 from tempfile import NamedTemporaryFile
+from uuid import uuid4
 from app.api.dependencies.bucket import S3BucketManager
 from app.api.exceptions.authentication_exceptions import BadRequestException
 from app.api.shared_schemas.terms_of_use import FilterTermOfUse
@@ -36,9 +37,11 @@ class TermOfUseServices:
             buffer.write(file_content)
             buffer.flush()
 
+        term_id = str(uuid4())
+
         file_url = self.__bucket.upload_file(
             local_path=buffer.name,
-            bucket_path=f"documents/terms_of_use_{version}.pdf"
+            bucket_path=f"documents/terms_of_use_{term_id}.pdf"
         )
 
         os.remove(buffer.name)

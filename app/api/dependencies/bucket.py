@@ -1,4 +1,5 @@
 import boto3
+import mimetypes
 from boto3.s3.transfer import S3Transfer
 from app.core.configs import get_environment, get_logger
 
@@ -41,9 +42,21 @@ class S3BucketManager:
         """
         try:
             _logger.info(f"Uploading file to '{self.bucket_name}/{bucket_path}'...")
+
+            content_type, _ = mimetypes.guess_type(local_path)
+            if content_type is None:
+                content_type = "application/octet-stream"
+
             transfer = S3Transfer(self.client)
-            transfer.upload_file(local_path, self.bucket_name, bucket_path)
-            file_url = f"{_env.BUCKET_BASE_URL}{self.bucket_name}/{bucket_path}"
+            transfer.upload_file(
+                local_path,
+                self.bucket_name,
+                bucket_path,
+                extra_args={"ContentType": content_type}
+            )
+
+            file_url = f"{_env.BUCKET_BASE_URL}/{self.bucket_name}/{bucket_path}"
+
             _logger.info(f"File uploaded successfully: {file_url}")
             return file_url
 
