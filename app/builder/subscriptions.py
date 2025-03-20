@@ -88,12 +88,12 @@ class SubscriptionBuilder:
             reason=f"pedidoZ - Assinatura {label} - {plan_in_db.name}",
             price_monthly=sub_price,
             discount=discount,
-            user_info=user_info
+            user_info=user_info,
         )
 
         invoice = Invoice(
             organization_plan_id=organization_plan_in_db.id,
-            integration_id=mp_preference.id,
+            integration_id=mp_preference.external_reference,
             integration_type="mercado-pago",
             amount=max(sub_price - discount, 0),
             observation=observation
@@ -106,7 +106,7 @@ class SubscriptionBuilder:
 
         return ResponseSubscription(
             invoice_id=invoice_in_db.id,
-            integration_id=mp_preference.id,
+            integration_id=mp_preference.external_reference,
             init_point=mp_preference.init_point,
             email=user_info["email"]
         )
@@ -206,7 +206,7 @@ class SubscriptionBuilder:
 
         invoice = Invoice(
             organization_plan_id=organization_plan_in_db.id,
-            integration_id=mp_sub.id,
+            integration_id=mp_sub.external_reference,
             integration_type="mercado-pago",
             amount=max(sub_price - credits, 0),
             observation={"credits": credits}
@@ -219,7 +219,7 @@ class SubscriptionBuilder:
 
         return ResponseSubscription(
             invoice_id=invoice_in_db.id,
-            integration_id=mp_sub.id,
+            integration_id=mp_sub.external_reference,
             init_point=mp_sub.init_point,
             email=user_info["email"]
         )
@@ -300,9 +300,9 @@ class SubscriptionBuilder:
             "cancelled": InvoiceStatus.CANCELLED
         }
 
-        internal_status = status_map.get(payment_status)
-        print(payment_data["metadata"])
-        integration_id = payment_data["metadata"]["preference_id"]
+        internal_status = status_map.get(payment_status, InvoiceStatus.CANCELLED)
+        _logger.info(payment_data["metadata"])
+        integration_id = payment_data["external_reference"]
 
         invoice_in_db = await self.__invoice_service.search_by_integration(
             integration_id=integration_id,

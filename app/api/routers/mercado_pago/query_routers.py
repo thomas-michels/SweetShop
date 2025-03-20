@@ -23,8 +23,7 @@ async def webhook(
         _logger.warning("Invalid webhook signature")
         return build_response(status_code=403, message="Invalid signature", data=None)
 
-    data = await request.json()
-    _logger.info("MP event received:", data)
+    data = {}
 
     subscription_in_db = None
 

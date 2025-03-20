@@ -1,3 +1,4 @@
+from bson import ObjectId
 import mercadopago
 from datetime import datetime, timedelta, timezone
 from app.api.exceptions.authentication_exceptions import InternalErrorException
@@ -163,6 +164,8 @@ class MercadoPagoIntegration:
         """
         _logger.info(f"Calling create_preference for user {user_info}")
 
+        external_id = str(ObjectId())
+
         try:
             data = {
                 "items": [
@@ -182,7 +185,7 @@ class MercadoPagoIntegration:
                     "pending": f"{_env.PEDIDOZ_FRONT_URL}/"
                 },
                 "auto_return": "approved",
-                "external_reference": f"pref_{user_info.get('id', 'no_id')}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+                "external_reference": external_id
             }
 
             response = self.mp.preference().create(data)
