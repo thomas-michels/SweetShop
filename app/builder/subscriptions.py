@@ -197,7 +197,7 @@ class SubscriptionBuilder:
 
         label = "Mensal" if subscription.monthly else "Anual"
 
-        mp_sub = self.__mp_integration.create_subscription(
+        mp_sub = self.__mp_integration.create_preference(
             reason=f"pedidoZ - Assinatura {label} - {plan_in_db.name}",
             price_monthly=plan_in_db.price,
             discount=credits,

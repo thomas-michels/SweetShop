@@ -66,7 +66,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.add_middleware(RateLimitMiddleware, limit=60, window=60)
+app.add_middleware(RateLimitMiddleware, limit=200, window=60)
 
 app.include_router(organization_router, prefix="/api")
 app.include_router(organization_plan_router, prefix="/api")

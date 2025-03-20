@@ -56,7 +56,7 @@ async def get_customers(
         return Response(status_code=204)
 
 
-@router.get("/customers/count/get", responses={200: {"model": List[CustomerInDB]}})
+@router.get("/customers/metrics/count", responses={200: {"model": List[CustomerInDB]}})
 async def get_customers_count(
     current_customer: UserInDB = Security(decode_jwt, scopes=["customer:get"]),
     customer_services: CustomerServices = Depends(customer_composer),
