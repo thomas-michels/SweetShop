@@ -1,6 +1,6 @@
 from datetime import datetime
 from pydantic import Field
-from typing import Optional, Union
+from typing import List, Optional, Union
 from app.core.models.base_schema import GenericModel
 
 
@@ -65,3 +65,44 @@ class WebhookPayload(GenericModel):
     id: Optional[str] = Field(None, example="123456")
     type: Optional[str] = Field(None, example="subscription_preapproval")
     version: Optional[int] = Field(None, example=8)
+
+
+class Item(GenericModel):
+    """Modelo para os itens da preferência."""
+    title: str = Field(..., description="Título/descrição do item")
+    quantity: int = Field(..., ge=1, description="Quantidade do item")
+    unit_price: float = Field(..., ge=0, description="Preço unitário do item")
+    currency_id: str = Field(default="BRL", description="ID da moeda (ex.: BRL)")
+
+
+class Payer(GenericModel):
+    """Modelo para informações do pagador."""
+    email: str = Field(..., description="Email do pagador")
+    name: Optional[str] = Field(None, description="Nome do pagador")
+    surname: Optional[str] = Field(None, description="Sobrenome do pagador")
+
+
+class BackUrls(GenericModel):
+    """Modelo para URLs de retorno."""
+    success: str = Field(..., description="URL para sucesso no pagamento")
+    failure: str = Field(..., description="URL para falha no pagamento")
+    pending: str = Field(..., description="URL para pagamento pendente")
+
+
+class MPPreferenceModel(GenericModel):
+    """Modelo para uma preferência do Mercado Pago."""
+    id: str = Field(..., description="ID único da preferência")
+    items: List[Item] = Field(..., description="Lista de itens da preferência")
+    payer: Payer = Field(..., description="Informações do pagador")
+    back_urls: BackUrls = Field(..., description="URLs de retorno após o pagamento")
+    auto_return: Optional[str] = Field(None, description="Define se retorna automaticamente após aprovação")
+    external_reference: Optional[str] = Field(None, description="Referência externa personalizada")
+    date_created: datetime = Field(..., description="Data de criação da preferência")
+    init_point: str = Field(..., description="URL para iniciar o fluxo de pagamento")
+    sandbox_init_point: Optional[str] = Field(None, description="URL para sandbox, se aplicável")
+    status: Optional[str] = Field(default="active", description="Status da preferência")
+
+    class Config:
+        # Compatibilidade com Pydantic V2
+        from_attributes = True  # Permite criar instâncias a partir de atributos
+        str_strip_whitespace = True  # Remove espaços em branco extras nas strings

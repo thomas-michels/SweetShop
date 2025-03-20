@@ -5,6 +5,7 @@ from app.core.models.base_schema import GenericModel
 
 class RequestSubscription(GenericModel):
     plan_id: str = Field(example="plan_123")
+    monthly: bool = Field(default=False, example=False)
     organization_id: str= Field(example="org_123")
     allow_additional: bool = Field(default=False, example=False)
     cupoun_id: str | None = Field(default=None, example="cou_123")

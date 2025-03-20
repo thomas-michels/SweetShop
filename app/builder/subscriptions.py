@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from typing import List
 from app.api.dependencies.mercado_pago_integration import MercadoPagoIntegration
 from app.api.exceptions.authentication_exceptions import BadRequestException
-from app.api.shared_schemas.mercado_pago import MPSubscriptionModel
+from app.api.shared_schemas.mercado_pago import MPPreferenceModel
 from app.api.shared_schemas.subscription import RequestSubscription, ResponseSubscription
 from app.core.utils.get_start_and_end_day_of_month import get_start_and_end_day_of_month
 from app.crud.coupons.services import CouponServices
@@ -37,7 +37,10 @@ class SubscriptionBuilder:
 
     async def subscribe(self, subscription: RequestSubscription, user: UserInDB) -> ResponseSubscription:
         plan_in_db = await self.__plan_service.search_by_id(id=subscription.plan_id)
-        annual_price = round(plan_in_db.price * 12, 2)
+
+        months_multiplier = 1 if subscription.monthly else 12
+
+        sub_price = round(plan_in_db.price * months_multiplier, 2)
 
         organization_plan_in_db = await self.__organization_plan_service.search_active_plan(
             organization_id=subscription.organization_id
@@ -53,7 +56,7 @@ class SubscriptionBuilder:
         )
 
         organization_plan_in_db = await self.__create_or_update_organization_plan(
-            subscription=subscription
+            subscription=subscription, months_multiplier=months_multiplier
         )
 
         user_info = {
@@ -72,25 +75,27 @@ class SubscriptionBuilder:
                 quantity=1
             )
 
-            discount = coupon_in_db.calculate_discount(price=annual_price)
+            discount = coupon_in_db.calculate_discount(price=sub_price)
 
             _logger.info(f"Generating R${discount} of discount using coupon {subscription.cupoun_id}")
 
             observation["discount"] = discount
             observation["coupon_id"] = subscription.cupoun_id
 
-        mp_sub = self.__mp_integration.create_subscription(
-            reason=f"pedidoZ - {plan_in_db.name} - Anual",
-            price_monthly=plan_in_db.price,
+        label = "Mensal" if subscription.monthly else "Anual"
+
+        mp_preference = self.__mp_integration.create_preference(
+            reason=f"pedidoZ - Assinatura {label} - {plan_in_db.name}",
+            price_monthly=sub_price,
             discount=discount,
             user_info=user_info
         )
 
         invoice = Invoice(
             organization_plan_id=organization_plan_in_db.id,
-            integration_id=mp_sub.id,
+            integration_id=mp_preference.id,
             integration_type="mercado-pago",
-            amount=annual_price - discount,
+            amount=max(sub_price - discount, 0),
             observation=observation
         )
 
@@ -101,14 +106,17 @@ class SubscriptionBuilder:
 
         return ResponseSubscription(
             invoice_id=invoice_in_db.id,
-            integration_id=mp_sub.id,
-            init_point=mp_sub.init_point,
+            integration_id=mp_preference.id,
+            init_point=mp_preference.init_point,
             email=user_info["email"]
         )
 
     async def recreate_subscription(self, subscription: RequestSubscription, user: UserInDB) -> ResponseSubscription:
         plan_in_db = await self.__plan_service.search_by_id(id=subscription.plan_id)
-        annual_price = round(plan_in_db.price * 12, 2)
+
+        months_multiplier = 1 if subscription.monthly else 12
+
+        sub_price = round(plan_in_db.price * months_multiplier, 2)
 
         organization_plan_in_db = await self.__organization_plan_service.search_active_plan(
             organization_id=subscription.organization_id
@@ -150,23 +158,17 @@ class SubscriptionBuilder:
                 organization_id=organization_plan_in_db.organization_id,
                 updated_organization_plan=organization_plan_in_db
             )
-
-            # Adjusting current organization plan to the end of the month
-            organization_plan_in_db.end_date = self._adjust_end_date(organization_plan_in_db.end_date)
-            organization_plan_in_db = await self.__organization_plan_service.update(
-                id=organization_plan_in_db.id,
-                organization_id=organization_plan_in_db.organization_id,
-                updated_organization_plan=organization_plan_in_db
-            )
             _logger.info(f"Organization plan set to finish on {organization_plan_in_db.end_date}")
 
-            start_date, end_date = self._get_next_plan_dates(organization_plan_in_db.end_date)
-
             # Getting next plan dates (Next month)
-            start_date, end_date = self._get_next_plan_dates(organization_plan_in_db.end_date)
+            start_date, end_date = self._get_next_plan_dates(
+                reference_date=organization_plan_in_db.end_date,
+                months=months_multiplier
+            )
 
             organization_plan_in_db = await self.__create_or_update_organization_plan(
                 subscription=subscription,
+                months_multiplier=months_multiplier,
                 start_date=start_date,
                 end_date=end_date
             )
@@ -174,7 +176,7 @@ class SubscriptionBuilder:
         else:
             # Updating plan not payed yet
             organization_plan_in_db.plan_id = subscription.plan_id
-            organization_plan_in_db.end_date = datetime.now() + timedelta(days=365)
+            organization_plan_in_db.end_date = datetime.now() + timedelta(days=30 * months_multiplier)
 
             organization_plan_in_db = await self.__organization_plan_service.update(
                 id=organization_plan_in_db.id,
@@ -193,8 +195,10 @@ class SubscriptionBuilder:
             "name": user.name
         }
 
+        label = "Mensal" if subscription.monthly else "Anual"
+
         mp_sub = self.__mp_integration.create_subscription(
-            reason=f"pedidoZ - {plan_in_db.name} - Anual",
+            reason=f"pedidoZ - Assinatura {label} - {plan_in_db.name}",
             price_monthly=plan_in_db.price,
             discount=credits,
             user_info=user_info
@@ -204,7 +208,7 @@ class SubscriptionBuilder:
             organization_plan_id=organization_plan_in_db.id,
             integration_id=mp_sub.id,
             integration_type="mercado-pago",
-            amount=max(annual_price - credits, 0),
+            amount=max(sub_price - credits, 0),
             observation={"credits": credits}
         )
 
@@ -228,6 +232,7 @@ class SubscriptionBuilder:
 
         remaining_days = (organization_plan.end_date - today).days
         total_days = (organization_plan.end_date - organization_plan.start_date).days
+
         if total_days <= 0:
             return 0
 
@@ -238,12 +243,12 @@ class SubscriptionBuilder:
         end_of_month = self._get_end_of_current_month()
         return min(current_end_date, end_of_month)
 
-    def _get_next_plan_dates(self, reference_date: datetime) -> tuple:
+    def _get_next_plan_dates(self, reference_date: datetime, months: int) -> tuple:
         """Obtém a data de início e fim do próximo plano."""
         next_month = reference_date.month % 12 + 1
         next_year = reference_date.year if next_month > 1 else reference_date.year + 1
         start_date, end_date = get_start_and_end_day_of_month(year=next_year, month=next_month)
-        return start_date, end_date + timedelta(days=365)
+        return start_date, end_date + timedelta(days=30 * months)
 
     def _get_end_of_current_month(self) -> datetime:
         """Retorna a data do último dia do mês atual."""
@@ -278,7 +283,7 @@ class SubscriptionBuilder:
         _logger.info(f"Authorized payment {authorized_payment['payment']['status']}")
 
         invoice_in_db = await self.__invoice_service.search_by_integration(
-            integration_id=authorized_payment["preapproval_id"],
+            integration_id=authorized_payment["preference_id"],
             integration_type="mercado-pago"
         )
 
@@ -296,7 +301,7 @@ class SubscriptionBuilder:
         }
 
         internal_status = status_map.get(payment_status)
-        integration_id = payment_data["metadata"]["preapproval_id"]
+        integration_id = payment_data["metadata"]["preference_id"]
 
         invoice_in_db = await self.__invoice_service.search_by_integration(
             integration_id=integration_id,
@@ -318,14 +323,14 @@ class SubscriptionBuilder:
 
         return updated_invoice
 
-    async def get_subscription(self, organization_id: str) -> MPSubscriptionModel:
+    async def get_subscription(self, organization_id: str) -> MPPreferenceModel:
         invoice_in_db = await self.__get_active_invoice(organization_id=organization_id)
 
         if invoice_in_db:
-            mp_sub = self.__mp_integration.get_subscription(preapproval_id=invoice_in_db.integration_id)
+            mp_sub = self.__mp_integration.get_preference(preference_id=invoice_in_db.integration_id)
             return mp_sub
 
-    async def unsubscribe(self, organization_id: str) -> MPSubscriptionModel:
+    async def unsubscribe(self, organization_id: str) -> MPPreferenceModel:
         invoice_in_db = await self.__get_active_invoice(organization_id=organization_id)
 
         if invoice_in_db:
@@ -335,13 +340,14 @@ class SubscriptionBuilder:
     async def __create_or_update_organization_plan(
             self,
             subscription: RequestSubscription,
+            months_multiplier: int,
             start_date: datetime = None,
             end_date: datetime = None
         ) -> OrganizationPlanInDB:
 
         now = datetime.now() if not start_date else start_date
         today = datetime(year=now.year, month=now.month, day=now.day)
-        sub_end = today + timedelta(days=365) if not end_date else end_date
+        sub_end = today + timedelta(days=30 * months_multiplier) if not end_date else end_date
 
         organization_plan_in_db = await self.__organization_plan_service.search_active_plan(
             organization_id=subscription.organization_id
