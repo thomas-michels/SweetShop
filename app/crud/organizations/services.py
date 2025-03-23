@@ -1,8 +1,11 @@
 from typing import List
 
+from app.api.dependencies.bucket import S3BucketManager
 from app.api.dependencies.get_plan_feature import get_plan_feature
-from app.api.exceptions.authentication_exceptions import UnauthorizedException
+from app.api.exceptions.authentication_exceptions import UnauthorizedException, BadRequestException
 from app.core.utils.features import Feature
+from app.crud.files.repositories import FileRepository
+from app.crud.files.schemas import FilePurpose
 from app.crud.users.repositories import UserRepository
 from app.crud.users.schemas import UserInDB
 
@@ -20,11 +23,12 @@ class OrganizationServices:
         self,
         organization_repository: OrganizationRepository,
         user_repository: UserRepository,
-        organization_plan_repository: OrganizationPlanRepository
+        organization_plan_repository: OrganizationPlanRepository,
     ) -> None:
         self.__organization_repository = organization_repository
         self.__organization_plan_repository = organization_plan_repository
         self.__user_repository = user_repository
+        self.__s3_manager = S3BucketManager(mode="private")
 
     async def create(self, organization: Organization, owner: UserInDB) -> OrganizationInDB:
         organization_in_db = await self.__organization_repository.create(organization=organization)
@@ -35,7 +39,6 @@ class OrganizationServices:
             user_making_request=owner.user_id,
             role=RoleEnum.OWNER,
         )
-
         return await self.search_by_id(id=organization_in_db.id)
 
     async def check_if_can_add_more_users(self, organization_id: str) -> None:
@@ -62,6 +65,18 @@ class OrganizationServices:
 
         if not user_role or user_role.role not in [RoleEnum.OWNER, RoleEnum.ADMIN]:
             raise UnauthorizedException(detail="You cannot update this organization!")
+
+        if updated_organization.file_id is not None:
+            file_repository = FileRepository(organization_id=id)
+            file_in_db = await file_repository.select_by_id(id=updated_organization.file_id)
+
+            if file_in_db.purpose != FilePurpose.ORGANIZATION:
+                raise BadRequestException(detail="Invalid image for the organization")
+
+            if organization_in_db.file_id:
+                old_file = await file_repository.delete_by_id(id=organization_in_db.file_id)
+
+                self.__s3_manager.delete_file_by_url(file_url=old_file.url)
 
         is_updated = organization_in_db.validate_updated_fields(update_organization=updated_organization)
 
@@ -116,6 +131,7 @@ class OrganizationServices:
 
     async def __build_complete_organization(self, organization: OrganizationInDB, expand: List[str] = []) -> CompleteOrganization:
         complete_organization = CompleteOrganization.model_validate(organization)
+        file_repository = FileRepository(organization_id=organization.id)
 
         if "users" in expand:
             for user in complete_organization.users:
@@ -125,6 +141,12 @@ class OrganizationServices:
         if "plan":
             organization_plan = await self.__organization_plan_repository.select_active_plan(organization_id=organization.id)
             complete_organization.plan = organization_plan
+
+        if "file":
+            complete_organization.file = await file_repository.select_by_id(
+                id=complete_organization.file_id,
+                raise_404=False
+            )
 
         return complete_organization
 

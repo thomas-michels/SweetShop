@@ -56,7 +56,7 @@ class ProductServices:
                 raise BadRequestException(detail="Invalid image for the product")
 
             if product_in_db.file_id:
-                old_file = await self.__file_repository.select_by_id(id=product_in_db.file_id)
+                old_file = await self.__file_repository.delete_by_id(id=product_in_db.file_id)
 
                 self.__s3_manager.delete_file_by_url(file_url=old_file.url)
 

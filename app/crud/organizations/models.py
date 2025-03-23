@@ -3,7 +3,6 @@ from mongoengine import (
     StringField,
     DictField,
     ListField,
-    IntField,
 )
 from app.core.models.base_document import BaseDocument
 
@@ -15,8 +14,8 @@ class OrganizationModel(BaseDocument):
     email = StringField(required=False, default=None)
     address = DictField(required=False, default=None)
     document = StringField(required=False, default=None)
-    due_day = IntField(required=False, default=10)
     users = ListField(DictField())
+    file_id = StringField(required=False, default=None)
 
     meta = {
         "collection": "organizations"

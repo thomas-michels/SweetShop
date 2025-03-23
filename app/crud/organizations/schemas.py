@@ -6,6 +6,7 @@ from pydantic import Field, model_validator
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
 from app.core.utils.validate_document import validate_cnpj, validate_cpf
+from app.crud.files.schemas import FileInDB
 from app.crud.organization_plans.schemas import OrganizationPlanInDB
 from app.crud.shared_schemas.address import Address
 from app.crud.shared_schemas.roles import RoleEnum
@@ -27,8 +28,8 @@ class Organization(GenericModel):
     phone_number: str | None = Field(default=None, max_length=9)
     address: Address | None = Field(default=None)
     email: str | None = Field(default=None, example="contact@your_company.com")
-    due_day: int | None = Field(default=None, example=10)
     document: str | None = Field(default=None, example="111.555.219-99")
+    file_id: str | None = Field(default=None, example="file_123")
 
     @model_validator(mode="after")
     def validate_model(self) -> "Organization":
@@ -45,10 +46,6 @@ class Organization(GenericModel):
         if self.email is not None:
             if not re.match(EMAIL_REGEX, self.email):
                 raise ValueError("Invalid email")
-
-        if self.due_day is not None:
-            if self.due_day not in [5, 10, 15, 20]:
-                raise ValueError("Due day should be day 5, 10, 15 or 20")
 
         if self.document is not None:
             self.document = re.sub(r'\D', '', self.document)
@@ -89,8 +86,8 @@ class Organization(GenericModel):
             self.email = update_organization.email
             is_updated = True
 
-        if update_organization.due_day is not None:
-            self.due_day = update_organization.due_day
+        if update_organization.file_id is not None:
+            self.file_id = update_organization.file_id
             is_updated = True
 
         if update_organization.document is not None:
@@ -106,7 +103,7 @@ class UpdateOrganization(GenericModel):
     phone_number: Optional[str] = Field(default=None, max_length=9, pattern=r"^\d+$")
     email: Optional[str] = Field(default=None)
     address: Optional[Address] = Field(default=None)
-    due_day: Optional[int] = Field(default=None)
+    file_id: Optional[str] = Field(default=None)
     document: Optional[str] = Field(default=None)
 
     @model_validator(mode="after")
@@ -124,10 +121,6 @@ class UpdateOrganization(GenericModel):
         if self.email is not None:
             if not re.match(EMAIL_REGEX, self.email):
                 raise ValueError("Invalid email")
-
-        if self.due_day is not None:
-            if self.due_day not in [5, 10, 15, 20]:
-                raise ValueError("Due day should be day 5, 10, 15 or 20")
 
         if self.document is not None:
             self.document = re.sub(r'\D', '', self.document)
@@ -177,3 +170,4 @@ class OrganizationInDB(Organization, DatabaseModel):
 
 class CompleteOrganization(OrganizationInDB):
     users: List[CompleteUserOrganization] | None = Field(default=[])
+    file: str | None | FileInDB = Field(default=None)

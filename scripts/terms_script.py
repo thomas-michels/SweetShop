@@ -16,14 +16,13 @@ db = client[db_name]
 # Definir os campos a serem removidos
 remove_fields = {
     "$unset": {
-        "marketing_email_consent": "",
-        "terms_of_use_accepted": ""
+        "due_day": ""
     }
 }
 
 # Iterar sobre todas as coleções do banco de dados
 total_modified = 0
-for collection_name in db.list_collection_names():
+for collection_name in ["organizations"]:
     collection = db[collection_name]
     result = collection.update_many({}, remove_fields)
     print(f"{result.modified_count} documentos atualizados na coleção '{collection_name}'")
