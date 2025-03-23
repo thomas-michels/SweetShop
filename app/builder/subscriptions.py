@@ -301,7 +301,6 @@ class SubscriptionBuilder:
         }
 
         internal_status = status_map.get(payment_status, InvoiceStatus.CANCELLED)
-        _logger.info(payment_data["metadata"])
         integration_id = payment_data["external_reference"]
 
         invoice_in_db = await self.__invoice_service.search_by_integration(

@@ -1,8 +1,15 @@
+import os
 from typing import List
+from uuid import uuid4
 
+from fastapi import UploadFile
+from tempfile import NamedTemporaryFile
+from app.api.dependencies.bucket import S3BucketManager
 from app.api.dependencies.get_plan_feature import get_plan_feature
 from app.api.exceptions.authentication_exceptions import UnauthorizedException
 from app.core.utils.features import Feature
+from app.core.utils.image_validator import validate_image_file
+from app.core.utils.resize_image import resize_image
 from app.crud.tags.repositories import TagRepository
 from .schemas import CompleteProduct, Product, ProductInDB, UpdateProduct
 from .repositories import ProductRepository
@@ -17,6 +24,7 @@ class ProductServices:
         ) -> None:
         self.__product_repository = product_repository
         self.__tag_repository = tag_repository
+        self.__s3_manager = S3BucketManager(mode="private")
 
     async def create(self, product: Product) -> ProductInDB:
         plan_feature = await get_plan_feature(
@@ -46,6 +54,39 @@ class ProductServices:
                     await self.__tag_repository.select_by_id(id=tag)
 
             product_in_db = await self.__product_repository.update(product=product_in_db)
+
+        return product_in_db
+
+    async def add_image(self, product_id: str, product_image: UploadFile) -> ProductInDB:
+        product_in_db = await self.search_by_id(id=product_id)
+
+        image_type = await validate_image_file(image=product_image)
+
+        image_id = str(uuid4())
+
+        product_image = await resize_image(
+            upload_image=product_image,
+            size=(400, 400)
+        )
+
+        image_extension = product_image.filename.split(".")[-1]  # Obtém a extensão original
+
+        with NamedTemporaryFile(mode="wb", suffix=f".{image_extension}", delete=False) as buffer:
+            buffer.write(await product_image.read())
+            buffer.flush()
+
+        image_url = self.__s3_manager.upload_file(
+            local_path=buffer.name,
+            bucket_path=f"organization/{product_in_db.organization_id}/products/{product_in_db.id}_{image_id}.{image_extension}"
+        )
+
+        os.remove(buffer.name)
+
+        if product_in_db.image_url:
+            self.__s3_manager.delete_file_by_url(file_url=product_in_db.image_url)
+
+        product_in_db.image_url = image_url
+        product_in_db = await self.__product_repository.update(product=product_in_db)
 
         return product_in_db
 

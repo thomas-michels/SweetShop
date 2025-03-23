@@ -1,6 +1,7 @@
 import boto3
 import mimetypes
 from boto3.s3.transfer import S3Transfer
+from urllib.parse import urlparse
 from app.core.configs import get_environment, get_logger
 
 _env = get_environment()
@@ -80,17 +81,23 @@ class S3BucketManager:
             _logger.error(f"Error downloading file: {error}")
             raise Exception("Error downloading file") from error
 
-    def generate_presigned_url(self, bucket_path: str, expiration: int = None) -> str:
+    def generate_presigned_url(self, file_url: str, expiration: int = None) -> str:
         """
         Gera uma URL pré-assinada para acesso ao arquivo no bucket.
 
-        :param bucket_path: Caminho do arquivo no bucket.
+        :param file_url: Caminho do arquivo no bucket.
         :param expiration: Tempo de expiração da URL em segundos (padrão: configurado no ambiente).
         :return: URL pré-assinada.
         """
         expiration = expiration or _env.BUCKET_URL_EXPIRES_IN_SECONDS
         try:
-            _logger.info(f"Generating presigned URL for '{bucket_path}'...")
+            _logger.info(f"Generating presigned URL for '{file_url}'...")
+            parsed_url = urlparse(file_url)
+            bucket_path = parsed_url.path.removeprefix(f"/{self.bucket_name}/")
+
+            if not bucket_path:
+                raise ValueError("Invalid file URL. Could not extract the file path.")
+
             url = self.client.generate_presigned_url(
                 "get_object",
                 Params={"Bucket": self.bucket_name, "Key": bucket_path},
@@ -120,3 +127,39 @@ class S3BucketManager:
         except Exception as error:
             _logger.error(f"Error listing files: {error}")
             raise Exception("Error listing files") from error
+
+    def delete_file(self, bucket_path: str) -> None:
+        """
+        Remove um arquivo do bucket S3.
+
+        :param bucket_path: Caminho do arquivo no bucket.
+        """
+        try:
+            _logger.info(f"Deleting file from '{self.bucket_name}/{bucket_path}'...")
+            self.client.delete_object(Bucket=self.bucket_name, Key=bucket_path)
+            _logger.info(f"File '{bucket_path}' deleted successfully.")
+
+        except Exception as error:
+            _logger.error(f"Error deleting file: {error}")
+            raise Exception("Error deleting file") from error
+
+    def delete_file_by_url(self, file_url: str) -> None:
+        """
+        Remove um arquivo do bucket S3 com base na URL.
+
+        :param file_url: URL do arquivo no S3.
+        """
+        try:
+            parsed_url = urlparse(file_url)
+            bucket_path = parsed_url.path.removeprefix(f"/{self.bucket_name}/")
+
+            if not bucket_path:
+                raise ValueError("Invalid file URL. Could not extract the file path.")
+
+            _logger.info(f"Deleting file from '{self.bucket_name}/{bucket_path}'...")
+            self.client.delete_object(Bucket=self.bucket_name, Key=bucket_path)
+            _logger.info(f"File '{bucket_path}' deleted successfully.")
+
+        except Exception as error:
+            _logger.error(f"Error deleting file: {error}")
+            raise Exception("Error deleting file") from error

@@ -2,6 +2,7 @@ from typing import List, Optional
 
 from pydantic import Field, model_validator
 
+from app.api.dependencies.bucket import S3BucketManager
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
 from app.crud.tags.schemas import TagInDB
@@ -72,6 +73,18 @@ class UpdateProduct(GenericModel):
 
 class ProductInDB(Product, DatabaseModel):
     organization_id: str = Field(example="org_123")
+    image_url: str | None = Field(default=None, example="www.tigris.com.br")
+
+    def model_post_init(self, __context):
+        if self.image_url is not None:
+            s3_manager = S3BucketManager(mode="private")
+            presigned_url = s3_manager.generate_presigned_url(
+                file_url=self.image_url,
+                expiration=600
+            )
+            self.image_url = presigned_url
+
+        return super().model_post_init(__context)
 
 
 class CompleteProduct(ProductInDB):

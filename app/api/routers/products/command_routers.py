@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Security
+from fastapi import APIRouter, Depends, Security, UploadFile
 
 from app.api.composers import product_composer
 from app.api.dependencies import build_response, decode_jwt
@@ -65,4 +65,27 @@ async def delete_product(
     else:
         return build_response(
             status_code=404, message=f"Product {product_id} not found", data=None
+        )
+
+
+@router.post("/products/{product_id}/image", responses={200: {"model": ProductInDB}})
+async def add_product_image(
+    product_id: str,
+    product_image: UploadFile,
+    current_user: UserInDB = Security(decode_jwt, scopes=["product:create"]),
+    product_services: ProductServices = Depends(product_composer),
+):
+    product_in_db = await product_services.add_image(
+        product_id=product_id,
+        product_image=product_image
+    )
+
+    if product_in_db:
+        return build_response(
+            status_code=200, message="Product Image added with success", data=product_in_db
+        )
+
+    else:
+        return build_response(
+            status_code=400, message="Some error happened on add a product image", data=None
         )
