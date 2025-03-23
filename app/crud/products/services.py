@@ -85,8 +85,10 @@ class ProductServices:
         if product_in_db.image_url:
             self.__s3_manager.delete_file_by_url(file_url=product_in_db.image_url)
 
-        product_in_db.image_url = image_url
-        product_in_db = await self.__product_repository.update(product=product_in_db)
+        product_in_db = await self.__product_repository.update_image(
+            product_id=product_in_db.id,
+            image_url=image_url
+        )
 
         return product_in_db
 
