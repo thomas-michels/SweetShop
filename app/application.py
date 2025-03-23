@@ -99,7 +99,6 @@ app.add_exception_handler(Exception, generic_error_500)
 
 @app.get("/")
 async def root_path(request: Request):
-    print(request.headers)
     return build_response(status_code=200, message="I'm alive!", data=None)
 
 

@@ -70,12 +70,14 @@ async def accepted_term_of_use(
 ):
     now = int(datetime.now().timestamp())
 
+    client_ip = request.headers.get("fly-client-ip")
+
     acceptance = TermOfUseAcceptance(
         term_of_use_id=term_of_use_id,
         user_id=current_user.user_id,
         acceptance_method="checkbox",
         accepted_at=now,
-        ip_address=request.client.host if request.client else "unknown",
+        ip_address=client_ip if client_ip else "unknown",
         user_agent=request.headers.get("User-Agent", "unknown"),
     )
 
