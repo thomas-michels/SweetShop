@@ -43,30 +43,13 @@ class ProductRepository(Repository):
             ).first()
             product.name = product.name.title()
 
-            product_model.update(**product.model_dump(exclude=["image_url"]))
+            product_model.update(**product.model_dump())
 
             return await self.select_by_id(id=product.id)
 
         except Exception as error:
             _logger.error(f"Error on update_product: {str(error)}")
             raise UnprocessableEntity(message="Error on update product")
-
-    async def update_image(self, product_id: str, image_url: str) -> ProductInDB:
-        try:
-            product_model: ProductModel = ProductModel.objects(
-                id=product_id,
-                is_active=True,
-                organization_id=self.organization_id
-            ).first()
-
-            product_model.image_url = image_url
-            product_model.save()
-
-            return await self.select_by_id(id=product_id)
-
-        except Exception as error:
-            _logger.error(f"Error on update_image: {str(error)}")
-            raise UnprocessableEntity(message="Error on update product image")
 
     async def select_count(self) -> int:
         try:

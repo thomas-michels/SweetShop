@@ -15,7 +15,6 @@ from app.api.routers import (
     expenses_router,
     invite_router,
     payment_router,
-    images_router,
     organization_plan_router,
     plan_router,
     plan_feature_router,
@@ -25,6 +24,8 @@ from app.api.routers import (
     marketing_email_router,
     calendar_router,
     term_of_use_router,
+    file_router,
+    section_router,
 )
 from app.api.routers.exception_handlers import (
     unprocessable_entity_error_422,
@@ -80,14 +81,15 @@ app.include_router(product_router, prefix="/api")
 app.include_router(order_router, prefix="/api")
 app.include_router(payment_router, prefix="/api")
 app.include_router(fast_order_router, prefix="/api")
+app.include_router(section_router, prefix="/api")
 app.include_router(billing_router, prefix="/api")
 app.include_router(calendar_router, prefix="/api")
 app.include_router(customer_router, prefix="/api")
 app.include_router(tag_router, prefix="/api")
 app.include_router(expenses_router, prefix="/api")
 app.include_router(coupon_router, prefix="/api")
+app.include_router(file_router, prefix="/api")
 app.include_router(marketing_email_router, prefix="/api")
-app.include_router(images_router, prefix="/api")
 app.include_router(mercado_pago_router, prefix="/api")
 
 app.add_exception_handler(HTTPException, http_exception_handler)

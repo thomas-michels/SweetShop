@@ -11,7 +11,7 @@ class ProductModel(BaseDocument):
     unit_price = FloatField(min_value=0, required=True)
     unit_cost = FloatField(min_value=0, required=True)
     tags = ListField(StringField(), required=False)
-    image_url = StringField(required=False)
+    file_id = StringField(required=False)
 
     meta = {
         "collection": "products",

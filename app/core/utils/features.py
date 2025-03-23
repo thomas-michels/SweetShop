@@ -15,6 +15,9 @@ class Feature(str, Enum):
     DISPLAY_DASHBOARD = "DISPLAY_DASHBOARD"
     DISPLAY_DELINQUENCY = "DISPLAY_DELINQUENCY"
 
+    # Menu
+    DISPLAY_MENU = "DISPLAY_MENU"
+
 
 def get_translation(name: Feature) -> str:
     translations = {
@@ -27,5 +30,6 @@ def get_translation(name: Feature) -> str:
         Feature.DISPLAY_CALENDAR: "Calendário",
         Feature.DISPLAY_DASHBOARD: "Painel financeiro",
         Feature.DISPLAY_DELINQUENCY: "Inadimplência",
+        Feature.DISPLAY_MENU: "Cardápio",
     }
     return translations.get(name, "Recurso não encontrada")
