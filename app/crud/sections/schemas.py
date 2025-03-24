@@ -36,7 +36,6 @@ class Section(GenericModel):
 
 class UpdateSection(GenericModel):
     position: Optional[int] = Field(default=None, example=1)
-    menu_id: Optional[str] = Field(default=None, example="men_123")
     name: Optional[str] = Field(default=None, example="Doces")
     description: Optional[str] = Field(default=None, example="Bolos e tortas")
     is_visible: Optional[bool] = Field(default=None, example=True)

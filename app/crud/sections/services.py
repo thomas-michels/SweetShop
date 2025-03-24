@@ -1,7 +1,5 @@
 from typing import List
-from app.api.dependencies.get_plan_feature import get_plan_feature
-from app.api.exceptions.authentication_exceptions import UnauthorizedException
-from app.core.utils.features import Feature
+from app.crud.menus.repositories import MenuRepository
 from .schemas import Section, SectionInDB, UpdateSection
 from .repositories import SectionRepository
 
@@ -11,17 +9,13 @@ class SectionServices:
     def __init__(
         self,
         section_repository: SectionRepository,
+        menu_repository: MenuRepository,
     ) -> None:
         self.__section_repository = section_repository
+        self.__menu_repository = menu_repository
 
     async def create(self, section: Section) -> SectionInDB:
-        plan_feature = await get_plan_feature(
-            organization_id=self.__section_repository.organization_id,
-            feature_name=Feature.DISPLAY_MENU
-        )
-
-        if not plan_feature or not plan_feature.value.startswith("t"):
-            raise UnauthorizedException(detail=f"You cannot access this feature")
+        await self.__menu_repository.select_by_id(id=section.menu_id)
 
         section_in_db = await self.__section_repository.create(section=section)
         return section_in_db

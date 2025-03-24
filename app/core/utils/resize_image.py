@@ -1,4 +1,4 @@
-from PIL import Image
+from PIL import Image, ImageOps
 import io
 
 from fastapi import UploadFile
@@ -17,6 +17,8 @@ async def resize_image(upload_image: UploadFile, size=(400, 400)) -> UploadFile:
     # Lê a imagem como um objeto de bytes
     upload_image.file.seek(0)
     img = Image.open(upload_image.file)
+
+    img = ImageOps.exif_transpose(img)
 
     # Converte para RGB se necessário (evita problemas com transparência)
     if img.mode in ("RGBA", "P"):
