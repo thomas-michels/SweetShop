@@ -1,2 +1,2 @@
-from .schemas import Section, SectionInDB, UpdateSection
+from .schemas import Section, SectionInDB, UpdateSection, CompleteSection
 from .services import SectionServices

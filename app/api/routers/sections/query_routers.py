@@ -13,10 +13,14 @@ router = APIRouter(tags=["Sections"])
 @router.get("/sections/{section_id}", responses={200: {"model": SectionInDB}})
 async def get_section_by_id(
     section_id: str,
+    expand: List[str] = Query(default=[]),
     current_user: UserInDB = Security(decode_jwt, scopes=[]),
     section_services: SectionServices = Depends(section_composer),
 ):
-    section_in_db = await section_services.search_by_id(id=section_id)
+    section_in_db = await section_services.search_by_id(
+        id=section_id,
+        expand=expand
+    )
 
     if section_in_db:
         return build_response(

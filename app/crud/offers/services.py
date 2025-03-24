@@ -1,10 +1,11 @@
 from typing import List
 
+from app.crud.files.repositories import FileRepository
 from app.crud.products.repositories import ProductRepository
 from app.crud.sections.repositories import SectionRepository
 
 from .repositories import OfferRepository
-from .schemas import OfferProduct, RequestOffer, Offer, OfferInDB, UpdateOffer
+from .schemas import CompleteOffer, CompleteOfferProduct, OfferProduct, RequestOffer, Offer, OfferInDB, UpdateOffer
 
 
 class OfferServices:
@@ -14,10 +15,12 @@ class OfferServices:
         offer_repository: OfferRepository,
         section_repository: SectionRepository,
         product_repository: ProductRepository,
+        file_repository: FileRepository
     ) -> None:
         self.__offer_repository = offer_repository
         self.__section_repository = section_repository
         self.__product_repository = product_repository
+        self.__file_repository = file_repository
 
     async def create(self, request_offer: RequestOffer) -> OfferInDB:
         await self.__section_repository.select_by_id(id=request_offer.section_id)
@@ -65,6 +68,9 @@ class OfferServices:
         if not expand or not offer_in_db:
             return offer_in_db
 
+        offers = await self.__build_complete_offer(offers=[offer_in_db], expand=expand)
+        return offers[0]
+
     async def search_all(self, section_id: str, is_visible: bool = None, expand: List[str] = []) -> List[OfferInDB]:
         offers = await self.__offer_repository.select_all(
             section_id=section_id,
@@ -74,7 +80,27 @@ class OfferServices:
         if not expand or not offers:
             return offers
 
+        return await self.__build_complete_offer(offers=offers, expand=expand)
+
+    async def __build_complete_offer(self, offers: List[OfferInDB], expand: List[str]) -> List[CompleteOffer]:
         complete_offers = []
+
+        for offer in offers:
+            complete_offer_products = []
+
+            for product in offer.products:
+                file = None
+
+                if "files" in expand:
+                    if product.file_id:
+                        file = await self.__file_repository.select_by_id(id=product.file_id)
+
+                offer_product = CompleteOfferProduct(**product.model_dump(), file=file)
+                complete_offer_products.append(offer_product)
+
+            complete_offer = CompleteOffer.model_validate(offer)
+            complete_offer.products = complete_offer_products
+            complete_offers.append(complete_offer)
 
         return complete_offers
 

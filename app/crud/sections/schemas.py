@@ -1,9 +1,8 @@
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import Field
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
-
 
 class Section(GenericModel):
     position: int = Field(example=1)
@@ -43,3 +42,9 @@ class UpdateSection(GenericModel):
 
 class SectionInDB(Section, DatabaseModel):
     organization_id: str = Field(example="org_123")
+
+
+from app.crud.offers.schemas import CompleteOffer
+
+class CompleteSection(SectionInDB):
+    offers: List[CompleteOffer] = Field(default=[], example=[])

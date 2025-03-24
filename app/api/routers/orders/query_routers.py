@@ -51,8 +51,6 @@ async def get_orders(
 ):
     if not start_order_date and not end_order_date and not status:
         today = datetime.today()
-        next_month = today.replace(day=28) + timedelta(days=4)
-        day = (next_month - timedelta(days=next_month.day))
 
         start_order_date = datetime(
             year=today.year,
@@ -61,15 +59,6 @@ async def get_orders(
             hour=0,
             minute=0,
             second=0
-        )
-
-        end_order_date = datetime(
-            year=day.year,
-            month=day.month,
-            day=day.day,
-            hour=23,
-            minute=59,
-            second=59
         )
 
     orders = await order_services.search_all(

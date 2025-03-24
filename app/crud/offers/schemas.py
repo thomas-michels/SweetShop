@@ -2,6 +2,7 @@ from typing import List, Optional
 from pydantic import Field
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
+from app.crud.files.schemas import FileInDB
 
 
 class OfferProduct(GenericModel):
@@ -11,6 +12,10 @@ class OfferProduct(GenericModel):
     cost: float = Field(example=10)
     price: float = Field(example=12)
     file_id: str | None = Field(default=None, example="file_123")
+
+
+class CompleteOfferProduct(OfferProduct):
+    file: FileInDB | None = Field(default=None)
 
 
 class RequestOffer(GenericModel):
@@ -61,3 +66,6 @@ class UpdateOffer(GenericModel):
 
 class OfferInDB(Offer, DatabaseModel):
     organization_id: str = Field(example="org_123")
+
+class CompleteOffer(Offer, DatabaseModel):
+    products: List[CompleteOfferProduct | str] = Field(default=[])
