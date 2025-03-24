@@ -68,7 +68,9 @@ def get_role_permissions(role: RoleEnum) -> Set[str]:
                 "user:delete",
                 "organization:update",
                 "billing:get",
-                "organization_plan:get"
+                "organization_plan:get",
+                "menu:create",
+                "menu:delete",
             ]
         )
     )

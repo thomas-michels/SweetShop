@@ -20,3 +20,4 @@ from .calendar_composite import calendar_composer
 from .term_of_use_composite import terms_of_use_composer
 from .file_composite import file_composer
 from .section_composite import section_composer
+from .menu_composite import menu_composer

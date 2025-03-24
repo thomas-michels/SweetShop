@@ -1,19 +1,16 @@
-from mongoengine import StringField, BooleanField, ListField, DictField, IntField
+from mongoengine import StringField, BooleanField
 
 from app.core.models.base_document import BaseDocument
 
 
-
-class SectionModel(BaseDocument):
+class MenuModel(BaseDocument):
     organization_id = StringField(required=True)
-    menu_id = StringField(required=True)
-    position = IntField(required=True)
-    name = StringField(max_length=100, required=True)
+    name = StringField(required=True)
     description = StringField(required=True)
     is_visible = BooleanField(default=True, required=False)
 
     meta = {
-        "collection": "sections"
+        "collection": "menus"
     }
 
     def update(self, **kwargs):
