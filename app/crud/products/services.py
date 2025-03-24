@@ -74,9 +74,14 @@ class ProductServices:
     async def search_count(self) -> int:
         return await self.__product_repository.select_count()
 
-    async def search_by_id(self, id: str) -> ProductInDB:
+    async def search_by_id(self, id: str, expand: List[str] = []) -> ProductInDB:
         product_in_db = await self.__product_repository.select_by_id(id=id)
-        return product_in_db
+
+        if not expand or not product_in_db:
+            return product_in_db
+
+        complete_product = await self.__build_complete_product(products=[product_in_db], expand=expand)
+        return complete_product[0]
 
     async def search_all(self, query: str, tags: List[str] = [], expand: List[str] = []) -> List[ProductInDB]:
         products = await self.__product_repository.select_all(
@@ -87,6 +92,9 @@ class ProductServices:
         if not expand:
             return products
 
+        return await self.__build_complete_product(products=products, expand=expand)
+
+    async def __build_complete_product(self, products: List[ProductInDB], expand: List[str]) -> List[CompleteProduct]:
         complete_products = []
         tags = {}
 

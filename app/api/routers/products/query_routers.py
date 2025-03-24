@@ -13,10 +13,14 @@ router = APIRouter(tags=["Products"])
 @router.get("/products/{product_id}", responses={200: {"model": ProductInDB}})
 async def get_product_by_id(
     product_id: str,
+    expand: List[str] = Query(default=[]),
     current_user: UserInDB = Security(decode_jwt, scopes=["product:get"]),
     product_services: ProductServices = Depends(product_composer),
 ):
-    product_in_db = await product_services.search_by_id(id=product_id)
+    product_in_db = await product_services.search_by_id(
+        id=product_id,
+        expand=expand
+    )
 
     if product_in_db:
         return build_response(
