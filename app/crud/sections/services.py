@@ -37,9 +37,10 @@ class SectionServices:
         section_in_db = await self.__section_repository.select_by_id(id=id)
         return section_in_db
 
-    async def search_all(self, query: str, expand: List[str] = []) -> List[SectionInDB]:
+    async def search_all(self, menu_id: str, is_visible: bool = None, expand: List[str] = []) -> List[SectionInDB]:
         sections = await self.__section_repository.select_all(
-            query=query,
+            menu_id=menu_id,
+            is_visible=is_visible
         )
         return sections
 

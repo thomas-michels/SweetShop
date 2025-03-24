@@ -79,17 +79,18 @@ class SectionRepository(Repository):
             if raise_404:
                 raise NotFoundError(message=f"Section #{id} not found")
 
-    async def select_all(self, query: str) -> List[SectionInDB]:
+    async def select_all(self, menu_id: str, is_visible: bool = None) -> List[SectionInDB]:
         try:
             sections = []
 
             objects = SectionModel.objects(
                 is_active=True,
-                organization_id=self.organization_id
+                organization_id=self.organization_id,
+                menu_id=menu_id
             )
 
-            if query:
-                objects = objects.filter(name__iregex=query)
+            if is_visible is not None:
+                objects = objects.filter(is_visible=is_visible)
 
             for section_model in objects.order_by("position"):
                 sections.append(SectionInDB.model_validate(section_model))

@@ -91,7 +91,7 @@ class MenuRepository(Repository):
             if query:
                 objects = objects.filter(name__iregex=query)
 
-            if is_visible:
+            if is_visible is not None:
                 objects = objects.filter(is_visible=is_visible)
 
             for menu_model in objects.order_by("created_at"):

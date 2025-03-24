@@ -13,7 +13,7 @@ router = APIRouter(tags=["Sections"])
 @router.get("/sections/{section_id}", responses={200: {"model": SectionInDB}})
 async def get_section_by_id(
     section_id: str,
-    current_user: UserInDB = Security(decode_jwt, scopes=["section:get"]),
+    current_user: UserInDB = Security(decode_jwt, scopes=[]),
     section_services: SectionServices = Depends(section_composer),
 ):
     section_in_db = await section_services.search_by_id(id=section_id)
@@ -29,17 +29,17 @@ async def get_section_by_id(
         )
 
 
-@router.get("/sections", responses={200: {"model": List[SectionInDB]}})
+@router.get("/menus/{menu_id}/sections", tags=["Menus"], responses={200: {"model": List[SectionInDB]}})
 async def get_sections(
-    query: str = Query(default=None),
-    tags: List[str] = Query(default=[]),
+    menu_id: str,
+    is_visible: bool = Query(default=None),
     expand: List[str] = Query(default=[]),
-    current_user: UserInDB = Security(decode_jwt, scopes=["section:get"]),
+    current_user: UserInDB = Security(decode_jwt, scopes=[]),
     section_services: SectionServices = Depends(section_composer),
 ):
     sections = await section_services.search_all(
-        query=query,
-        tags=tags,
+        menu_id=menu_id,
+        is_visible=is_visible,
         expand=expand
     )
 

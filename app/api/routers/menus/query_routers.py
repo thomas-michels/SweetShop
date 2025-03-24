@@ -32,14 +32,12 @@ async def get_menu_by_id(
 @router.get("/menus", responses={200: {"model": List[MenuInDB]}})
 async def get_menus(
     query: str = Query(default=None),
-    tags: List[str] = Query(default=[]),
     expand: List[str] = Query(default=[]),
     current_user: UserInDB = Security(decode_jwt, scopes=[]),
     menu_services: MenuServices = Depends(menu_composer),
 ):
     menus = await menu_services.search_all(
         query=query,
-        tags=tags,
         expand=expand
     )
 
