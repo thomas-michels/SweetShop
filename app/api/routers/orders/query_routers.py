@@ -49,7 +49,7 @@ async def get_orders(
     current_user: UserInDB = Security(decode_jwt, scopes=["order:get"]),
     order_services: OrderServices = Depends(order_composer),
 ):
-    if not start_order_date and not end_order_date:
+    if not start_order_date and not end_order_date and not status:
         today = datetime.today()
         next_month = today.replace(day=28) + timedelta(days=4)
         day = (next_month - timedelta(days=next_month.day))

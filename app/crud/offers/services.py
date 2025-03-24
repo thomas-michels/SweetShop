@@ -59,16 +59,24 @@ class OfferServices:
 
         return offer_in_db
 
-    async def search_by_id(self, id: str) -> OfferInDB:
+    async def search_by_id(self, id: str, expand: List[str] = []) -> OfferInDB:
         offer_in_db = await self.__offer_repository.select_by_id(id=id)
-        return offer_in_db
+
+        if not expand or not offer_in_db:
+            return offer_in_db
 
     async def search_all(self, section_id: str, is_visible: bool = None, expand: List[str] = []) -> List[OfferInDB]:
         offers = await self.__offer_repository.select_all(
             section_id=section_id,
             is_visible=is_visible
         )
-        return offers
+
+        if not expand or not offers:
+            return offers
+
+        complete_offers = []
+
+        return complete_offers
 
     async def delete_by_id(self, id: str) -> OfferInDB:
         offer_in_db = await self.__offer_repository.delete_by_id(id=id)

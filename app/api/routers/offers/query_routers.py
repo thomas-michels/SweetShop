@@ -13,10 +13,11 @@ router = APIRouter(tags=["Offers"])
 @router.get("/offers/{offer_id}", responses={200: {"model": OfferInDB}})
 async def get_offer_by_id(
     offer_id: str,
+    expand: List[str] = Query(default=[]),
     current_user: UserInDB = Security(decode_jwt, scopes=[]),
     offer_services: OfferServices = Depends(offer_composer),
 ):
-    offer_in_db = await offer_services.search_by_id(id=offer_id)
+    offer_in_db = await offer_services.search_by_id(id=offer_id, expand=expand)
 
     if offer_in_db:
         return build_response(
