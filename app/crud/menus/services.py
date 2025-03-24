@@ -23,8 +23,8 @@ class MenuServices:
         if not plan_feature or not plan_feature.value.startswith("t"):
             raise UnauthorizedException(detail=f"You cannot access this feature")
 
-        if await self.search_count() > 3:
-            raise UnauthorizedException(detail=f"You cannot create more than 3 menus")
+        # if await self.search_count() > 3:
+        #     raise UnauthorizedException(detail=f"You cannot create more than 3 menus")
 
         menu_in_db = await self.__menu_repository.create(menu=menu)
         return menu_in_db

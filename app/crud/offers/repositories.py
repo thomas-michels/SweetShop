@@ -1,0 +1,104 @@
+from datetime import datetime
+from typing import List
+from app.core.configs import get_logger
+from app.core.exceptions import NotFoundError, UnprocessableEntity
+from app.core.repositories.base_repository import Repository
+
+from .models import OfferModel
+from .schemas import Offer, OfferInDB
+
+_logger = get_logger(__name__)
+
+
+class OfferRepository(Repository):
+    def __init__(self, organization_id: str) -> None:
+        super().__init__()
+        self.organization_id = organization_id
+
+    async def create(self, offer: Offer) -> OfferInDB:
+        try:
+            offer_model = OfferModel(
+                created_at=datetime.now(),
+                updated_at=datetime.now(),
+                organization_id=self.organization_id,
+                **offer.model_dump()
+            )
+            offer_model.name = offer_model.name.title()
+
+            offer_model.save()
+            _logger.info(f"Offer {offer.name} saved for organization {self.organization_id}")
+
+            return OfferInDB.model_validate(offer_model)
+
+        except Exception as error:
+            _logger.error(f"Error on create_offer: {str(error)}")
+            raise UnprocessableEntity(message="Error on create new offer")
+
+    async def update(self, offer: OfferInDB) -> OfferInDB:
+        try:
+            offer_model: OfferModel = OfferModel.objects(
+                id=offer.id,
+                is_active=True,
+                organization_id=self.organization_id
+            ).first()
+            offer.name = offer.name.title()
+
+            offer_model.update(**offer.model_dump())
+
+            return await self.select_by_id(id=offer.id)
+
+        except Exception as error:
+            _logger.error(f"Error on update_offer: {str(error)}")
+            raise UnprocessableEntity(message="Error on update offer")
+
+    async def select_by_id(self, id: str, raise_404: bool = True) -> OfferInDB:
+        try:
+            offer_model: OfferModel = OfferModel.objects(
+                id=id,
+                is_active=True,
+                organization_id=self.organization_id
+            ).first()
+
+            return OfferInDB.model_validate(offer_model)
+
+        except Exception as error:
+            _logger.error(f"Error on select_by_id: {str(error)}")
+            if raise_404:
+                raise NotFoundError(message=f"Offer #{id} not found")
+
+    async def select_all(self, section_id: str, is_visible: bool = None) -> List[OfferInDB]:
+        try:
+            offers = []
+
+            objects = OfferModel.objects(
+                is_active=True,
+                organization_id=self.organization_id,
+                section_id=section_id
+            )
+
+            if is_visible is not None:
+                objects = objects.filter(is_visible=is_visible)
+
+            for offer_model in objects.order_by("created_at"):
+                offers.append(OfferInDB.model_validate(offer_model))
+
+            return offers
+
+        except Exception as error:
+            _logger.error(f"Error on select_all: {str(error)}")
+            raise NotFoundError(message=f"Offers not found")
+
+    async def delete_by_id(self, id: str) -> OfferInDB:
+        try:
+            offer_model: OfferModel = OfferModel.objects(
+                id=id,
+                is_active=True,
+                organization_id=self.organization_id
+            ).first()
+            offer_model.delete()
+
+            return OfferInDB.model_validate(offer_model)
+
+        except Exception as error:
+            _logger.error(f"Error on delete_by_id: {str(error)}")
+            raise NotFoundError(message=f"Offer #{id} not found")

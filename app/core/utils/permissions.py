@@ -72,7 +72,9 @@ def get_role_permissions(role: RoleEnum) -> Set[str]:
                 "menu:create",
                 "menu:delete",
                 "section:create",
-                "section:delete"
+                "section:delete",
+                "offer:create",
+                "offer:delete",
             ]
         )
     )
