@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List
 
 from fastapi import APIRouter, Depends, Query, Response, Security
@@ -49,6 +49,29 @@ async def get_orders(
     current_user: UserInDB = Security(decode_jwt, scopes=["order:get"]),
     order_services: OrderServices = Depends(order_composer),
 ):
+    if not start_order_date and not end_order_date:
+        today = datetime.today()
+        next_month = today.replace(day=28) + timedelta(days=4)
+        day = (next_month - timedelta(days=next_month.day))
+
+        start_order_date = datetime(
+            year=today.year,
+            month=today.month,
+            day=1,
+            hour=0,
+            minute=0,
+            second=0
+        )
+
+        end_order_date = datetime(
+            year=day.year,
+            month=day.month,
+            day=day.day,
+            hour=23,
+            minute=59,
+            second=59
+        )
+
     orders = await order_services.search_all(
         customer_id=customer_id,
         status=status,

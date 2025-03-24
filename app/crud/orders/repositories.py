@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import List
 
+from mongoengine import Q
 from pydantic_core import ValidationError
 
 from app.core.configs import get_logger
@@ -125,7 +126,10 @@ class OrderRepository(Repository):
                 objects = objects.filter(status=status.value)
 
             else:
-                objects = objects.filter(status__ne=OrderStatus.CANCELED.value)
+                objects = objects.filter(
+                    Q(status__ne=OrderStatus.CANCELED.value) &
+                    Q(status__ne=OrderStatus.DONE.value, payment_status__ne=PaymentStatus.PAID)
+                )
 
             if payment_status:
                 objects = objects.filter(payment_status__in=payment_status)
