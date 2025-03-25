@@ -18,9 +18,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.window = window
 
     async def dispatch(self, request: Request, call_next):
-        client_ip = request.client.host
+        client_ip = request.headers.get("fly-client-ip")
 
-        key = f"rate_limit:{client_ip}"
+        key = f"pedidoz:rate_limit:{client_ip}"
         request_count = self.redis.increment_value(key, self.window)
 
         if request_count > self.limit:
