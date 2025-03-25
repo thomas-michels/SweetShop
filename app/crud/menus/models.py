@@ -1,4 +1,4 @@
-from mongoengine import StringField, BooleanField
+from mongoengine import StringField, BooleanField, DictField
 
 from app.core.models.base_document import BaseDocument
 
@@ -8,6 +8,7 @@ class MenuModel(BaseDocument):
     name = StringField(required=True)
     description = StringField(required=True)
     is_visible = BooleanField(default=True, required=False)
+    extra_fields = DictField(default={}, required=False)
 
     meta = {
         "collection": "menus"
