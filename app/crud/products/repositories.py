@@ -79,7 +79,7 @@ class ProductRepository(Repository):
             if raise_404:
                 raise NotFoundError(message=f"Product #{id} not found")
 
-    async def select_all(self, query: str, tags: List[str] = []) -> List[ProductInDB]:
+    async def select_all(self, query: str, tags: List[str] = [], limit: int = None) -> List[ProductInDB]:
         try:
             products = []
 
@@ -93,6 +93,9 @@ class ProductRepository(Repository):
 
             if tags:
                 objects = objects.filter(tags__in=tags)
+
+            if limit is not None:
+                objects = objects.limit(limit)
 
             for product_model in objects.order_by("name"):
                 products.append(ProductInDB.model_validate(product_model))
