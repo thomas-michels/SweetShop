@@ -1,4 +1,4 @@
-from mongoengine import StringField, BooleanField, DictField
+from mongoengine import StringField, BooleanField, DictField, ListField, IntField, FloatField
 
 from app.core.models.base_document import BaseDocument
 
@@ -8,7 +8,14 @@ class MenuModel(BaseDocument):
     name = StringField(required=True)
     description = StringField(required=True)
     is_visible = BooleanField(default=True, required=False)
-    extra_fields = DictField(default={}, required=False)
+    operating_days = ListField(DictField(), required=False)
+    min_delivery_time = IntField(required=False)
+    max_delivery_time = IntField(required=False)
+    max_distance: int = IntField(required=False)
+    allowed_payment_methods = ListField(StringField(), required=False)
+    min_order_price = FloatField(required=False)
+    min_delivery_price = FloatField(required=False)
+    km_tax = FloatField(required=False)
 
     meta = {
         "collection": "menus"
