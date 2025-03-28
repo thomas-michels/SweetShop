@@ -204,7 +204,8 @@ class OrderServices:
         min_total_amount: float,
         max_total_amount: float,
         expand: List[str],
-        order_by: str = None
+        order_by: str = None,
+        ignore_default_filters: bool = False
     ) -> List[CompleteOrder]:
 
         orders = await self.__order_repository.select_all(
@@ -217,7 +218,8 @@ class OrderServices:
             min_total_amount=min_total_amount,
             max_total_amount=max_total_amount,
             tags=tags,
-            order_by=order_by
+            order_by=order_by,
+            ignore_default_filters=ignore_default_filters
         )
 
         complete_orders = []

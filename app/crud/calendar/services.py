@@ -38,6 +38,7 @@ class CalendarServices:
             min_total_amount=None,
             max_total_amount=None,
             expand=["customers"],
+            ignore_default_filters=True
         )
 
         calendar_days = {}

@@ -76,6 +76,7 @@ class BillingServices:
             min_total_amount=None,
             max_total_amount=None,
             expand=[],
+            ignore_default_filters=True
         )
 
         fast_orders = await self.fast_order_services.search_all(
@@ -165,6 +166,7 @@ class BillingServices:
             min_total_amount=None,
             max_total_amount=None,
             expand=["tags"],
+            ignore_default_filters=True
         )
 
         places: Dict[str, BestPlace] = {}
@@ -212,6 +214,7 @@ class BillingServices:
             min_total_amount=None,
             max_total_amount=None,
             expand=[],
+            ignore_default_filters=True
         )
 
         fast_orders = await self.fast_order_services.search_all(

@@ -111,7 +111,8 @@ class OrderRepository(Repository):
         end_date: datetime,
         min_total_amount: float,
         max_total_amount: float,
-        order_by: str = None
+        order_by: str = None,
+        ignore_default_filters: bool = False
     ) -> List[OrderInDB]:
         try:
             orders = []
@@ -129,10 +130,11 @@ class OrderRepository(Repository):
                 objects = objects.filter(status=status.value)
 
             else:
-                objects = objects.filter(
-                    Q(status__ne=OrderStatus.DONE.value) |
-                    Q(payment_status__ne=PaymentStatus.PAID.value)
-                )
+                if not ignore_default_filters:
+                    objects = objects.filter(
+                        Q(status__ne=OrderStatus.DONE.value) |
+                        Q(payment_status__ne=PaymentStatus.PAID.value)
+                    )
 
             if payment_status:
                 objects = objects.filter(payment_status__in=payment_status)
