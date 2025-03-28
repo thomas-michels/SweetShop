@@ -231,6 +231,27 @@ class OrderServices:
 
         return complete_orders
 
+    async def search_all_without_filters(
+        self,
+        start_date: datetime,
+        end_date: datetime,
+        expand: List[str] = [],
+    ) -> List[CompleteOrder]:
+
+        orders = await self.__order_repository.select_all_without_filters(
+            start_date=start_date,
+            end_date=end_date,
+        )
+
+        complete_orders = []
+
+        for order in orders:
+            complete_orders.append(
+                await self.__build_complete_order(order_in_db=order, expand=expand)
+            )
+
+        return complete_orders
+
     async def delete_by_id(self, id: str) -> CompleteOrder:
         order_in_db = await self.__order_repository.delete_by_id(id=id)
         return await self.__build_complete_order(order_in_db)

@@ -173,6 +173,43 @@ class OrderRepository(Repository):
             _logger.error(f"Error on select_all: {str(error)}")
             raise NotFoundError(message=f"Orders not found")
 
+    async def select_all_without_filters(
+        self,
+        start_date: datetime,
+        end_date: datetime
+    ) -> List[OrderInDB]:
+        """
+        Este metodo retorna todos os pedidos normais e rapidos
+        """
+        try:
+            orders = []
+
+            objects = OrderModel.objects(
+                is_active=True,
+                organization_id=self.organization_id,
+            )
+
+            if start_date:
+                objects = objects.filter(order_date__gte=start_date)
+
+            if end_date:
+                objects = objects.filter(order_date__lt=end_date)
+
+            order_by = "order_date"
+
+            objects = objects.order_by(f"-{order_by}").aggregate(
+                OrderModel.get_payments()
+            )
+
+            for order_model in objects:
+                orders.append(self.__from_order_model(order_model=order_model))
+
+            return orders
+
+        except Exception as error:
+            _logger.error(f"Error on select_all_without_filters: {str(error)}")
+            raise NotFoundError(message=f"Orders not found")
+
     async def delete_by_id(self, id: str) -> OrderInDB:
         try:
             order_model: OrderModel = OrderModel.objects(

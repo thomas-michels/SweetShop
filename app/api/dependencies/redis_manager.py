@@ -29,7 +29,6 @@ class RedisManager:
         :return: True se bem-sucedido, False caso contrário.
         """
         try:
-            _logger.debug(f"Setting key '{key}' in Redis...")
             self.client.set(key, value, ex=expiration)
             return True
         except Exception as error:
@@ -44,7 +43,6 @@ class RedisManager:
         :return: Valor armazenado ou None se não encontrado.
         """
         try:
-            _logger.debug(f"Getting key '{key}' from Redis...")
             return self.client.get(key)
         except Exception as error:
             _logger.error(f"Error getting key '{key}': {error}")
@@ -83,7 +81,6 @@ class RedisManager:
         Incrementa um valor no Redis e define um tempo de expiração se necessário.
         """
         try:
-            _logger.debug(f"Incrementing key '{key}' in Redis...")
             value = self.client.incr(key)
             if value == 1:
                 self.client.expire(key, expiration)

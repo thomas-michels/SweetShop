@@ -1,6 +1,8 @@
-from datetime import datetime
+from datetime import datetime, timedelta
+import json
 from typing import Dict, List, Tuple
 from app.api.dependencies.get_plan_feature import get_plan_feature
+from app.api.dependencies.redis_manager import RedisManager
 from app.api.exceptions.authentication_exceptions import UnauthorizedException
 from app.core.utils.features import Feature
 from app.crud.expenses.services import ExpenseServices
@@ -23,26 +25,17 @@ class BillingServices:
         self.order_services = order_services
         self.fast_order_services = fast_order_services
         self.expenses_services = expenses_services
+        self.redis_manager = RedisManager()
 
     async def get_billing_for_dashboard(self, month: int, year: int) -> Billing:
-        plan_feature = await get_plan_feature(
-            organization_id=self.order_services.organization_id,
-            feature_name=Feature.DISPLAY_DASHBOARD
-        )
+        await self.__verify_plan_feature()
 
-        if not plan_feature or not plan_feature.value.startswith("t"):
-            raise UnauthorizedException(detail=f"You cannot access this feature")
+        billing = await self.__generate_monthly_billing(month=month, year=year)
 
-        return await self.__generate_monthly_billing(month=month, year=year)
+        return billing
 
     async def get_monthly_billings(self, last_months: int) -> List[Billing]:
-        plan_feature = await get_plan_feature(
-            organization_id=self.order_services.organization_id,
-            feature_name=Feature.DISPLAY_DASHBOARD
-        )
-
-        if not plan_feature or not plan_feature.value.startswith("t"):
-            raise UnauthorizedException(detail=f"You cannot access this feature")
+        await self.__verify_plan_feature()
 
         billings = []
 
@@ -55,37 +48,14 @@ class BillingServices:
         return billings
 
     async def get_best_selling_products(self, month: int, year: int) -> List[SellingProduct]:
-        plan_feature = await get_plan_feature(
-            organization_id=self.order_services.organization_id,
-            feature_name=Feature.DISPLAY_DASHBOARD
-        )
-
-        if not plan_feature or not plan_feature.value.startswith("t"):
-            raise UnauthorizedException(detail=f"You cannot access this feature")
+        await self.__verify_plan_feature()
 
         start_date, end_date = self.__get_start_and_end_date(month=month, year=year)
 
-        orders = await self.order_services.search_all(
-            customer_id=None,
-            status=None,
-            payment_status=[],
-            delivery_type=None,
+        orders = await self.order_services.search_all_without_filters(
             start_date=start_date,
             end_date=end_date,
-            tags=[],
-            min_total_amount=None,
-            max_total_amount=None,
-            expand=[],
-            ignore_default_filters=True
         )
-
-        fast_orders = await self.fast_order_services.search_all(
-            expand=[],
-            start_date=start_date,
-            end_date=end_date
-        )
-
-        orders.extend(fast_orders)
 
         selling_products: Dict[str, SellingProduct] = {}
 
@@ -107,13 +77,7 @@ class BillingServices:
         return selling_products[:5]
 
     async def get_expanses_categories(self, month: int, year: int) -> List[ExpanseCategory]:
-        plan_feature = await get_plan_feature(
-            organization_id=self.order_services.organization_id,
-            feature_name=Feature.DISPLAY_DASHBOARD
-        )
-
-        if not plan_feature or not plan_feature.value.startswith("t"):
-            raise UnauthorizedException(detail=f"You cannot access this feature")
+        await self.__verify_plan_feature()
 
         start_date, end_date = self.__get_start_and_end_date(month=month, year=year)
 
@@ -145,13 +109,7 @@ class BillingServices:
         return category_list[:5]
 
     async def get_best_places(self, month: int, year: int) -> List[BestPlace]:
-        plan_feature = await get_plan_feature(
-            organization_id=self.order_services.organization_id,
-            feature_name=Feature.DISPLAY_DASHBOARD
-        )
-
-        if not plan_feature or not plan_feature.value.startswith("t"):
-            raise UnauthorizedException(detail=f"You cannot access this feature")
+        await self.__verify_plan_feature()
 
         start_date, end_date = self.__get_start_and_end_date(month=month, year=year)
 
@@ -188,6 +146,15 @@ class BillingServices:
 
         return places_list[:5]
 
+    async def __verify_plan_feature(self):
+        plan_feature = await get_plan_feature(
+            organization_id=self.order_services.organization_id,
+            feature_name=Feature.DISPLAY_DASHBOARD
+        )
+
+        if not plan_feature or not plan_feature.value.startswith("t"):
+            raise UnauthorizedException(detail=f"You cannot access this feature")
+
     def __get_month_and_year(self, past_months: int) -> Tuple[int, int]:
         current_date = datetime.now()
 
@@ -203,24 +170,18 @@ class BillingServices:
     async def __generate_monthly_billing(self, month: int, year: int) -> Billing:
         start_date, end_date = self.__get_start_and_end_date(month=month, year=year)
 
-        orders = await self.order_services.search_all(
-            customer_id=None,
-            status=None,
-            payment_status=[],
-            delivery_type=None,
+        key = f"billing:{self.order_services.organization_id}:month:{month}:year:{year}"
+
+        cached_billing = self.redis_manager.get_value(key=key)
+
+        if cached_billing:
+            cached_billing = json.loads(cached_billing)
+
+            return Billing(**cached_billing)
+
+        orders = await self.order_services.search_all_without_filters(
             start_date=start_date,
             end_date=end_date,
-            tags=[],
-            min_total_amount=None,
-            max_total_amount=None,
-            expand=[],
-            ignore_default_filters=True
-        )
-
-        fast_orders = await self.fast_order_services.search_all(
-            expand=[],
-            start_date=start_date,
-            end_date=end_date
         )
 
         expenses = await self.expenses_services.search_all(
@@ -229,8 +190,6 @@ class BillingServices:
             query=None,
             expand=[]
         )
-
-        orders.extend(fast_orders)
 
         billing = Billing(month=month, year=year)
 
@@ -249,6 +208,13 @@ class BillingServices:
             billing.total_expanses += expense.total_paid
 
         billing.round_numbers()
+
+        self.redis_manager.set_value(
+            key=key,
+            value=billing.model_dump_json(),
+            expiration=300
+        )
+
         return billing
 
     def __process_payments(
@@ -282,9 +248,9 @@ class BillingServices:
         start_date = datetime(year, month, 1)
 
         if month == 12:
-            end_date = datetime(year + 1, 1, 1)
+            end_date = datetime(year + 1, 1, 1) - timedelta(minutes=1)
 
         else:
-            end_date = datetime(year, month + 1, 1)
+            end_date = datetime(year, month + 1, 1) - timedelta(minutes=1)
 
-        return start_date,end_date
+        return start_date, end_date
