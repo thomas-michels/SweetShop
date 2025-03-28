@@ -51,6 +51,9 @@ class OrderRepository(Repository):
             order_model.update(**order)
             order_model.save()
 
+            if order_model.status == OrderStatus.CANCELED:
+                return await self.delete_by_id(id=order_id)
+
             return await self.select_by_id(id=order_id)
 
         except Exception as error:
@@ -127,8 +130,8 @@ class OrderRepository(Repository):
 
             else:
                 objects = objects.filter(
-                    Q(status__ne=OrderStatus.CANCELED.value) &
-                    Q(status__ne=OrderStatus.DONE.value, payment_status__ne=PaymentStatus.PAID)
+                    Q(status__ne=OrderStatus.DONE.value) |
+                    Q(payment_status__ne=PaymentStatus.PAID.value)
                 )
 
             if payment_status:
