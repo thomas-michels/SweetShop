@@ -108,9 +108,11 @@ class SectionRepository(Repository):
                 is_active=True,
                 organization_id=self.organization_id
             ).first()
-            section_model.delete()
 
-            return SectionInDB.model_validate(section_model)
+            if section_model:
+                section_model.delete()
+
+                return SectionInDB.model_validate(section_model)
 
         except Exception as error:
             _logger.error(f"Error on delete_by_id: {str(error)}")

@@ -16,4 +16,4 @@ EXPOSE 8080
 
 ENTRYPOINT ["uvicorn"]
 
-CMD ["app.application:app", "--proxy-headers", "--host", "0.0.0.0", "--port", "8080", "--workers", "3"]
+CMD ["app.application:app", "--proxy-headers", "--host", "0.0.0.0", "--port", "8080"]
