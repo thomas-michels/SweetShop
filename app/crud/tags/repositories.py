@@ -25,7 +25,7 @@ class TagRepository(Repository):
                 updated_at=datetime.now(),
                 **tag.model_dump()
             )
-            tag_model.name = tag_model.name.title()
+            tag_model.name = tag_model.name.strip().title()
 
             tag_model.save()
 
@@ -47,7 +47,7 @@ class TagRepository(Repository):
                 is_active=True,
                 organization_id=self.organization_id
             ).first()
-            tag.name = tag.name.title()
+            tag.name = tag.name.strip().title()
 
             tag_model.update(**tag.model_dump())
 

@@ -28,6 +28,7 @@ class OrganizationRepository(Repository):
                 updated_at=datetime.now(),
                 **json
             )
+            organization_model.name = organization_model.name.strip()
 
             organization_model.save()
 
@@ -45,6 +46,9 @@ class OrganizationRepository(Repository):
             organization_model: OrganizationModel = OrganizationModel.objects(id=organization_id, is_active=True).first()
 
             organization_model.update(**organization)
+
+            organization_model.name = organization_model.name.strip()
+
             organization_model.save()
 
             return await self.select_by_id(id=organization_id)

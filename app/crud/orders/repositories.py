@@ -32,6 +32,7 @@ class OrderRepository(Repository):
                 **order.model_dump(),
             )
 
+            order_model.description = order_model.description.strip()
             order_model.save()
 
             return await self.select_by_id(id=order_model.id)
@@ -49,6 +50,8 @@ class OrderRepository(Repository):
             ).first()
 
             order_model.update(**order)
+            order_model.description = order_model.description.strip()
+
             order_model.save()
 
             if order_model.status == OrderStatus.CANCELED:

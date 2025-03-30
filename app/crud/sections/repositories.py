@@ -23,7 +23,8 @@ class SectionRepository(Repository):
                 organization_id=self.organization_id,
                 **section.model_dump()
             )
-            section_model.name = section_model.name.title()
+            section_model.name = section_model.name.strip().title()
+            section_model.description = section_model.description.strip()
 
             section_model.save()
             _logger.info(f"Section {section.name} saved for organization {self.organization_id}")
@@ -41,7 +42,8 @@ class SectionRepository(Repository):
                 is_active=True,
                 organization_id=self.organization_id
             ).first()
-            section.name = section.name.title()
+            section.name = section.name.strip().title()
+            section.description = section.description.strip()
 
             section_model.update(**section.model_dump())
 

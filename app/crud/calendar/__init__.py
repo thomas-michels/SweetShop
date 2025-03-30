@@ -1,2 +1,2 @@
-from .schemas import Calendar, CalendarOrder
+from .schemas import CalendarOrder
 from .services import CalendarServices

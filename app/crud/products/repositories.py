@@ -23,7 +23,7 @@ class ProductRepository(Repository):
                 organization_id=self.organization_id,
                 **product.model_dump()
             )
-            product_model.name = product_model.name.title()
+            product_model.name = product_model.name.strip().title()
 
             product_model.save()
             _logger.info(f"Product {product.name} saved for organization {self.organization_id}")
@@ -41,7 +41,7 @@ class ProductRepository(Repository):
                 is_active=True,
                 organization_id=self.organization_id
             ).first()
-            product.name = product.name.title()
+            product.name = product.name.strip().title()
 
             product_model.update(**product.model_dump())
 

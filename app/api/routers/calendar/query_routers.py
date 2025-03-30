@@ -6,12 +6,12 @@ from fastapi import APIRouter, Depends, Query, Security, Response
 from app.api.composers import calendar_composer
 from app.api.dependencies import build_response, decode_jwt
 from app.crud.users import UserInDB
-from app.crud.calendar import CalendarServices, Calendar
+from app.crud.calendar import CalendarServices, CalendarOrder
 
 router = APIRouter(tags=["Calendar"])
 
 
-@router.get("/calendars", responses={200: {"model": List[Calendar]}})
+@router.get("/calendars", responses={200: {"model": List[CalendarOrder]}})
 async def get_calendar(
     month_year: str = Query(
         default=f"{datetime.now().month}/{datetime.now().year}",

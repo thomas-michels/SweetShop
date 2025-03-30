@@ -1,11 +1,11 @@
-from datetime import date, datetime
+from datetime import datetime, timedelta
 from typing import List, Tuple
 from app.api.dependencies.get_plan_feature import get_plan_feature
 from app.api.exceptions.authentication_exceptions import UnauthorizedException
 from app.core.utils.features import Feature
 from app.crud.orders.services import OrderServices
 
-from .schemas import Calendar, CalendarOrder
+from .schemas import CalendarOrder
 
 
 class CalendarServices:
@@ -16,7 +16,7 @@ class CalendarServices:
         ) -> None:
         self.order_services = order_services
 
-    async def get_calendar(self, month: int, year: int, day: int = None) -> List[Calendar]:
+    async def get_calendar(self, month: int, year: int, day: int = None) -> List[CalendarOrder]:
         plan_feature = await get_plan_feature(
             organization_id=self.order_services.organization_id,
             feature_name=Feature.DISPLAY_CALENDAR
@@ -41,21 +41,9 @@ class CalendarServices:
             ignore_default_filters=True
         )
 
-        calendar_days = {}
+        calendars = []
 
         for order in orders:
-            order_date = order.order_date.date()
-            if order_date in calendar_days:
-                calendar_day = calendar_days[order_date]
-
-            else:
-                calendar_day = Calendar(
-                    month=month,
-                    year=year,
-                    day=order_date.day
-                )
-                calendar_days[order_date] = calendar_day
-
             calendar_order = CalendarOrder(
                 order_id=order.id,
                 customer_name=order.customer.name if order.customer else "",
@@ -63,29 +51,23 @@ class CalendarServices:
                 order_status=order.status,
                 order_delivery_type=order.delivery.delivery_type.value
             )
-            calendar_day.orders.append(calendar_order)
 
-        if day:
-            filtered_day = date(
-                year=year,
-                month=month,
-                day=day
-            )
-            if calendar_days.get(filtered_day):
-                return [calendar_days[filtered_day]]
+            if day:
+                if day == calendar_order.order_date.day:
+                    calendars.append(calendar_order)
 
             else:
-                return None
+                calendars.append(calendar_order)
 
-        return list(calendar_days.values())
+        return calendars
 
     def __get_start_and_end_date(self, month: int, year: int) -> Tuple[datetime, datetime]:
         start_date = datetime(year, month, 1)
 
         if month == 12:
-            end_date = datetime(year + 1, 1, 1)
+            end_date = datetime(year + 1, 1, 1) - timedelta(minutes=1)
 
         else:
-            end_date = datetime(year, month + 1, 1)
+            end_date = datetime(year, month + 1, 1) - timedelta(minutes=1)
 
-        return start_date,end_date
+        return start_date, end_date
