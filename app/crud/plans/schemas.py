@@ -14,7 +14,7 @@ class Plan(GenericModel):
 
     @model_validator(mode="after")
     def validate_model(self) -> "UpdatePlan":
-        if self.price <= 0:
+        if self.price < 0:
             raise ValueError("Price should be grater than zero")
 
         return self
@@ -49,7 +49,7 @@ class UpdatePlan(GenericModel):
 
     @model_validator(mode="after")
     def validate_model(self) -> "UpdatePlan":
-        if self.price <= 0:
+        if self.price < 0:
             raise ValueError("Price should be grater than zero")
 
         return self
