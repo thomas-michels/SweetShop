@@ -252,6 +252,18 @@ class OrderServices:
 
         return complete_orders
 
+    async def search_recent(self, limit: int = 10, expand: List[str] = []) -> List[CompleteOrder]:
+        orders = await self.__order_repository.select_recent(limit=limit)
+
+        complete_orders = []
+
+        for order in orders:
+            complete_orders.append(
+                await self.__build_complete_order(order_in_db=order, expand=expand)
+            )
+
+        return complete_orders
+
     async def delete_by_id(self, id: str) -> CompleteOrder:
         order_in_db = await self.__order_repository.delete_by_id(id=id)
         return await self.__build_complete_order(order_in_db)

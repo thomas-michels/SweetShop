@@ -213,6 +213,31 @@ class OrderRepository(Repository):
             _logger.error(f"Error on select_all_without_filters: {str(error)}")
             raise NotFoundError(message=f"Orders not found")
 
+    async def select_recent(self, limit: int) -> List[OrderInDB]:
+        try:
+            orders = []
+
+            objects = OrderModel.objects(
+                is_active=True,
+                organization_id=self.organization_id,
+                is_fast_order=False,
+            )
+
+            objects = objects.limit(limit)
+
+            objects = objects.order_by(f"-created_at").aggregate(
+                OrderModel.get_payments()
+            )
+
+            for order_model in objects:
+                orders.append(self.__from_order_model(order_model=order_model))
+
+            return orders
+
+        except Exception as error:
+            _logger.error(f"Error on select_recent: {str(error)}")
+            raise NotFoundError(message=f"Orders not found")
+
     async def delete_by_id(self, id: str) -> OrderInDB:
         try:
             order_model: OrderModel = OrderModel.objects(
