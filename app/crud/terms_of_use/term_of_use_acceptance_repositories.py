@@ -55,7 +55,7 @@ class TermOfUseAcceptanceRepository(Repository):
                 return TermOfUseAcceptanceInDB.model_validate(term_of_use_acceptance_model)
 
         except Exception as error:
-            _logger.error(f"Error on select_by_id: {str(error)}")
+            _logger.error(f"Error on select_by_term_and_user: {str(error)}")
 
     async def delete(self, acceptance: TermOfUseAcceptanceInDB) -> TermOfUseAcceptanceInDB:
         try:

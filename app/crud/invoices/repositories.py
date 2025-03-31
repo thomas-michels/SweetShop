@@ -1,4 +1,5 @@
 from datetime import datetime
+from pydantic import ValidationError
 from typing import List
 from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
@@ -83,6 +84,10 @@ class InvoiceRepository(Repository):
             ).first()
 
             return InvoiceInDB.model_validate(invoice_model)
+
+        except ValidationError:
+            if raise_404:
+                raise NotFoundError(message=f"Invoice not found")
 
         except Exception as error:
             if raise_404:

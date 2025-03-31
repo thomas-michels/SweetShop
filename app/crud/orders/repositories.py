@@ -59,8 +59,11 @@ class OrderRepository(Repository):
 
             return await self.select_by_id(id=order_id)
 
+        except ValidationError:
+            raise NotFoundError(message=f"Order #{order_id} not found")
+
         except Exception as error:
-            _logger.error(f"Error on update_order: {str(error)}")
+            _logger.error(f"Error on update_order: {error}")
             raise UnprocessableEntity(message="Error on update order")
 
     async def select_count_by_date(self, start_date: datetime, end_date: datetime) -> int:

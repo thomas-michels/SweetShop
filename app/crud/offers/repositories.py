@@ -95,9 +95,13 @@ class OfferRepository(Repository):
                 is_active=True,
                 organization_id=self.organization_id
             ).first()
-            offer_model.delete()
 
-            return OfferInDB.model_validate(offer_model)
+            if offer_model:
+                offer_model.delete()
+
+                return OfferInDB.model_validate(offer_model)
+
+            raise NotFoundError(message=f"Offer #{id} not found")
 
         except Exception as error:
             _logger.error(f"Error on delete_by_id: {str(error)}")

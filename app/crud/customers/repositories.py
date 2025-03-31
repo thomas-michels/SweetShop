@@ -129,9 +129,13 @@ class CustomerRepository(Repository):
                 is_active=True,
                 organization_id=self.organization_id
             ).first()
-            customer_model.delete()
 
-            return CustomerInDB.model_validate(customer_model)
+            if customer_model:
+                customer_model.delete()
+
+                return CustomerInDB.model_validate(customer_model)
+
+            raise NotFoundError(message=f"Customer #{id} not found")
 
         except Exception as error:
             _logger.error(f"Error on delete_by_id: {str(error)}")

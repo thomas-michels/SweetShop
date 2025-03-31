@@ -40,11 +40,15 @@ class FileRepository(Repository):
                 organization_id=self.organization_id
             ).first()
 
-            return FileInDB.model_validate(file_model)
+            if file_model:
+                return FileInDB.model_validate(file_model)
+
+            if raise_404:
+                raise NotFoundError(message=f"File #{id} not found")
 
         except Exception as error:
-            _logger.error(f"Error on select_by_id: {str(error)}")
             if raise_404:
+                _logger.error(f"Error on select_by_id: {str(error)}")
                 raise NotFoundError(message=f"File #{id} not found")
 
     async def delete_by_id(self, id: str) -> FileInDB:

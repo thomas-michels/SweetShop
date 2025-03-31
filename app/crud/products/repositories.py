@@ -113,9 +113,13 @@ class ProductRepository(Repository):
                 is_active=True,
                 organization_id=self.organization_id
             ).first()
-            product_model.delete()
 
-            return ProductInDB.model_validate(product_model)
+            if product_model:
+                product_model.delete()
+
+                return ProductInDB.model_validate(product_model)
+
+            raise NotFoundError(message=f"Product #{id} not found")
 
         except Exception as error:
             _logger.error(f"Error on delete_by_id: {str(error)}")

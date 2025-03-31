@@ -136,9 +136,13 @@ class TagRepository(Repository):
                 is_active=True,
                 organization_id=self.organization_id
             ).first()
-            tag_model.delete()
 
-            return self.__build_tag(tag_model=tag_model)
+            if tag_model:
+                tag_model.delete()
+
+                return self.__build_tag(tag_model=tag_model)
+
+            raise NotFoundError(message=f"Tag #{id} not found")
 
         except Exception as error:
             _logger.error(f"Error on delete_by_id: {str(error)}")

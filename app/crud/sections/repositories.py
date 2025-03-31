@@ -1,5 +1,7 @@
 from datetime import datetime
 from typing import List
+
+from pydantic import ValidationError
 from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.core.repositories.base_repository import Repository
@@ -75,6 +77,10 @@ class SectionRepository(Repository):
             ).first()
 
             return SectionInDB.model_validate(section_model)
+
+        except ValidationError:
+            if raise_404:
+                raise NotFoundError(message=f"Section #{id} not found")
 
         except Exception as error:
             _logger.error(f"Error on select_by_id: {str(error)}")

@@ -121,9 +121,13 @@ class ExpenseRepository(Repository):
                 is_active=True,
                 organization_id=self.organization_id
             ).first()
-            expense_model.delete()
 
-            return ExpenseInDB.model_validate(expense_model)
+            if expense_model:
+                expense_model.delete()
+
+                return ExpenseInDB.model_validate(expense_model)
+
+            raise NotFoundError(message=f"Expense #{id} not found")
 
         except Exception as error:
             _logger.error(f"Error on delete_by_id: {str(error)}")
