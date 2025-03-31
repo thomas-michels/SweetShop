@@ -2,6 +2,14 @@
 Looger Module
 """
 import logging
+import os
+
+
+class RelativePathFormatter(logging.Formatter):
+    def format(self, record):
+        # Calcula o caminho relativo
+        record.relativepath = os.path.relpath(record.pathname, os.getcwd())
+        return super().format(record)
 
 
 class Logger:
@@ -32,13 +40,16 @@ class Logger:
         # create console handler and set level to debug
         console_handler = logging.FileHandler(file) if file else logging.StreamHandler()
         console_handler.setLevel(level)
+
         # create formatter
-        formatter = logging.Formatter(
-            "%(levelname)s\t| %(asctime)s| %(module)s:%(lineno)s => %(message)s\t"
+        formatter = RelativePathFormatter(
+            "%(levelname)s\t| %(asctime)s| %(relativepath)s:%(lineno)s => %(message)s\t"
         )
+
         # add formatter to console_handler
         console_handler.setFormatter(formatter)
-        # add console_handler to logge  r
+
+        # add console_handler to logger
         self.logger_worker.addHandler(console_handler)
 
     def get_logger(self):

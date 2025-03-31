@@ -1,5 +1,7 @@
 from datetime import datetime
 from typing import List
+
+from pydantic import ValidationError
 from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.core.repositories.base_repository import Repository
@@ -31,7 +33,7 @@ class OfferRepository(Repository):
             return OfferInDB.model_validate(offer_model)
 
         except Exception as error:
-            _logger.error(f"Error on create_offer: {str(error)}")
+            _logger.error(f"Error on create_offer: {error}")
             raise UnprocessableEntity(message="Error on create new offer")
 
     async def update(self, offer: OfferInDB) -> OfferInDB:
@@ -47,8 +49,11 @@ class OfferRepository(Repository):
 
             return await self.select_by_id(id=offer.id)
 
+        except ValidationError:
+            raise NotFoundError(message=f"Offer not found")
+
         except Exception as error:
-            _logger.error(f"Error on update_offer: {str(error)}")
+            _logger.error(f"Error on update_offer: {error}")
             raise UnprocessableEntity(message="Error on update offer")
 
     async def select_by_id(self, id: str, raise_404: bool = True) -> OfferInDB:
@@ -61,8 +66,12 @@ class OfferRepository(Repository):
 
             return OfferInDB.model_validate(offer_model)
 
+        except ValidationError:
+            if raise_404:
+                raise NotFoundError(message=f"Offer #{id} not found")
+
         except Exception as error:
-            _logger.error(f"Error on select_by_id: {str(error)}")
+            _logger.error(f"Error on select_by_id: {error}")
             if raise_404:
                 raise NotFoundError(message=f"Offer #{id} not found")
 
@@ -85,7 +94,7 @@ class OfferRepository(Repository):
             return offers
 
         except Exception as error:
-            _logger.error(f"Error on select_all: {str(error)}")
+            _logger.error(f"Error on select_all: {error}")
             raise NotFoundError(message=f"Offers not found")
 
     async def delete_by_id(self, id: str) -> OfferInDB:
@@ -104,5 +113,5 @@ class OfferRepository(Repository):
             raise NotFoundError(message=f"Offer #{id} not found")
 
         except Exception as error:
-            _logger.error(f"Error on delete_by_id: {str(error)}")
+            _logger.error(f"Error on delete_by_id: {error}")
             raise NotFoundError(message=f"Offer #{id} not found")
