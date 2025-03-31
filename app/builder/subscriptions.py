@@ -84,16 +84,23 @@ class SubscriptionBuilder:
 
         label = "Mensal" if subscription.monthly else "Anual"
 
-        mp_preference = self.__mp_integration.create_preference(
-            reason=f"pedidoZ - Assinatura {label} - {plan_in_db.name}",
-            price_monthly=sub_price,
-            discount=discount,
-            user_info=user_info,
-        )
+        if sub_price > 0:
+            mp_preference = self.__mp_integration.create_preference(
+                reason=f"pedidoZ - Assinatura {label} - {plan_in_db.name}",
+                price_monthly=sub_price,
+                discount=discount,
+                user_info=user_info,
+            )
+            external_reference = mp_preference.external_reference
+            init_point = mp_preference.init_point
+
+        else:
+            external_reference = "free-plan"
+            init_point = "https://www.pedidoz.online/organizacoes"
 
         invoice = Invoice(
             organization_plan_id=organization_plan_in_db.id,
-            integration_id=mp_preference.external_reference,
+            integration_id=external_reference,
             integration_type="mercado-pago",
             amount=max(sub_price - discount, 0),
             observation=observation
@@ -106,8 +113,8 @@ class SubscriptionBuilder:
 
         return ResponseSubscription(
             invoice_id=invoice_in_db.id,
-            integration_id=mp_preference.external_reference,
-            init_point=mp_preference.init_point,
+            integration_id=external_reference,
+            init_point=init_point,
             email=user_info["email"]
         )
 

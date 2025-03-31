@@ -31,7 +31,7 @@ class ProductServices:
 
         quantity = await self.__product_repository.select_count()
 
-        if not plan_feature or (quantity + 1) >= int(plan_feature.value):
+        if not plan_feature or (plan_feature.value != "-" and (quantity + 1) >= int(plan_feature.value)):
             raise UnauthorizedException(detail=f"Maximum number of products reached, Max value: {plan_feature.value}")
 
         if product.file_id:

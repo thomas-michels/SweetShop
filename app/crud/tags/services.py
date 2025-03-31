@@ -1,10 +1,14 @@
 from typing import List
 
 from app.api.dependencies.get_plan_feature import get_plan_feature
-from app.api.exceptions.authentication_exceptions import BadRequestException, UnauthorizedException
+from app.api.exceptions.authentication_exceptions import (
+    BadRequestException,
+    UnauthorizedException,
+)
 from app.core.utils.features import Feature
-from .schemas import Tag, TagInDB, UpdateTag
+
 from .repositories import TagRepository
+from .schemas import Tag, TagInDB, UpdateTag
 
 
 class TagServices:
@@ -15,13 +19,17 @@ class TagServices:
     async def create(self, tag: Tag, system_tag: bool = False) -> TagInDB:
         plan_feature = await get_plan_feature(
             organization_id=self.__repository.organization_id,
-            feature_name=Feature.MAX_TAGS
+            feature_name=Feature.MAX_TAGS,
         )
 
         quantity = await self.__repository.select_count()
 
-        if not plan_feature or (quantity + 1) >= int(plan_feature.value):
-            raise UnauthorizedException(detail=f"Maximum number of tags reached, Max value: {plan_feature.value}")
+        if not plan_feature or (
+            plan_feature.value != "-" and (quantity + 1) >= int(plan_feature.value)
+        ):
+            raise UnauthorizedException(
+                detail=f"Maximum number of tags reached, Max value: {plan_feature.value}"
+            )
 
         tag_in_db = await self.__repository.create(tag=tag, system_tag=system_tag)
         return tag_in_db

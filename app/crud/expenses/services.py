@@ -37,7 +37,9 @@ class ExpenseServices:
             start_date=start_date, end_date=end_date
         )
 
-        if not plan_feature or (quantity + 1) >= int(plan_feature.value):
+        if not plan_feature or (
+            plan_feature.value != "-" and (quantity + 1) >= int(plan_feature.value)
+        ):
             raise UnauthorizedException(
                 detail=f"Maximum number of expenses reached, Max value: {plan_feature.value}"
             )

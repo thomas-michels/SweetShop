@@ -55,7 +55,9 @@ class OrderServices:
             start_date=start_date, end_date=end_date
         )
 
-        if not plan_feature or (quantity + 1) >= int(plan_feature.value):
+        if not plan_feature or (
+            plan_feature.value != "-" and (quantity + 1) >= int(plan_feature.value)
+        ):
             raise UnauthorizedException(
                 detail=f"Maximum number of orders reached, Max value: {plan_feature.value}"
             )
@@ -205,7 +207,7 @@ class OrderServices:
         max_total_amount: float,
         expand: List[str],
         order_by: str = None,
-        ignore_default_filters: bool = False
+        ignore_default_filters: bool = False,
     ) -> List[CompleteOrder]:
 
         orders = await self.__order_repository.select_all(
@@ -219,7 +221,7 @@ class OrderServices:
             max_total_amount=max_total_amount,
             tags=tags,
             order_by=order_by,
-            ignore_default_filters=ignore_default_filters
+            ignore_default_filters=ignore_default_filters,
         )
 
         complete_orders = []
@@ -252,7 +254,9 @@ class OrderServices:
 
         return complete_orders
 
-    async def search_recent(self, limit: int = 10, expand: List[str] = []) -> List[CompleteOrder]:
+    async def search_recent(
+        self, limit: int = 10, expand: List[str] = []
+    ) -> List[CompleteOrder]:
         orders = await self.__order_repository.select_recent(limit=limit)
 
         complete_orders = []
