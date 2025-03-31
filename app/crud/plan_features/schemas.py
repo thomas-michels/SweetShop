@@ -12,6 +12,7 @@ class PlanFeature(GenericModel):
     name: Feature = Field(example=Feature.DISPLAY_CALENDAR.value)
     display_name: str | None = Field(default=None)
     value: str = Field(example="123")
+    display_value: str | None = Field(default=None)
     additional_price: float = Field(example=123)
     allow_additional: bool = Field(default=False, example=False)
 
@@ -26,6 +27,11 @@ class PlanFeature(GenericModel):
                 raise ValueError("additional_price should be zero if additionals are allowed")
 
         self.display_name = get_translation(name=self.name)
+
+        self.display_value = self.value
+
+        if self.display_value == "-":
+            self.display_value = get_translation(name=self.value)
 
         return self
 
