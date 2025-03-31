@@ -9,8 +9,8 @@ class OfferProduct(GenericModel):
     product_id: str = Field(example="prod_123")
     name: str = Field(example="name")
     description: str = Field(example="description")
-    cost: float = Field(example=10)
-    price: float = Field(example=12)
+    unit_cost: float = Field(example=10)
+    unit_price: float = Field(example=12)
     file_id: str | None = Field(default=None, example="file_123")
 
 
@@ -32,8 +32,8 @@ class Offer(GenericModel):
     description: str = Field(example="Bolos e tortas")
     is_visible: bool = Field(default=False, example=True)
     products: List[OfferProduct] = Field(default=[])
-    cost: float = Field(example=10)
-    price: float = Field(example=12)
+    unit_cost: float = Field(example=10)
+    unit_price: float = Field(example=12)
 
     def validate_updated_fields(self, update_offer: "UpdateOffer") -> bool:
         is_updated = False

@@ -34,8 +34,8 @@ class OfferServices:
             name=request_offer.name,
             description=request_offer.description,
             is_visible=request_offer.is_visible,
-            price=total_price,
-            cost=total_cost,
+            unit_price=total_price,
+            unit_cost=total_cost,
             products=products
         )
 
@@ -54,8 +54,8 @@ class OfferServices:
                     product_ids=updated_offer.products
                 )
 
-                offer_in_db.cost = total_cost
-                offer_in_db.price = total_price
+                offer_in_db.unit_cost = total_cost
+                offer_in_db.unit_price = total_price
                 offer_in_db.products = products
 
             offer_in_db = await self.__offer_repository.update(offer=offer_in_db)
@@ -120,13 +120,13 @@ class OfferServices:
                 product_id=product_in_db.id,
                 name=product_in_db.name,
                 description=product_in_db.description,
-                cost=product_in_db.unit_cost,
-                price=product_in_db.unit_price,
+                unit_cost=product_in_db.unit_cost,
+                unit_price=product_in_db.unit_price,
                 file_id=product_in_db.file_id
             )
 
-            total_cost += offer_product.cost
-            total_price += offer_product.price
+            total_cost += offer_product.unit_cost
+            total_price += offer_product.unit_price
 
             products.append(offer_product)
 
