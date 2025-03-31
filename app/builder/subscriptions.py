@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from typing import List
+from uuid import uuid4
 from app.api.dependencies.mercado_pago_integration import MercadoPagoIntegration
 from app.api.exceptions.authentication_exceptions import BadRequestException
 from app.api.shared_schemas.mercado_pago import MPPreferenceModel
@@ -95,7 +96,7 @@ class SubscriptionBuilder:
             init_point = mp_preference.init_point
 
         else:
-            external_reference = "free-plan"
+            external_reference = str(uuid4())
             init_point = "https://www.pedidoz.online/organizacoes"
 
         invoice = Invoice(
@@ -105,6 +106,10 @@ class SubscriptionBuilder:
             amount=max(sub_price - discount, 0),
             observation=observation
         )
+
+        if sub_price == 0:
+            invoice.status = InvoiceStatus.PAID
+            invoice.amount_paid = 0
 
         invoice_in_db = await self.__invoice_service.create(
             invoice=invoice,

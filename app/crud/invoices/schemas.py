@@ -28,10 +28,10 @@ class Invoice(GenericModel):
 
     @model_validator(mode="after")
     def validate_model(self) -> "UpdateInvoice":
-        if self.amount <= 0:
+        if self.amount < 0:
             raise ValueError("amount should be grater than zero")
 
-        if self.amount_paid and self.amount_paid <= 0:
+        if self.amount_paid and self.amount_paid < 0:
             raise ValueError("amount_paid should be grater than zero")
 
         return self
