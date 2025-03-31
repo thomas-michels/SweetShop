@@ -9,8 +9,8 @@ class OfferModel(BaseDocument):
     name = StringField(max_length=100, required=True)
     description = StringField(required=True)
     is_visible = BooleanField(default=True, required=False)
-    cost = FloatField(required=True)
-    price = FloatField(required=True)
+    unit_cost = FloatField(required=True)
+    unit_price = FloatField(required=True)
     products = ListField(DictField(), min_lenght=1)
 
     meta = {
