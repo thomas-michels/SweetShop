@@ -1,4 +1,5 @@
 from PIL import Image, ImageOps
+from PIL.Image import Resampling
 import io
 
 from fastapi import UploadFile
@@ -25,7 +26,10 @@ async def resize_image(upload_image: UploadFile, size=(400, 400)) -> UploadFile:
         img = img.convert("RGB")
 
     # Redimensiona mantendo a proporção
-    img.thumbnail(size)
+    img.thumbnail(
+        size=size,
+        resample=Resampling.LANCZOS
+    )
 
     # Salva a imagem redimensionada em um buffer de memória
     img_bytes = io.BytesIO()
