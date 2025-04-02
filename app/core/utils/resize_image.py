@@ -41,45 +41,33 @@ from fastapi import UploadFile
 #     return UploadFile(filename=new_name, file=img_bytes, headers={"content_type": "image/jpeg"})
 
 
-async def resize_image(upload_image: UploadFile, size=(400, 400)) -> UploadFile:
-    """Redimensiona a imagem para o tamanho especificado usando transform.
-
-    Args:
-        upload_image (UploadFile): Imagem enviada pelo usuário.
-        size (tuple, optional): Tamanho desejado (largura, altura). Default é (400, 400).
-
-    Returns:
-        UploadFile: Imagem redimensionada pronta para upload.
-    """
-    # Lê a imagem como um objeto de bytes
+async def resize_image(upload_image: UploadFile, size=(400, 400)):
+    # Lê a imagem
     upload_image.file.seek(0)
     img = Image.open(upload_image.file)
 
-    # Corrige a orientação baseada em EXIF
+    # Corrige a orientação (se necessário)
     img = ImageOps.exif_transpose(img)
 
-    # Converte para RGB se necessário
+    # Converte para RGB (se necessário)
     if img.mode in ("RGBA", "P"):
         img = img.convert("RGB")
 
-    # Calcula as proporções para manter o aspect ratio
+    # Calcula o novo tamanho mantendo a proporção
     original_width, original_height = img.size
     target_width, target_height = size
     ratio = min(target_width / original_width, target_height / original_height)
     new_width = int(original_width * ratio)
     new_height = int(original_height * ratio)
 
-    # Redimensiona usando transform
-    img = img.transform(
-        (new_width, new_height),  # Tamanho de saída
-        Image.Resampling.LANCZOS  # Método de reamostragem
-    )
+    # Redimensiona a imagem
+    img = img.resize((new_width, new_height), resample=Image.Resampling.LANCZOS)
 
-    # Salva a imagem redimensionada em um buffer de memória
+    # Salva em um buffer de memória
     img_bytes = io.BytesIO()
     img.save(img_bytes, format="JPEG")
     img_bytes.seek(0)
 
-    # Retorna a imagem como um novo UploadFile
+    # Retorna como UploadFile
     new_name = f"{upload_image.filename.split('.')[0]}.jpeg"
     return UploadFile(filename=new_name, file=img_bytes, headers={"content_type": "image/jpeg"})
