@@ -39,7 +39,7 @@ class SubscriptionBuilder:
     async def subscribe(self, subscription: RequestSubscription, user: UserInDB) -> ResponseSubscription:
         plan_in_db = await self.__plan_service.search_by_id(id=subscription.plan_id)
 
-        months_multiplier = 1 if subscription.monthly else 12
+        months_multiplier = subscription.get_sub_months()
 
         sub_price = round(plan_in_db.price * months_multiplier, 2)
 
@@ -83,7 +83,7 @@ class SubscriptionBuilder:
             observation["discount"] = discount
             observation["coupon_id"] = subscription.cupoun_id
 
-        label = "Mensal" if subscription.monthly else "Anual"
+        label = subscription.get_label()
 
         if sub_price > 0:
             mp_preference = self.__mp_integration.create_preference(
@@ -126,7 +126,7 @@ class SubscriptionBuilder:
     async def recreate_subscription(self, subscription: RequestSubscription, user: UserInDB) -> ResponseSubscription:
         plan_in_db = await self.__plan_service.search_by_id(id=subscription.plan_id)
 
-        months_multiplier = 1 if subscription.monthly else 12
+        months_multiplier = subscription.get_sub_months()
 
         sub_price = round(plan_in_db.price * months_multiplier, 2)
 
@@ -207,7 +207,7 @@ class SubscriptionBuilder:
             "name": user.name
         }
 
-        label = "Mensal" if subscription.monthly else "Anual"
+        label = subscription.get_label()
 
         mp_sub = self.__mp_integration.create_preference(
             reason=f"pedidoZ - Assinatura {label} - {plan_in_db.name}",
