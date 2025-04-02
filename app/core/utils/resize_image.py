@@ -63,6 +63,15 @@ async def resize_image(upload_image: UploadFile, size=(400, 400)):
     # Redimensiona a imagem
     img = img.resize((new_width, new_height), resample=Image.Resampling.LANCZOS)
 
+    # Adiciona bordas para atingir o tamanho exato
+    img = ImageOps.pad(
+        img,
+        size=size,  # Tamanho final desejado (ex.: 400x400)
+        method=Image.Resampling.LANCZOS,
+        color="white",  # Cor das bordas
+        centering=(0.5, 0.5)  # Centraliza a imagem
+    )
+
     # Salva em um buffer de memória
     img_bytes = io.BytesIO()
     img.save(img_bytes, format="JPEG")
