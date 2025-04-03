@@ -11,7 +11,7 @@ from app.crud.orders.schemas import PaymentInOrder
 from app.crud.orders.services import OrderServices
 from app.crud.shared_schemas.payment import PaymentMethod
 
-from .schemas import BestPlace, Billing, ExpanseCategory, SellingProduct
+from .schemas import BestPlace, Billing, DailySale, ExpanseCategory, ProductProfit, SellingProduct
 
 
 class BillingServices:
@@ -75,6 +75,64 @@ class BillingServices:
         selling_products.sort(key=lambda c: c.quantity, reverse=True)
 
         return selling_products[:5]
+
+    async def get_products_profit(self, month: int, year: int) -> List[ProductProfit]:
+        await self.__verify_plan_feature()
+
+        start_date, end_date = self.__get_start_and_end_date(month=month, year=year)
+
+        orders = await self.order_services.search_all_without_filters(
+            start_date=start_date,
+            end_date=end_date,
+        )
+
+        products_profiting: Dict[str, ProductProfit] = {}
+
+        for order in orders:
+            for order_product in order.products:
+                if order_product.product_id not in products_profiting:
+                    products_profiting[order_product.product_id] = ProductProfit(
+                        product_id=order_product.product_id,
+                        product_name=order_product.name
+                    )
+
+                product_profit = products_profiting[order_product.product_id]
+                product_profit.total_amount += (order_product.unit_price * order_product.quantity)
+                product_profit.total_profit += ((order_product.unit_price - order_product.unit_cost) * order_product.quantity)
+                product_profit.quantity += order_product.quantity
+
+        products_profiting = list(products_profiting.values())
+
+        products_profiting.sort(key=lambda c: c.total_profit, reverse=True)
+
+        return products_profiting[:10]
+
+    async def get_daily_sales(self, month: int, year: int) -> List[DailySale]:
+        await self.__verify_plan_feature()
+
+        start_date, end_date = self.__get_start_and_end_date(month=month, year=year)
+
+        orders = await self.order_services.search_all_without_filters(
+            start_date=start_date,
+            end_date=end_date,
+        )
+
+        daily_sales: Dict[int, DailySale] = {}
+
+        for i in range(1, end_date.day + 1):
+            daily_sales[i] = DailySale(day=i)
+
+        for order in orders:
+            for order_product in order.products:
+                daily_sales[order.order_date.day].total_amount += (order_product.unit_price * order_product.quantity)
+
+            daily_sales[order.order_date.day].total_amount += (order.additional - order.discount)
+
+        daily_sales = list(daily_sales.values())
+
+        daily_sales.sort(key=lambda c: c.day)
+
+        return daily_sales
 
     async def get_expanses_categories(self, month: int, year: int) -> List[ExpanseCategory]:
         await self.__verify_plan_feature()

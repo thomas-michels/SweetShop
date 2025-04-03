@@ -31,6 +31,8 @@ def get_translation(name: Feature) -> str:
         Feature.DISPLAY_DASHBOARD: "Painel financeiro",
         Feature.DISPLAY_DELINQUENCY: "Inadimplência",
         Feature.DISPLAY_MENU: "Cardápio",
-        "-": "Ilimitado"
+        "-": "Ilimitado",
+        "true": "Incluído",
+        "false": "Não incluído",
     }
-    return translations.get(name, "Recurso não encontrada")
+    return translations.get(name)

@@ -28,10 +28,10 @@ class PlanFeature(GenericModel):
 
         self.display_name = get_translation(name=self.name)
 
-        self.display_value = self.value
+        self.display_value = get_translation(name=self.value)
 
-        if self.display_value == "-":
-            self.display_value = get_translation(name=self.value)
+        if self.display_value:
+            self.display_value = self.value
 
         return self
 

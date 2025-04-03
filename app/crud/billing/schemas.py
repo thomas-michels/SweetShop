@@ -42,3 +42,16 @@ class BestPlace(GenericModel):
     tag_id: str = Field(example="tag_123")
     tag_name: str = Field(example="Tag 123")
     total_amount: float = Field(default=0, example=123)
+
+
+class ProductProfit(GenericModel):
+    product_id: str = Field(example="product_123")
+    product_name: str = Field(example="Product")
+    total_amount: float = Field(default=0, example=123)
+    total_profit: float = Field(default=0, example=123)
+    quantity: int = Field(default=0, example=123)
+
+
+class DailySale(GenericModel):
+    day: int = Field(example=1)
+    total_amount: float = Field(default=0, example=123)

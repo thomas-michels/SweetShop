@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Query, Security, Response
 
 from app.api.composers import billing_composer
 from app.api.dependencies import build_response, decode_jwt
+from app.crud.billing.schemas import DailySale, ProductProfit
 from app.crud.users import UserInDB
 from app.crud.billing import BillingServices, Billing
 
@@ -57,6 +58,7 @@ async def get_monthly_billings(
         return Response(status_code=204)
 
 
+# TODO remove that
 @router.get("/billings/products", responses={200: {"model": List[Billing]}})
 async def get_best_selling_products(
     month_year: str = Query(
@@ -111,6 +113,7 @@ async def get_expanses_categories(
         return Response(status_code=204)
 
 
+# TODO remove that
 @router.get("/billings/places", responses={200: {"model": List[Billing]}})
 async def get_best_places(
     month_year: str = Query(
@@ -132,6 +135,60 @@ async def get_best_places(
     if best_places:
         return build_response(
             status_code=200, message="Best places found with success", data=best_places
+        )
+
+    else:
+        return Response(status_code=204)
+
+
+@router.get("/billings/products/profit", responses={200: {"model": List[ProductProfit]}})
+async def get_products_profit(
+    month_year: str = Query(
+        default=f"{datetime.now().month}/{datetime.now().year}",
+        pattern=r'\b(1[0-2]|0?[1-9])/([0-9]{4})\b',
+        alias="monthYear"
+    ),
+    current_user: UserInDB = Security(decode_jwt, scopes=["billing:get"]),
+    billing_services: BillingServices = Depends(billing_composer),
+):
+    month = int(month_year.split("/")[0])
+    year = int(month_year.split("/")[1])
+
+    products_profit = await billing_services.get_products_profit(
+        month=month,
+        year=year
+    )
+
+    if products_profit:
+        return build_response(
+            status_code=200, message="Products profit found with success", data=products_profit
+        )
+
+    else:
+        return Response(status_code=204)
+
+
+@router.get("/billings/sales/daily", responses={200: {"model": List[DailySale]}})
+async def get_daily_sales(
+    month_year: str = Query(
+        default=f"{datetime.now().month}/{datetime.now().year}",
+        pattern=r'\b(1[0-2]|0?[1-9])/([0-9]{4})\b',
+        alias="monthYear"
+    ),
+    current_user: UserInDB = Security(decode_jwt, scopes=["billing:get"]),
+    billing_services: BillingServices = Depends(billing_composer),
+):
+    month = int(month_year.split("/")[0])
+    year = int(month_year.split("/")[1])
+
+    daily_sales = await billing_services.get_daily_sales(
+        month=month,
+        year=year
+    )
+
+    if daily_sales:
+        return build_response(
+            status_code=200, message="Daily Sales found with success", data=daily_sales
         )
 
     else:
