@@ -64,9 +64,6 @@ class FileServices:
 
     async def delete_by_id(self, id: str) -> FileInDB:
         file_in_db = await self.__file_repository.delete_by_id(id=id)
-
-        self.__s3_manager.delete_file_by_url(file_url=file_in_db.url)
-
         return file_in_db
 
     async def validate_image(self, file: UploadFile, size: tuple):
