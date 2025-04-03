@@ -27,6 +27,10 @@ class Menu(GenericModel):
             self.name = update_menu.name
             is_updated = True
 
+        if update_menu.is_visible is not None:
+            self.is_visible = update_menu.is_visible
+            is_updated = True
+
         if update_menu.description is not None:
             self.description = update_menu.description
             is_updated = True
