@@ -42,6 +42,8 @@ class OrderServices:
         self.__tag_repository = tag_repository
         self.__customer_repository = customer_repository
         self.organization_id = self.__order_repository.organization_id
+        self.__cache_tags = {}
+        self.__cache_customers = {}
 
     async def create(self, order: RequestOrder) -> CompleteOrder:
         plan_feature = await get_plan_feature(
@@ -300,9 +302,14 @@ class OrderServices:
 
         if "customers" in expand:
             if order_in_db.customer_id is not None:
-                customer = await self.__customer_repository.select_by_id(
-                    id=order_in_db.customer_id, raise_404=False
-                )
+                if order_in_db.customer_id not in self.__cache_customers:
+                    customer = await self.__customer_repository.select_by_id(
+                        id=order_in_db.customer_id, raise_404=False
+                    )
+                    self.__cache_customers[order_in_db.customer_id] = customer
+
+                else:
+                    customer = self.__cache_customers[order_in_db.customer_id]
 
                 if customer:
                     complete_order.customer = customer
@@ -311,9 +318,14 @@ class OrderServices:
             complete_order.tags = []
 
             for tag in order_in_db.tags:
-                tag_in_db = await self.__tag_repository.select_by_id(
-                    id=tag, raise_404=False
-                )
+                if tag not in self.__cache_tags:
+                    tag_in_db = await self.__tag_repository.select_by_id(
+                        id=tag, raise_404=False
+                    )
+                    self.__cache_tags[tag] = tag_in_db
+
+                else:
+                    tag_in_db = self.__cache_tags[tag]
 
                 if tag_in_db:
                     complete_order.tags.append(tag_in_db)

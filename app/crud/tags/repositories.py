@@ -104,18 +104,13 @@ class TagRepository(Repository):
         try:
             tags = []
 
-            if query:
-                objects = TagModel.objects(
-                    name__iregex=query,
-                    is_active=True,
-                    organization_id=self.organization_id
-                )
+            objects = TagModel.objects(
+                organization_id=self.organization_id,
+                is_active=True
+            )
 
-            else:
-                objects = TagModel.objects(
-                    organization_id=self.organization_id,
-                    is_active=True
-                )
+            if query:
+                objects = objects.filter(name__iregex=query)
 
             for tag_model in objects.order_by("name"):
                 tag_in_db = self.__build_tag(tag_model)

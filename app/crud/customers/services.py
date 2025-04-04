@@ -18,6 +18,7 @@ class CustomerServices:
     ) -> None:
         self.__repository = customer_repository
         self.__tag_repository = tag_repository
+        self.__cache_tags = {}
 
     async def create(self, customer: Customer) -> CompleteCustomerInDB:
         plan_feature = await get_plan_feature(
@@ -101,9 +102,14 @@ class CustomerServices:
             complete_customer.tags = []
 
             for tag in customer_in_db.tags:
-                tag_in_db = await self.__tag_repository.select_by_id(
-                    id=tag, raise_404=False
-                )
+                if tag not in self.__cache_tags:
+                    tag_in_db = await self.__tag_repository.select_by_id(
+                        id=tag, raise_404=False
+                    )
+                    self.__cache_tags[tag] = tag_in_db
+
+                else:
+                    tag_in_db = self.__cache_tags[tag]
 
                 if tag_in_db:
                     complete_customer.tags.append(tag_in_db)
