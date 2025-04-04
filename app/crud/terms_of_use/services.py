@@ -7,6 +7,7 @@ from fastapi import UploadFile
 from tempfile import NamedTemporaryFile
 from uuid import uuid4
 from app.api.dependencies.bucket import S3BucketManager
+from app.api.dependencies.redis_manager import RedisManager
 from app.api.exceptions.authentication_exceptions import BadRequestException
 from app.api.shared_schemas.terms_of_use import FilterTermOfUse
 from app.crud.terms_of_use.term_of_use_acceptance_repositories import TermOfUseAcceptanceRepository
@@ -25,6 +26,7 @@ class TermOfUseServices:
         self.__term_of_use_repository = term_of_use_repository
         self.__acceptance_repository = acceptance_repository
         self.__bucket = S3BucketManager(mode="public")
+        self.redis_manager = RedisManager()
 
     async def create_term_of_use(self, version: str, file: UploadFile) -> TermOfUseInDB:
         file_content = await file.read()
@@ -91,6 +93,9 @@ class TermOfUseServices:
             term_of_use_acceptance=acceptance
         )
 
+        key = f"user:{acceptance.user_id}"
+        self.redis_manager.delete_value(key=key)
+
         return acceptance_in_db
 
     async def search_acceptance_by_id(self, term_of_use_id: str, user_id: str) -> TermOfUseAcceptanceInDB:
@@ -117,5 +122,8 @@ class TermOfUseServices:
         acceptance_in_db = await self.__acceptance_repository.delete(
             acceptance=acceptance_in_db
         )
+
+        key = f"user:{user_id}"
+        self.redis_manager.delete_value(key=key)
 
         return acceptance_in_db

@@ -2,6 +2,7 @@ from typing import List
 
 from app.api.dependencies.bucket import S3BucketManager
 from app.api.dependencies.get_plan_feature import get_plan_feature
+from app.api.dependencies.redis_manager import RedisManager
 from app.api.exceptions.authentication_exceptions import UnauthorizedException, BadRequestException
 from app.core.utils.features import Feature
 from app.crud.files.repositories import FileRepository
@@ -29,6 +30,7 @@ class OrganizationServices:
         self.__organization_plan_repository = organization_plan_repository
         self.__user_repository = user_repository
         self.__s3_manager = S3BucketManager(mode="private")
+        self.redis_manager = RedisManager()
 
     async def create(self, organization: Organization, owner: UserInDB) -> OrganizationInDB:
         organization_in_db = await self.__organization_repository.create(organization=organization)
@@ -39,6 +41,7 @@ class OrganizationServices:
             user_making_request=owner.user_id,
             role=RoleEnum.OWNER,
         )
+
         return await self.search_by_id(id=organization_in_db.id)
 
     async def check_if_can_add_more_users(self, organization_id: str) -> None:
@@ -191,6 +194,9 @@ class OrganizationServices:
             organization=organization_in_db.model_dump(exclude={"plan"})
         )
 
+        key = f"user:{user_in_db.user_id}"
+        self.redis_manager.delete_value(key=key)
+
         return True
 
     async def update_user_role(self, organization_id: str, user_making_request: str, user_id: str, role: RoleEnum) -> bool:
@@ -270,6 +276,9 @@ class OrganizationServices:
             organization=organization_in_db.model_dump()
         )
 
+        key = f"user:{user_in_db.user_id}"
+        self.redis_manager.delete_value(key=key)
+
         return True
 
     async def transfer_ownership(self, organization_id: str, user_making_request: str, user_id: str) -> bool:
@@ -306,6 +315,9 @@ class OrganizationServices:
             organization=organization_in_db.model_dump()
         )
 
+        key = f"user:{user_in_db.user_id}"
+        self.redis_manager.delete_value(key=key)
+
         return True
 
     async def leave_the_organization(self, organization_id: str, user_id: str) -> bool:
@@ -334,5 +346,8 @@ class OrganizationServices:
                 organization_id=organization_id,
                 organization=organization_in_db.model_dump()
             )
+
+        key = f"user:{user_in_db.user_id}"
+        self.redis_manager.delete_value(key=key)
 
         return True

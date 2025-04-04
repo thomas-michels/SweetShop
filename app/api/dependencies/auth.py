@@ -31,10 +31,7 @@ async def decode_jwt(
 
         token_data = TokenData(scopes=token_scopes, id=auth_result["sub"])
 
-        current_user = await authetication_services.get_current_user(
-            token=token_data,
-            expand=["organizations"]
-        )
+        current_user = await authetication_services.get_current_user(token=token_data)
 
         if not current_user:
             raise HTTPException(

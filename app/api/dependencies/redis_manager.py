@@ -58,6 +58,7 @@ class RedisManager:
         try:
             _logger.info(f"Deleting key '{key}' from Redis...")
             return self.client.delete(key) > 0
+
         except Exception as error:
             _logger.error(f"Error deleting key '{key}': {error}")
             return False
@@ -72,6 +73,7 @@ class RedisManager:
         try:
             _logger.info(f"Listing keys with pattern '{pattern}'...")
             return self.client.keys(pattern)
+
         except Exception as error:
             _logger.error(f"Error listing keys: {error}")
             return []
