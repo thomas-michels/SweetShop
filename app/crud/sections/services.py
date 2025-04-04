@@ -1,8 +1,8 @@
 from typing import List
-from app.crud.menus.repositories import MenuRepository
-from .schemas import CompleteSection, Section, SectionInDB, UpdateSection
-from .repositories import SectionRepository
 from app.crud.offers.services import OfferServices
+from app.crud.menus.repositories import MenuRepository
+from .repositories import SectionRepository
+from .schemas import CompleteSection, Section, SectionInDB, UpdateSection
 
 
 class SectionServices:
