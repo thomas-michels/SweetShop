@@ -28,7 +28,7 @@ from app.api.routers import (
     section_router,
     menu_router,
     offer_router,
-    metric_router,
+    home_router,
 )
 from app.api.routers.exception_handlers import (
     unprocessable_entity_error_422,
@@ -88,7 +88,7 @@ app.include_router(menu_router, prefix="/api")
 app.include_router(section_router, prefix="/api")
 app.include_router(offer_router, prefix="/api")
 app.include_router(billing_router, prefix="/api")
-app.include_router(metric_router, prefix="/api")
+app.include_router(home_router, prefix="/api")
 app.include_router(calendar_router, prefix="/api")
 app.include_router(customer_router, prefix="/api")
 app.include_router(tag_router, prefix="/api")

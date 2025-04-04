@@ -83,12 +83,12 @@ async def get_organization_features_by_id(
             status_code=401, message="Unauthorized!", data=None
         )
 
-    plan_feature = get_plan_feature(
+    plan_feature = await get_plan_feature(
         organization_id=organization_id,
         feature_name=feature_name
     )
 
-    if plan_feature:
+    if plan_feature and plan_feature.value.startswith("t"):
         return build_response(
             status_code=200, message="This organization have this feature", data=None
         )

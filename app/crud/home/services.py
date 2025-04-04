@@ -1,6 +1,7 @@
-from datetime import datetime
 import json
+from datetime import datetime
 from typing import List
+
 from app.api.dependencies.redis_manager import RedisManager
 from app.api.exceptions.authentication_exceptions import UnauthorizedException
 from app.crud.billing.services import BillingServices
@@ -13,16 +14,16 @@ from app.crud.products.services import ProductServices
 from .schemas import HomeMetric, RecentOrder
 
 
-class MetricServices:
+class HomeServices:
 
     def __init__(
-            self,
-            order_services: OrderServices,
-            product_services: ProductServices,
-            customer_services: CustomerServices,
-            calendar_services: CalendarServices,
-            billing_services: BillingServices,
-        ) -> None:
+        self,
+        order_services: OrderServices,
+        product_services: ProductServices,
+        customer_services: CustomerServices,
+        calendar_services: CalendarServices,
+        billing_services: BillingServices,
+    ) -> None:
         self.order_services = order_services
         self.product_services = product_services
         self.customer_services = customer_services
@@ -54,9 +55,7 @@ class MetricServices:
         home_metric.orders_today = len(orders)
 
         self.redis_manager.set_value(
-            key=key,
-            expiration=600,
-            value=home_metric.model_dump_json()
+            key=key, expiration=600, value=home_metric.model_dump_json()
         )
 
         return home_metric
@@ -69,8 +68,12 @@ class MetricServices:
         for order in orders:
             recent_order = RecentOrder(
                 order_id=order.id,
-                customer_name=order.customer.name if order.customer else "Cliente não identificado",
-                total_amount=order.total_amount
+                customer_name=(
+                    order.customer.name
+                    if order.customer
+                    else "Cliente não identificado"
+                ),
+                total_amount=order.total_amount,
             )
             recent_orders.append(recent_order)
 
@@ -79,9 +82,7 @@ class MetricServices:
     async def __get_today_orders(self, now: datetime) -> List[CalendarOrder]:
         try:
             orders = await self.calendar_services.get_calendar(
-                day=now.day,
-                month=now.month,
-                year=now.year
+                day=now.day, month=now.month, year=now.year
             )
 
             return orders
@@ -92,8 +93,7 @@ class MetricServices:
     async def __get_billing(self, now: datetime) -> float:
         try:
             billing = await self.billing_services.get_billing_for_dashboard(
-                month=now.month,
-                year=now.year
+                month=now.month, year=now.year
             )
 
             return billing.total_amount
