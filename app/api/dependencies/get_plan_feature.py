@@ -13,7 +13,7 @@ redis_manager = RedisManager()
 
 
 async def get_plan_feature(organization_id: str, feature_name: Feature) -> PlanFeatureInDB:
-    cache_key = f"plan_feature:{organization_id}:{feature_name}"
+    cache_key = f"organization:{organization_id}:plan_feature:{feature_name}"
 
     cached_value = redis_manager.get_value(cache_key)
 

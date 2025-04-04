@@ -24,6 +24,7 @@ class Environment(BaseSettings):
     SECRET_KEY: str = "test"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
+    API_TOKEN: str | None = None
 
     # AUTH0
     AUTH0_DOMAIN: str
