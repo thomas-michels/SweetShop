@@ -3,6 +3,7 @@ from typing import List, Tuple
 from app.api.dependencies.get_plan_feature import get_plan_feature
 from app.api.exceptions.authentication_exceptions import UnauthorizedException
 from app.core.utils.features import Feature
+from app.crud.orders.schemas import DeliveryType
 from app.crud.orders.services import OrderServices
 
 from .schemas import CalendarOrder
@@ -51,6 +52,10 @@ class CalendarServices:
                 order_status=order.status,
                 order_delivery_type=order.delivery.delivery_type.value
             )
+
+            if calendar_order.order_delivery_type == DeliveryType.DELIVERY:
+                calendar_order.order_delivery_at = order.delivery.delivery_at
+                calendar_order.address = order.delivery.address
 
             if day:
                 if day == calendar_order.order_date.day:
