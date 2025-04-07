@@ -37,7 +37,6 @@ class UpdateTag(GenericModel):
 class TagInDB(Tag):
     id: str = Field(example="123")
     organization_id: str = Field(example="org_123", exclude=True)
-    system_tag: bool = Field(default=False, example=False, exclude=True)
 
     model_config = ConfigDict(extra="allow", from_attributes=True)
 

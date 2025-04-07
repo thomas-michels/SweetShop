@@ -66,13 +66,11 @@ class HomeServices:
         recent_orders = []
 
         for order in orders:
+            customer_name = order.customer.name if order.customer else "Cliente não identificado"
+
             recent_order = RecentOrder(
                 order_id=order.id,
-                customer_name=(
-                    order.customer.name
-                    if order.customer
-                    else "Cliente não identificado"
-                ),
+                customer_name=customer_name,
                 total_amount=order.total_amount,
             )
             recent_orders.append(recent_order)

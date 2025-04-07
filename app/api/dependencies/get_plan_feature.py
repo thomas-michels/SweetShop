@@ -28,7 +28,7 @@ async def get_plan_feature(organization_id: str, feature_name: Feature) -> PlanF
         organization_id=organization_id
     )
 
-    if not active_plan.has_paid_invoice:
+    if not active_plan or not active_plan.has_paid_invoice:
         raise PaymentRequiredException()
 
     plan_feature = await plan_feature_repository.select_by_name(

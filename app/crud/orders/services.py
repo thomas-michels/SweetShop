@@ -281,7 +281,6 @@ class OrderServices:
             id=order_in_db.id,
             organization_id=order_in_db.organization_id,
             customer_id=order_in_db.customer_id,
-            customer=order_in_db.customer_id,
             status=order_in_db.status,
             payment_status=order_in_db.payment_status,
             products=order_in_db.products,

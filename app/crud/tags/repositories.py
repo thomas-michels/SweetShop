@@ -16,11 +16,13 @@ class TagRepository(Repository):
         super().__init__()
         self.organization_id = organization_id
 
-    async def create(self, tag: Tag, system_tag: bool = False) -> TagInDB:
+    async def create(self, tag: Tag) -> TagInDB:
         try:
+            if await self.select_by_name(name=tag.name):
+                raise NotUniqueError()
+
             tag_model = TagModel(
                 organization_id=self.organization_id,
-                system_tag=system_tag,
                 created_at=datetime.now(),
                 updated_at=datetime.now(),
                 **tag.model_dump()
@@ -33,7 +35,7 @@ class TagRepository(Repository):
 
         except NotUniqueError:
             _logger.warning(f"Tag with name {tag.name} is not unique")
-            return await self.select_by_name(name=tag.name)
+            raise UnprocessableEntity(message="This tag is not unique")
 
         except Exception as error:
             _logger.error(f"Error on create_tag: {str(error)}")
@@ -43,15 +45,23 @@ class TagRepository(Repository):
         try:
             tag_model: TagModel = TagModel.objects(
                 id=tag.id,
-                system_tag=False,
                 is_active=True,
                 organization_id=self.organization_id
             ).first()
-            tag.name = tag.name.strip().title()
 
-            tag_model.update(**tag.model_dump())
+            if tag_model:
+                if tag_model.name != tag.name and await self.select_by_name(name=tag.name):
+                    raise NotUniqueError()
 
-            return await self.select_by_id(id=tag.id)
+                tag.name = tag.name.strip().title()
+
+                tag_model.update(**tag.model_dump())
+
+                return await self.select_by_id(id=tag.id)
+
+        except NotUniqueError:
+            _logger.warning(f"Tag with name {tag.name} is not unique")
+            raise UnprocessableEntity(message="This tag is not unique")
 
         except Exception as error:
             _logger.error(f"Error on update_tag: {str(error)}")
@@ -87,7 +97,7 @@ class TagRepository(Repository):
 
     async def select_by_name(self, name: str) -> TagInDB:
         try:
-            name = name.title()
+            name = name.strip().title()
             tag_model: TagModel = TagModel.objects(
                 name=name,
                 is_active=True,
@@ -127,7 +137,6 @@ class TagRepository(Repository):
         try:
             tag_model: TagModel = TagModel.objects(
                 id=id,
-                system_tag=False,
                 is_active=True,
                 organization_id=self.organization_id
             ).first()
@@ -148,7 +157,6 @@ class TagRepository(Repository):
             id=tag_model.id,
             name=tag_model.name,
             organization_id=tag_model.organization_id,
-            system_tag=tag_model.system_tag
         )
 
         if tag_model.styling:

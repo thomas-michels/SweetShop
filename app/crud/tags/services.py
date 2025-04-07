@@ -1,10 +1,7 @@
 from typing import List
 
 from app.api.dependencies.get_plan_feature import get_plan_feature
-from app.api.exceptions.authentication_exceptions import (
-    BadRequestException,
-    UnauthorizedException,
-)
+from app.api.exceptions.authentication_exceptions import UnauthorizedException
 from app.core.utils.features import Feature
 
 from .repositories import TagRepository
@@ -16,7 +13,7 @@ class TagServices:
     def __init__(self, tag_repository: TagRepository) -> None:
         self.__repository = tag_repository
 
-    async def create(self, tag: Tag, system_tag: bool = False) -> TagInDB:
+    async def create(self, tag: Tag) -> TagInDB:
         plan_feature = await get_plan_feature(
             organization_id=self.__repository.organization_id,
             feature_name=Feature.MAX_TAGS,
@@ -31,14 +28,11 @@ class TagServices:
                 detail=f"Maximum number of tags reached, Max value: {plan_feature.value}"
             )
 
-        tag_in_db = await self.__repository.create(tag=tag, system_tag=system_tag)
+        tag_in_db = await self.__repository.create(tag=tag)
         return tag_in_db
 
     async def update(self, id: str, updated_tag: UpdateTag) -> TagInDB:
         tag_in_db = await self.search_by_id(id=id)
-
-        if tag_in_db.system_tag:
-            raise BadRequestException(detail="You cannot update this tag!")
 
         is_updated = tag_in_db.validate_updated_fields(update_tag=updated_tag)
 
@@ -56,10 +50,5 @@ class TagServices:
         return tags
 
     async def delete_by_id(self, id: str) -> TagInDB:
-        tag_in_db = await self.search_by_id(id=id)
-
-        if tag_in_db.system_tag:
-            raise BadRequestException(detail="You cannot delete this tag!")
-
         tag_in_db = await self.__repository.delete_by_id(id=id)
         return tag_in_db
