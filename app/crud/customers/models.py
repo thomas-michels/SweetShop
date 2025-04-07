@@ -8,6 +8,7 @@ class CustomerModel(BaseDocument):
     name = StringField(max_length=100, required=True)
     ddd = StringField(max_length=3, required=False)
     phone_number = StringField(max_length=9, required=False)
+    document = StringField(required=False, default=None)
     addresses = ListField(DictField())
     tags = ListField(StringField(), required=False)
 

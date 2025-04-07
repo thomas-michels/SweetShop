@@ -1,9 +1,11 @@
+import re
 from typing import List, Optional
 
 from pydantic import Field, model_validator
 
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
+from app.core.utils.validate_document import validate_cnpj, validate_cpf
 from app.crud.shared_schemas.address import Address
 from app.crud.tags.schemas import TagInDB
 
@@ -12,6 +14,7 @@ class Customer(GenericModel):
     name: str = Field(example="Ted Mosby")
     ddd: str | None = Field(default=None, example="047", max_length=3)
     phone_number: str | None = Field(default=None, max_length=9)
+    document: str | None = Field(default=None, example="111.555.219-99")
     addresses: List[Address] = Field(default=[])
     tags: List[str] = Field(default=[])
 
@@ -26,6 +29,20 @@ class Customer(GenericModel):
 
             if len(self.phone_number) not in [8, 9]:
                 raise ValueError("Phone number must have 8 or 9 digits")
+
+        if self.document is not None:
+            self.document = re.sub(r'\D', '', self.document)
+
+            if len(self.document) == 11:
+                if not validate_cpf(self.document):
+                    raise ValueError("Invalid CPF")
+
+            elif len(self.document) == 14:
+                if not validate_cnpj(self.document):
+                    raise ValueError("Invalid CNPJ")
+
+            else:
+                raise ValueError("Document must be a valid CPF or CNPJ")
 
         return self
 
@@ -42,6 +59,10 @@ class Customer(GenericModel):
 
         if update_customer.phone_number is not None:
             self.phone_number = update_customer.phone_number
+            is_updated = True
+
+        if update_customer.document is not None:
+            self.document = update_customer.document
             is_updated = True
 
         if update_customer.addresses is not None:
@@ -61,6 +82,7 @@ class UpdateCustomer(GenericModel):
     phone_number: Optional[str] = Field(default=None, max_length=9)
     addresses: Optional[List[Address]] = Field(default=None)
     tags: Optional[List[str]] = Field(default=None)
+    document: Optional[str] = Field(default=None)
 
     @model_validator(mode="after")
     def validate_model(self) -> "UpdateCustomer":
@@ -73,6 +95,20 @@ class UpdateCustomer(GenericModel):
 
             if len(self.phone_number) not in [8, 9]:
                 raise ValueError("Phone number must have 8 or 9 digits")
+
+        if self.document is not None:
+            self.document = re.sub(r'\D', '', self.document)
+
+            if len(self.document) == 11:
+                if not validate_cpf(self.document):
+                    raise ValueError("Invalid CPF")
+
+            elif len(self.document) == 14:
+                if not validate_cnpj(self.document):
+                    raise ValueError("Invalid CNPJ")
+
+            else:
+                raise ValueError("Document must be a valid CPF or CNPJ")
 
         return self
 
