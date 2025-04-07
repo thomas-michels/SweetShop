@@ -57,7 +57,7 @@ class TagRepository(Repository):
 
                 tag_model.update(**tag.model_dump())
 
-                return await self.select_by_id(id=tag.id)
+                return await self.select_by_id(id=tag_model.id)
 
         except NotUniqueError:
             _logger.warning(f"Tag with name {tag.name} is not unique")
@@ -104,7 +104,8 @@ class TagRepository(Repository):
                 organization_id=self.organization_id
             ).first()
 
-            return self.__build_tag(tag_model=tag_model)
+            if tag_model:
+                return self.__build_tag(tag_model=tag_model)
 
         except Exception as error:
             _logger.error(f"Error on select_by_name: {str(error)}")
