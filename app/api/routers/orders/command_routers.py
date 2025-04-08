@@ -25,7 +25,7 @@ async def create_orders(
 
     else:
         return build_response(
-            status_code=400, message="Some error happened on create an order", data=None
+            status_code=400, message="Erro ao criar pedido", data=None
         )
 
 
@@ -45,7 +45,7 @@ async def update_order(
 
     else:
         return build_response(
-            status_code=400, message="Some error happened on update an order", data=None
+            status_code=400, message="Erro ao atualizar pedido", data=None
         )
 
 
@@ -63,5 +63,5 @@ async def delete_order(
         )
     else:
         return build_response(
-            status_code=404, message=f"Order {order_id} not found", data=None
+            status_code=404, message=f"Pedido {order_id} não encontrado", data=None
         )

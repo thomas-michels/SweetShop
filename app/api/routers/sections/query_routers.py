@@ -29,7 +29,7 @@ async def get_section_by_id(
 
     else:
         return build_response(
-            status_code=404, message=f"Section {section_id} not found", data=None
+            status_code=404, message=f"Seção {section_id} não encontrada", data=None
         )
 
 

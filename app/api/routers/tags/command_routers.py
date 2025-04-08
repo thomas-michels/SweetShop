@@ -28,7 +28,7 @@ async def create_tag(
 
     else:
         return build_response(
-            status_code=400, message="Some error happened on create a tag", data=None
+            status_code=400, message="Erro ao criar tag", data=None
         )
 
 
@@ -48,7 +48,7 @@ async def update_tag(
 
     else:
         return build_response(
-            status_code=400, message="Some error happened on update a tag", data=None
+            status_code=400, message="Erro atualizar tag", data=None
         )
 
 
@@ -67,5 +67,5 @@ async def delete_tag(
 
     else:
         return build_response(
-            status_code=404, message=f"Tag {tag_id} not found", data=None
+            status_code=404, message=f"Tag {tag_id} não encontrada", data=None
         )

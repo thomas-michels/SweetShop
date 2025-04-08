@@ -26,7 +26,7 @@ async def get_offer_by_id(
 
     else:
         return build_response(
-            status_code=404, message=f"Offer {offer_id} not found", data=None
+            status_code=404, message=f"Oferta {offer_id} não encontrada", data=None
         )
 
 

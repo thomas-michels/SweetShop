@@ -25,7 +25,7 @@ async def create_sections(
 
     else:
         return build_response(
-            status_code=400, message="Some error happened on create a section", data=None
+            status_code=400, message="Erro ao criar seção", data=None
         )
 
 
@@ -45,7 +45,7 @@ async def update_section(
 
     else:
         return build_response(
-            status_code=400, message="Some error happened on update a section", data=None
+            status_code=400, message="Erro ao atualizar seção", data=None
         )
 
 
@@ -64,5 +64,5 @@ async def delete_section(
 
     else:
         return build_response(
-            status_code=404, message=f"Section {section_id} not found", data=None
+            status_code=404, message=f"Seção {section_id} não encontrada", data=None
         )

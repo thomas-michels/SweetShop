@@ -27,7 +27,7 @@ async def create_organizations(
 
     else:
         return build_response(
-            status_code=400, message="Some error happened on create an organization", data=None
+            status_code=400, message="Erro ao criar organização", data=None
         )
 
 
@@ -51,7 +51,7 @@ async def update_organization(
 
     else:
         return build_response(
-            status_code=400, message="Some error happened on update an organization", data=None
+            status_code=400, message="Erro ao atualizar organização", data=None
         )
 
 
@@ -73,7 +73,7 @@ async def delete_organization(
 
     else:
         return build_response(
-            status_code=404, message=f"Organization {organization_id} not found", data=None
+            status_code=404, message=f"Organização {organization_id} não encontrada", data=None
         )
 
 
@@ -99,7 +99,7 @@ async def update_user_in_organization(
 
     else:
         return build_response(
-            status_code=400, message="Some error happened on update user's role", data=None
+            status_code=400, message="Erro ao atualizar usuário na organização", data=None
         )
 
 
@@ -123,7 +123,7 @@ async def remove_user_from_organization(
 
     else:
         return build_response(
-            status_code=400, message="Some error happened on remove an user from organization", data=None
+            status_code=400, message="Erro ao remover usuário da organização", data=None
         )
 
 
@@ -147,7 +147,7 @@ async def transfer_organization_ownership(
 
     else:
         return build_response(
-            status_code=400, message="Some error happened on transfer the organization", data=None
+            status_code=400, message="Erro ao transferir dono da organização", data=None
         )
 
 
@@ -169,5 +169,5 @@ async def leave_the_organization(
 
     else:
         return build_response(
-            status_code=400, message="Some error happened on left the organization", data=None
+            status_code=400, message="Erro ao sair da organização", data=None
         )

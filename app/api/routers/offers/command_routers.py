@@ -25,7 +25,7 @@ async def create_offers(
 
     else:
         return build_response(
-            status_code=400, message="Some error happened on create a offer", data=None
+            status_code=400, message="Erro ao criar oferta", data=None
         )
 
 
@@ -45,7 +45,7 @@ async def update_offer(
 
     else:
         return build_response(
-            status_code=400, message="Some error happened on update a offer", data=None
+            status_code=400, message="Erro ao atualizar oferta", data=None
         )
 
 
@@ -64,5 +64,5 @@ async def delete_offer(
 
     else:
         return build_response(
-            status_code=404, message=f"Offer {offer_id} not found", data=None
+            status_code=404, message=f"Oferta {offer_id} não encontrada", data=None
         )

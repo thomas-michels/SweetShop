@@ -51,7 +51,7 @@ async def get_organization_by_id(
 
     else:
         return build_response(
-            status_code=404, message=f"Organization {organization_id} not found", data=None
+            status_code=404, message=f"Organização {organization_id} não encontrada", data=None
         )
 
 

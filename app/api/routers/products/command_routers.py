@@ -25,7 +25,7 @@ async def create_products(
 
     else:
         return build_response(
-            status_code=400, message="Some error happened on create a product", data=None
+            status_code=400, message="Erro ao criar produto", data=None
         )
 
 
@@ -45,7 +45,7 @@ async def update_product(
 
     else:
         return build_response(
-            status_code=400, message="Some error happened on update a product", data=None
+            status_code=400, message="Erro ao atualizar produto", data=None
         )
 
 
@@ -64,5 +64,5 @@ async def delete_product(
 
     else:
         return build_response(
-            status_code=404, message=f"Product {product_id} not found", data=None
+            status_code=404, message=f"Produto {product_id} não encontrado", data=None
         )

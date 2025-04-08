@@ -29,7 +29,7 @@ async def get_product_by_id(
 
     else:
         return build_response(
-            status_code=404, message=f"Product {product_id} not found", data=None
+            status_code=404, message=f"Produto {product_id} não encontrado", data=None
         )
 
 

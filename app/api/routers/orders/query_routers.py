@@ -29,7 +29,7 @@ async def get_order_by_id(
 
     else:
         return build_response(
-            status_code=404, message=f"Order {order_id} not found", data=None
+            status_code=404, message=f"Pedido {order_id} não encontrado", data=None
         )
 
 
