@@ -112,4 +112,4 @@ async def root_path(request: Request):
 
 @app.get("/health", tags=["Health Check"])
 async def health_check():
-    return {"message": "I'm alive"}
+    return build_response(status_code=200, message="I'm alive!", data=None)
