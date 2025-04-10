@@ -155,7 +155,10 @@ class SubscriptionBuilder:
 
         credits = 0
 
-        if old_invoice_in_db:
+        old_plan_in_db = await self.__plan_service.search_by_id(id=organization_plan_in_db.plan_id)
+
+        if old_invoice_in_db and old_plan_in_db.price > 0:
+
             credits = self._calculate_remaining_credits(
                 organization_plan=organization_plan_in_db,
                 amount_paid=old_invoice_in_db.amount_paid
@@ -211,7 +214,7 @@ class SubscriptionBuilder:
 
         mp_sub = self.__mp_integration.create_preference(
             reason=f"pedidoZ - Assinatura {label} - {plan_in_db.name}",
-            price_monthly=plan_in_db.price,
+            price_monthly=sub_price,
             discount=credits,
             user_info=user_info
         )
