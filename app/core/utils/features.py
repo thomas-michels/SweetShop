@@ -30,7 +30,7 @@ def get_translation(name: Feature) -> str:
         Feature.DISPLAY_CALENDAR: "Calendário",
         Feature.DISPLAY_DASHBOARD: "Painel financeiro",
         Feature.DISPLAY_DELINQUENCY: "Inadimplência",
-        Feature.DISPLAY_MENU: "Cardápio",
+        Feature.DISPLAY_MENU: "Catálogo",
         "-": "Ilimitado",
         "true": "Incluído",
         "false": "Não incluído",

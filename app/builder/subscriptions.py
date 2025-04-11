@@ -141,8 +141,8 @@ class SubscriptionBuilder:
             _logger.warning(f"Organization {subscription.organization_id} without an active plan")
             return
 
-        if organization_plan_in_db.plan_id == subscription.plan_id:
-            raise BadRequestException("You cannot update the organization plan with the same plan")
+        # if organization_plan_in_db.plan_id == subscription.plan_id:
+        #     raise BadRequestException("You cannot update the organization plan with the same plan")
 
         await self.__cancel_pending_payments(organization_plan_id=organization_plan_in_db.id)
 
@@ -368,7 +368,7 @@ class SubscriptionBuilder:
             organization_id=subscription.organization_id
         )
 
-        if organization_plan_in_db and not start_date and not end_date:
+        if organization_plan_in_db and not organization_plan_in_db.has_paid_invoice and not start_date and not end_date:
             organization_plan_in_db.start_date = today
             organization_plan_in_db.end_date = sub_end
             organization_plan_in_db.allow_additional = subscription.allow_additional
