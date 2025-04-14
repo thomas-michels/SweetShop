@@ -13,15 +13,6 @@ class OrganizationPlan(GenericModel):
     end_date: datetime = Field(example=str(datetime.now()))
     allow_additional: bool = Field(default=False, example=False)
 
-    @model_validator(mode="after")
-    def validate_model(self) -> "OrganizationPlan":
-        now = datetime.now()
-
-        if self.end_date < now:
-            raise ValueError("End date should be grater than now")
-
-        return self
-
     def validate_updated_fields(self, update_organization_plan: "UpdateOrganizationPlan") -> bool:
         is_updated = False
 
@@ -49,15 +40,6 @@ class UpdateOrganizationPlan(GenericModel):
     start_date: Optional[datetime] = Field(default=None, example=str(datetime.now()))
     end_date: Optional[datetime] = Field(default=None, example=str(datetime.now()))
     allow_additional: Optional[bool] = Field(default=None, example=False)
-
-    @model_validator(mode="after")
-    def validate_model(self) -> "UpdateOrganizationPlan":
-        now = datetime.now()
-
-        if self.end_date < now:
-            raise ValueError("End date should be grater than now")
-
-        return self
 
 
 class OrganizationPlanInDB(OrganizationPlan, DatabaseModel):

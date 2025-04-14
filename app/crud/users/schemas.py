@@ -43,7 +43,7 @@ class User(GenericModel):
     email: str = Field(example="test@test.com")
     name: str = Field(example="test")
     nickname: str = Field(example="test")
-    picture: str = Field(default="", example="http://localhost")
+    picture: str | None = Field(default=None, example="http://localhost")
 
 
 class UserInDB(User):

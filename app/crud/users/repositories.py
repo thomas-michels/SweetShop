@@ -35,11 +35,11 @@ class UserRepository:
             )
 
             if status_code == 200:
-                _logger.info("User updated successfully.")
-                return UserInDB(**response)
+                _logger.debug("User updated successfully")
+                return self.__mount_user(response)
 
             else:
-                _logger.info(f"User not created.")
+                _logger.warning(f"User for {user.email} not created")
 
         except Exception as error:
             _logger.error(f"Error on update_user: {str(error)}")
@@ -55,11 +55,11 @@ class UserRepository:
             )
 
             if status_code == 200:
-                _logger.info("User updated successfully.")
-                return UserInDB(**response)
+                _logger.debug("User updated successfully")
+                return self.__mount_user(response)
 
             else:
-                _logger.info(f"User {user_id} not updated.")
+                _logger.warning(f"User {user_id} not updated")
 
         except Exception as error:
             _logger.error(f"Error on update_user: {str(error)}")
@@ -82,7 +82,7 @@ class UserRepository:
 
             if status_code == 200 and response:
                 _logger.info("User retrieved successfully.")
-                return UserInDB(**response)
+                return self.__mount_user(response)
 
             else:
                 _logger.info(f"User {id} not found.")
@@ -103,11 +103,11 @@ class UserRepository:
             )
 
             if status_code == 200 and response:
-                _logger.info("User retrieved successfully.")
-                return UserInDB(**response[0])
+                _logger.debug("User retrieved successfully")
+                return self.__mount_user(response[0])
 
             else:
-                _logger.info(f"User with email {email} not found.")
+                _logger.warning(f"User with email {email} not found")
                 if raise_404:
                     raise NotFoundError(message=f"User with email {email} not found")
 
@@ -124,9 +124,9 @@ class UserRepository:
             )
 
             if status_code == 200:
-                _logger.info("Users retrieved successfully.")
+                _logger.debug("Users retrieved successfully.")
                 for raw_user in response:
-                    users.append(UserInDB(**raw_user))
+                    users.append(self.__mount_user(raw_user))
 
             return users
 
@@ -142,11 +142,11 @@ class UserRepository:
             )
 
             if status_code == 204:
-                _logger.info("User deleted successfully.")
+                _logger.debug("User deleted successfully")
                 return True
 
             else:
-                _logger.info(f"User {id} not deleted.")
+                _logger.warning(f"User {id} not deleted")
                 return False
 
         except Exception as error:
@@ -154,3 +154,17 @@ class UserRepository:
             _logger.error(str(error))
             _logger.error(traceback.format_exc())
             return False
+
+    def __mount_user(self, response: dict) -> UserInDB:
+        return UserInDB(
+            email=response["email"],
+            name=response["name"],
+            nickname=response["nickname"],
+            picture=response.get("picture"),
+            user_id=response["user_id"],
+            user_metadata=response.get("user_metadata"),
+            app_metadata=response.get("app_metadata"),
+            last_login=response.get("last_login"),
+            created_at=response["created_at"],
+            updated_at=response["updated_at"],
+        )
