@@ -25,16 +25,6 @@ class OrganizationPlanServices:
         if organization_plan.plan_id:
             await self.__plan_repository.select_by_id(id=organization_plan.plan_id)
 
-        organization_plan_in_same_period = await self.__organization_plan_repository.check_if_period_is_available(
-            organization_id=organization_id,
-            start_date=organization_plan.start_date,
-            end_date=organization_plan.end_date
-        )
-
-        if organization_plan_in_same_period:
-            _logger.warning(f"An active plan already exists for this period - Organization: {organization_id}")
-            raise UnprocessableEntity(message="An active plan already exists for this period")
-
         organization_plan_in_db = await self.__organization_plan_repository.create(
             organization_plan=organization_plan,
             organization_id=organization_id
@@ -42,7 +32,7 @@ class OrganizationPlanServices:
         return organization_plan_in_db
 
     async def update(self, id: str, organization_id: str, updated_organization_plan: UpdateOrganizationPlan) -> OrganizationPlanInDB:
-        organization_plan_in_db = await self.search_by_id(id=id, organization_id=organization_id)
+        organization_plan_in_db = await self.search_by_id(id=id)
 
         is_updated = organization_plan_in_db.validate_updated_fields(update_organization_plan=updated_organization_plan)
 
@@ -64,21 +54,21 @@ class OrganizationPlanServices:
 
         return organization_plan_in_db
 
-    async def search_by_id(self, id: str, organization_id: str) -> OrganizationPlanInDB:
-        organization_plan_in_db = await self.__organization_plan_repository.select_by_id(id=id, organization_id=organization_id)
+    async def search_by_id(self, id: str) -> OrganizationPlanInDB:
+        organization_plan_in_db = await self.__organization_plan_repository.select_by_id(id=id)
         return organization_plan_in_db
 
     async def search_active_plan(self, organization_id: str) -> OrganizationPlanInDB:
         organization_plan = await self.__organization_plan_repository.select_active_plan(organization_id=organization_id)
         return organization_plan
 
-    async def check_if_period_is_available(self, organization_id: str, start_date: datetime, end_date: datetime) -> OrganizationPlanInDB:
-        organization_plan_in_db = await self.__organization_plan_repository.check_if_period_is_available(
+    async def check_if_period_is_available(self, organization_id: str, start_date: datetime, end_date: datetime) -> List[OrganizationPlanInDB]:
+        organization_plans = await self.__organization_plan_repository.check_if_period_is_available(
             organization_id=organization_id,
             start_date=start_date,
             end_date=end_date
         )
-        return organization_plan_in_db
+        return organization_plans
 
     async def search_all(self, organization_id: str) -> List[OrganizationPlanInDB]:
         organization_plans = await self.__organization_plan_repository.select_all(organization_id=organization_id)

@@ -31,10 +31,7 @@ async def get_organization_plan_by_id(
         current_user=current_user
     )
 
-    organization_plan_in_db = await organization_plan_services.search_by_id(
-        id=organization_plan_id,
-        organization_id=organization_id
-    )
+    organization_plan_in_db = await organization_plan_services.search_by_id(id=organization_plan_id)
 
     if organization_plan_in_db:
         return build_response(

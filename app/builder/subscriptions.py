@@ -107,92 +107,66 @@ class SubscriptionBuilder:
 
         today = datetime.now().date()
         start_date = datetime.combine(today, datetime.min.time())
+        end_of_the_today = datetime.combine(today, datetime.max.time())
+
         end_date = start_date + timedelta(days=30 * months_multiplier)
 
         # Busca o plano atual da organização
-        organization_plan_in_db = await self.__organization_plan_service.check_if_period_is_available(
+        organization_plans = await self.__organization_plan_service.check_if_period_is_available(
             organization_id=subscription.organization_id,
             start_date=start_date,
-            end_date=end_date
+            end_date=end_of_the_today
         )
 
-        if not organization_plan_in_db:
+        if not organization_plans:
             raise BadRequestException("Organização não possui um plano para atualizar")
 
         # Verifica se o plano está pago
+        current_organization_plan = organization_plans[0]
+
         invoices = await self.__invoice_service.search_by_organization_plan_id(
-            organization_plan_id=organization_plan_in_db.id
+            organization_plan_id=current_organization_plan.id
         )
 
         paid_invoice = next((invoice for invoice in invoices if invoice.status == InvoiceStatus.PAID), None)
 
-        if paid_invoice:
-            # Plano ativo (pago)
-            await self.__cancel_pending_payments(organization_plan_id=organization_plan_in_db.id)
+        await self.__cancel_pending_payments(organization_plan_id=current_organization_plan.id)
 
+        credits = 0
+
+        if paid_invoice:
             credits = self._calculate_remaining_credits(
-                organization_plan=organization_plan_in_db,
+                organization_plan=current_organization_plan,
                 amount_paid=paid_invoice.amount_paid
             )
             _logger.info(f"R${credits} de crédito gerados para o novo plano - organização {subscription.organization_id}")
 
-            # Finalizar o plano atual ontem
-            yesterday = (datetime.now() - timedelta(days=1)).date()
-            organization_plan_in_db.end_date = datetime.combine(yesterday, datetime.max.time())
-            await self.__organization_plan_service.update(
-                id=organization_plan_in_db.id,
-                organization_id=organization_plan_in_db.organization_id,
-                updated_organization_plan=organization_plan_in_db
-            )
-            _logger.info(f"Plano atual finalizado em {organization_plan_in_db.end_date}")
+        today = datetime.now().date()
+        start_date = datetime.combine(today, datetime.min.time())
+        end_date = start_date + timedelta(days=30 * months_multiplier)
 
-            # Criar um novo plano começando hoje
-            today = datetime.now().date()
-            start_date = datetime.combine(today, datetime.min.time())
-            end_date = start_date + timedelta(days=30 * months_multiplier)
-            new_plan = OrganizationPlan(
-                plan_id=subscription.plan_id,
-                allow_additional=subscription.allow_additional,
-                start_date=start_date,
-                end_date=end_date
-            )
-            new_plan_in_db = await self.__organization_plan_service.create(
-                organization_plan=new_plan,
-                organization_id=subscription.organization_id
-            )
-            discount = credits
-            observation = {"credits": credits} if credits > 0 else {}
+        new_plan = OrganizationPlan(
+            plan_id=subscription.plan_id,
+            allow_additional=subscription.allow_additional,
+            start_date=start_date,
+            end_date=end_date
+        )
 
-        else:
-            # Plano não ativo (não pago)
-            await self.__cancel_pending_payments(organization_plan_id=organization_plan_in_db.id)
+        new_plan_in_db = await self.__organization_plan_service.create(
+            organization_plan=new_plan,
+            organization_id=subscription.organization_id
+        )
 
-            # Atualizar o plano existente
-            today = datetime.now().date()
-            start_date = datetime.combine(today, datetime.min.time())
-            end_date = start_date + timedelta(days=30 * months_multiplier)
-
-            organization_plan_in_db.plan_id = subscription.plan_id
-            organization_plan_in_db.allow_additional = subscription.allow_additional
-            organization_plan_in_db.start_date = start_date
-            organization_plan_in_db.end_date = end_date
-
-            await self.__organization_plan_service.update(
-                id=organization_plan_in_db.id,
-                organization_id=organization_plan_in_db.organization_id,
-                updated_organization_plan=organization_plan_in_db
-            )
-
-            _logger.info(f"Plano existente atualizado para começar em {start_date} e terminar em {end_date}")
-
-            discount = 0
-            observation = {}
-            new_plan_in_db = organization_plan_in_db
+        discount = credits
+        observation = {"credits": credits} if credits > 0 else {}
 
         # Gera a preferência de pagamento e a fatura
         organization_in_db = await self.__organization_service.search_by_id(id=subscription.organization_id)
+
         user_info = {"email": organization_in_db.email or user.email, "name": user.name}
+
         label = subscription.get_label()
+
         invoice_in_db, init_point, external_reference = await self._create_invoice_and_preference(
             plan_name=plan_in_db.name,
             subscription_price=subscription_price,
@@ -247,10 +221,8 @@ class SubscriptionBuilder:
             invoice.status = InvoiceStatus.PAID
             invoice.amount_paid = 0
 
-        invoice_in_db = await self.__invoice_service.create(
-            invoice=invoice,
-            organization_id=organization_id
-        )
+        invoice_in_db = await self.__invoice_service.create(invoice=invoice)
+
         return invoice_in_db, init_point, external_reference
 
     def _calculate_remaining_credits(self, organization_plan: OrganizationPlan, amount_paid: float) -> float:
@@ -320,6 +292,10 @@ class SubscriptionBuilder:
 
     async def update_payment(self, payment_id: str) -> InvoiceInDB:
         payment_data = self.__mp_integration.get_payment(payment_id)
+
+        if not payment_data:
+            return
+
         payment_status = payment_data.get("status")
 
         status_map = {
@@ -344,6 +320,34 @@ class SubscriptionBuilder:
         if internal_status == InvoiceStatus.PAID:
             update_invoice.paid_at = datetime.now()
             update_invoice.amount_paid = invoice_in_db.amount
+
+            current_organization_plan = await self.__organization_plan_service.search_by_id(id=invoice_in_db.organization_plan_id)
+
+            # Cancel previous plans
+            organization_plans = await self.__organization_plan_service.check_if_period_is_available(
+                organization_id=current_organization_plan.organization_id,
+                start_date=current_organization_plan.start_date,
+                end_date=current_organization_plan.end_date
+            )
+
+            if organization_plans:
+                yesterday = (datetime.now() - timedelta(days=1)).date()
+
+                for organization_plan in organization_plans:
+                    if organization_plan.id == current_organization_plan.id:
+                        continue
+
+                    if organization_plan.end_date < datetime.now():
+                        continue
+
+                    organization_plan.end_date = datetime.combine(yesterday, datetime.max.time())
+
+                    await self.__organization_plan_service.update(
+                        id=organization_plan.id,
+                        organization_id=organization_plan.organization_id,
+                        updated_organization_plan=organization_plan
+                    )
+                    _logger.info(f"Plano atual finalizado em {organization_plan.end_date}")
 
         updated_invoice = await self.__invoice_service.update(
             id=invoice_in_db.id,

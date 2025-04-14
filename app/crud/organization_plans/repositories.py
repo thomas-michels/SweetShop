@@ -43,20 +43,16 @@ class OrganizationPlanRepository(Repository):
 
             organization_plan_model.update(**organization_plan.model_dump(exclude=["active_plan", "has_paid_invoice"]))
 
-            return await self.select_by_id(
-                id=organization_plan.id,
-                organization_id=organization_plan.organization_id
-            )
+            return await self.select_by_id(id=organization_plan.id)
 
         except Exception as error:
             _logger.error(f"Error on update_organization_plan: {str(error)}")
             raise UnprocessableEntity(message="Error on update OrganizationPlan")
 
-    async def select_by_id(self, id: str, organization_id: str, raise_404: bool = True) -> OrganizationPlanInDB:
+    async def select_by_id(self, id: str, raise_404: bool = True) -> OrganizationPlanInDB:
         try:
             organization_plan_model: OrganizationPlanModel = OrganizationPlanModel.objects(
                 id=id,
-                organization_id=organization_id,
                 is_active=True,
             ).first()
 
@@ -160,17 +156,19 @@ class OrganizationPlanRepository(Repository):
             _logger.error(f"Error on select_active_plan: {str(error)}")
             raise NotFoundError(message="OrganizationPlans not found")
 
-    async def check_if_period_is_available(self, start_date: datetime, end_date: datetime, organization_id: str) -> OrganizationPlanInDB:
+    async def check_if_period_is_available(self, start_date: datetime, end_date: datetime, organization_id: str) -> List[OrganizationPlanInDB]:
         existing_plan = OrganizationPlanModel.objects(
             (
                 Q(start_date__lte=end_date) &
                 Q(end_date__gte=start_date)
             ),
             organization_id=organization_id
-        ).first()
+        )
+
+        organization_plans = []
 
         if existing_plan:
-            return await self.select_by_id(
-                id=existing_plan.id,
-                organization_id=organization_id
-            )
+            for organization_plan_model in existing_plan.order_by("-end_date"):
+                organization_plans.append(OrganizationPlanInDB.model_validate(organization_plan_model))
+
+            return organization_plans

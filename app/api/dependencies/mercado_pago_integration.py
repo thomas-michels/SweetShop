@@ -128,7 +128,6 @@ class MercadoPagoIntegration:
 
         except Exception as error:
             _logger.error(f"Error on get_payment: {str(error)}")
-            raise InternalErrorException("Error fetching payment details")
 
     def get_authorized_payments(self, authorized_payment_id: str) -> dict:
         """

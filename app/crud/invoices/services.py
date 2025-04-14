@@ -16,11 +16,8 @@ class InvoiceServices:
         self.__invoice_repository = invoice_repository
         self.__organization_plan_repository = organization_plan_repository
 
-    async def create(self, invoice: Invoice, organization_id: str) -> InvoiceInDB:
-        await self.__organization_plan_repository.select_by_id(
-            id=invoice.organization_plan_id,
-            organization_id=organization_id
-        )
+    async def create(self, invoice: Invoice) -> InvoiceInDB:
+        await self.__organization_plan_repository.select_by_id(id=invoice.organization_plan_id)
 
         invoice_in_db = await self.__invoice_repository.create(invoice=invoice)
 
