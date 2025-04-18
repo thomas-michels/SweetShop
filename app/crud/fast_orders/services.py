@@ -149,15 +149,35 @@ class FastOrderServices:
 
         return fast_order_in_db
 
+    async def search_count(
+        self,
+        day: datetime = None,
+        start_date: datetime = None,
+        end_date: datetime = None
+    ) -> FastOrderInDB:
+        quantity = await self.__fast_order_repository.select_count(
+            day=day,
+            start_date=start_date,
+            end_date=end_date
+        )
+
+        return quantity
+
     async def search_all(
         self,
         expand: List[str] = [],
         day: datetime = None,
         start_date: datetime = None,
         end_date: datetime = None,
+        page: int = None,
+        page_size: int = None
     ) -> List[FastOrderInDB]:
         orders = await self.__fast_order_repository.select_all(
-            day=day, start_date=start_date, end_date=end_date
+            day=day,
+            start_date=start_date,
+            end_date=end_date,
+            page=page,
+            page_size=page_size
         )
         return orders
 

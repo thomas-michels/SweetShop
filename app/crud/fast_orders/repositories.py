@@ -85,11 +85,41 @@ class FastOrderRepository(Repository):
             _logger.error(f"Error on select_by_id: {str(error)}")
             raise NotFoundError(message=f"FastOrder #{id} not found")
 
+    async def select_count(
+        self,
+        day: datetime = None,
+        start_date: datetime = None,
+        end_date: datetime = None
+    ) -> int:
+        try:
+            objects = OrderModel.objects(
+                is_active=True,
+                is_fast_order=True,
+                organization_id=self.__organization_id,
+            )
+
+            if day:
+                objects = objects(order_date=day)
+
+            if start_date:
+                objects = objects.filter(order_date__gte=start_date)
+
+            if end_date:
+                objects = objects.filter(order_date__lt=end_date)
+
+            return max(objects.count(), 0)
+
+        except Exception as error:
+            _logger.error(f"Error on select_count: {str(error)}")
+            return 0
+
     async def select_all(
         self,
         day: datetime = None,
         start_date: datetime = None,
         end_date: datetime = None,
+        page: int = None,
+        page_size: int = None
     ) -> List[OrderInDB]:
         try:
             fast_orders = []
@@ -109,7 +139,13 @@ class FastOrderRepository(Repository):
             if end_date:
                 objects = objects.filter(order_date__lt=end_date)
 
-            for order_model in objects.order_by("-order_date").aggregate(
+            objects = objects.order_by("-order_date")
+
+            if page and page_size:
+                skip = (page - 1) * page_size
+                objects = objects.skip(skip).limit(page_size)
+
+            for order_model in objects.aggregate(
                 OrderModel.get_payments()
             ):
                 fast_orders.append(self.__from_order_model(order_model=order_model))
