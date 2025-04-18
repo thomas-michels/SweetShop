@@ -55,14 +55,20 @@ class CustomerRepository(Repository):
             _logger.error(f"Error on update_customer: {str(error)}")
             raise UnprocessableEntity(message="Error on update Customer")
 
-    async def select_count(self) -> int:
+    async def select_count(self, query: str = None, tags: List[str] = []) -> int:
         try:
-            count = CustomerModel.objects(
+            objects = CustomerModel.objects(
                 is_active=True,
                 organization_id=self.organization_id,
-            ).count()
+            )
 
-            return count if count else 0
+            if query:
+                objects = objects.filter(name__iregex=query)
+
+            if tags:
+                objects = objects.filter(tags__in=tags)
+
+            return max(objects.count(), 0)
 
         except Exception as error:
             _logger.error(f"Error on select_count: {str(error)}")
@@ -98,7 +104,13 @@ class CustomerRepository(Repository):
             _logger.error(f"Error on select_by_name: {str(error)}")
             raise NotFoundError(message=f"Customer with {name} not found")
 
-    async def select_all(self, query: str, tags: List[str] = []) -> List[CustomerInDB]:
+    async def select_all(
+        self,
+        query: str,
+        tags: List[str] = [],
+        page: int = None,
+        page_size: int = None
+    ) -> List[CustomerInDB]:
         try:
             customers = []
 
@@ -113,7 +125,10 @@ class CustomerRepository(Repository):
             if tags:
                 objects = objects.filter(tags__in=tags)
 
-            for customer_model in objects.order_by("name"):
+            skip = (page - 1) * page_size
+            objects = objects.order_by("name").skip(skip).limit(page_size)
+
+            for customer_model in objects:
                 customers.append(CustomerInDB.model_validate(customer_model))
 
             return customers

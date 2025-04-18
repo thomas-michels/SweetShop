@@ -63,8 +63,11 @@ class CustomerServices:
 
         return await self.__build_complete_customer(customer_in_db=customer_in_db)
 
-    async def search_count(self) -> int:
-        return await self.__repository.select_count()
+    async def search_count(self, query: str = None, tags: List[str] = []) -> int:
+        return await self.__repository.select_count(
+            query=query,
+            tags=tags
+        )
 
     async def search_by_id(
         self, id: str, expand: List[str] = []
@@ -75,9 +78,19 @@ class CustomerServices:
         )
 
     async def search_all(
-        self, query: str, tags: List[str] = [], expand: List[str] = []
+        self,
+        query: str,
+        tags: List[str] = [],
+        expand: List[str] = [],
+        page: int = None,
+        page_size: int = None
     ) -> List[CompleteCustomerInDB]:
-        customers = await self.__repository.select_all(query=query, tags=tags)
+        customers = await self.__repository.select_all(
+            query=query,
+            tags=tags,
+            page=page,
+            page_size=page_size
+        )
         all_customers = []
 
         for customer in customers:
