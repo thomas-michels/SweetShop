@@ -220,8 +220,11 @@ class OrderRepository(Repository):
             if not order_by:
                 order_by = "order_date"
 
-            skip = (page - 1) * page_size
-            objects = objects.order_by(f"-{order_by}").skip(skip).limit(page_size)
+            objects = objects.order_by(f"-{order_by}")
+
+            if page and page_size:
+                skip = (page - 1) * page_size
+                objects = objects.skip(skip).limit(page_size)
 
             objects = objects.aggregate(
                 OrderModel.get_payments()
