@@ -67,6 +67,37 @@ class ExpenseRepository(Repository):
             _logger.error(f"Error on select_count_by_date: {str(error)}")
             return 0
 
+    async def select_count(
+        self,
+        query: str = None,
+        start_date: date = None,
+        end_date: date = None,
+        tags: List[str] = None
+    ) -> int:
+        try:
+            objects = ExpenseModel.objects(
+                is_active=True,
+                organization_id=self.organization_id,
+            )
+
+            if query:
+                objects = objects.filter(name__iregex=query)
+
+            if start_date:
+                objects = objects.filter(expense_date__gte=start_date)
+
+            if end_date:
+                objects = objects.filter(expense_date__lte=end_date)
+
+            if tags:
+                objects = objects.filter(tags__in=tags)
+
+            return max(objects.count(), 0)
+
+        except Exception as error:
+            _logger.error(f"Error on select_count: {str(error)}")
+            return 0
+
     async def select_by_id(self, id: str, raise_404: bool = True) -> ExpenseInDB:
         try:
             expense_model: ExpenseModel = ExpenseModel.objects(
@@ -82,7 +113,15 @@ class ExpenseRepository(Repository):
             if raise_404:
                 raise NotFoundError(message=f"Expense #{id} not found")
 
-    async def select_all(self, query: str, start_date: date = None, end_date: date = None, tags: List[str] = None) -> List[ExpenseInDB]:
+    async def select_all(
+            self,
+            query: str = None,
+            start_date: date = None,
+            end_date: date = None,
+            tags: List[str] = None,
+            page: int = None,
+            page_size: int = None
+        ) -> List[ExpenseInDB]:
         try:
             expenses = []
 
@@ -104,6 +143,10 @@ class ExpenseRepository(Repository):
                 query_filter["tags__in"] = tags
 
             objects = ExpenseModel.objects(**query_filter).order_by("-expense_date")
+
+            if page and page_size:
+                skip = (page - 1) * page_size
+                objects = objects.skip(skip).limit(page_size)
 
             for expense_model in objects:
                 expenses.append(ExpenseInDB.model_validate(expense_model))

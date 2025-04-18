@@ -95,6 +95,21 @@ class ExpenseServices:
         expense_in_db = await self.__expense_repository.select_by_id(id=id)
         return expense_in_db
 
+    async def search_count(
+        self,
+        query: str,
+        start_date: date = None,
+        end_date: date = None,
+        tags: List[str] = [],
+    ) -> int:
+        quantity = await self.__expense_repository.select_count(
+            query=query,
+            start_date=start_date,
+            end_date=end_date,
+            tags=tags,
+        )
+        return quantity
+
     async def search_all(
         self,
         query: str,
@@ -102,9 +117,16 @@ class ExpenseServices:
         end_date: date = None,
         tags: List[str] = [],
         expand: List[str] = [],
+        page: int = None,
+        page_size: int = None
     ) -> List[ExpenseInDB | CompleteExpense]:
         expenses = await self.__expense_repository.select_all(
-            query=query, start_date=start_date, end_date=end_date, tags=tags
+            query=query,
+            start_date=start_date,
+            end_date=end_date,
+            tags=tags,
+            page=page,
+            page_size=page_size
         )
 
         if not expand:
