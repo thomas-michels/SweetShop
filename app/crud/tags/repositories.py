@@ -67,14 +67,17 @@ class TagRepository(Repository):
             _logger.error(f"Error on update_tag: {str(error)}")
             raise UnprocessableEntity(message="Error on update Tag")
 
-    async def select_count(self) -> int:
+    async def select_count(self, query: str = None) -> int:
         try:
-            count = TagModel.objects(
+            objects = TagModel.objects(
                 is_active=True,
                 organization_id=self.organization_id,
-            ).count()
+            )
 
-            return count if count else 0
+            if query:
+                objects = objects.filter(name__iregex=query)
+
+            return max(objects.count(), 0)
 
         except Exception as error:
             _logger.error(f"Error on select_count: {str(error)}")
@@ -111,7 +114,7 @@ class TagRepository(Repository):
             _logger.error(f"Error on select_by_name: {str(error)}")
             raise NotFoundError(message=f"Tag with name {name} not found")
 
-    async def select_all(self, query: str) -> List[TagInDB]:
+    async def select_all(self, query: str, page: int, page_size: int) -> List[TagInDB]:
         try:
             tags = []
 
@@ -123,7 +126,10 @@ class TagRepository(Repository):
             if query:
                 objects = objects.filter(name__iregex=query)
 
-            for tag_model in objects.order_by("name"):
+            skip = (page - 1) * page_size
+            objects = objects.order_by("name").skip(skip).limit(page_size)
+
+            for tag_model in objects:
                 tag_in_db = self.__build_tag(tag_model)
 
                 tags.append(tag_in_db)

@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import List
 from pydantic import Field
 
 from app.core.models.base_schema import GenericModel

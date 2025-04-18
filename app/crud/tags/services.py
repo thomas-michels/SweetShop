@@ -45,8 +45,12 @@ class TagServices:
         tag_in_db = await self.__repository.select_by_id(id=id)
         return tag_in_db
 
-    async def search_all(self, query: str) -> List[TagInDB]:
-        tags = await self.__repository.select_all(query=query)
+    async def search_all(self, query: str, page: int, page_size: int) -> List[TagInDB]:
+        tags = await self.__repository.select_all(query=query, page=page, page_size=page_size)
+        return tags
+
+    async def count_all(self, query: str) -> int:
+        tags = await self.__repository.select_count(query=query)
         return tags
 
     async def delete_by_id(self, id: str) -> TagInDB:
