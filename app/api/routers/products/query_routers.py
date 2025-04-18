@@ -1,9 +1,12 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, Query, Security, Response
+from fastapi import APIRouter, Depends, Query, Request, Security, Response
 
 from app.api.composers import product_composer
 from app.api.dependencies import build_response, decode_jwt
+from app.api.dependencies.pagination_parameters import pagination_parameters
+from app.api.dependencies.paginator import Paginator
+from app.api.dependencies.response import build_list_response
 from app.crud.users import UserInDB
 from app.crud.products import ProductInDB, ProductServices
 
@@ -35,23 +38,38 @@ async def get_product_by_id(
 
 @router.get("/products", responses={200: {"model": List[ProductInDB]}})
 async def get_products(
+    request: Request,
     query: str = Query(default=None),
-    limit: int | None = Query(default=None),
     tags: List[str] = Query(default=[]),
     expand: List[str] = Query(default=[]),
+    pagination: dict = Depends(pagination_parameters),
     current_user: UserInDB = Security(decode_jwt, scopes=["product:get"]),
     product_services: ProductServices = Depends(product_composer),
 ):
+    paginator = Paginator(
+        request=request, pagination=pagination
+    )
+
+    total = await product_services.search_count(
+        query=query,
+        tags=tags
+    )
     products = await product_services.search_all(
         query=query,
         tags=tags,
-        limit=limit,
-        expand=expand
+        expand=expand,
+        page=pagination["page"],
+        page_size=pagination["page_size"]
     )
 
+    paginator.set_total(total=total)
+
     if products:
-        return build_response(
-            status_code=200, message="Products found with success", data=products
+        return build_list_response(
+            status_code=200,
+            message="Products found with success",
+            pagination=paginator.pagination,
+            data=products
         )
 
     else:

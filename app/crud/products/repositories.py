@@ -51,14 +51,20 @@ class ProductRepository(Repository):
             _logger.error(f"Error on update_product: {str(error)}")
             raise UnprocessableEntity(message="Error on update product")
 
-    async def select_count(self) -> int:
+    async def select_count(self, query: str = None, tags: List[str] = []) -> int:
         try:
-            count = ProductModel.objects(
+            objects = ProductModel.objects(
                 is_active=True,
                 organization_id=self.organization_id,
-            ).count()
+            )
 
-            return count if count else 0
+            if query:
+                objects = objects.filter(name__iregex=query)
+
+            if tags:
+                objects = objects.filter(tags__in=tags)
+
+            return max(objects.count(), 0)
 
         except Exception as error:
             _logger.error(f"Error on select_count: {str(error)}")
@@ -79,7 +85,13 @@ class ProductRepository(Repository):
             if raise_404:
                 raise NotFoundError(message=f"Product #{id} not found")
 
-    async def select_all(self, query: str, tags: List[str] = [], limit: int = None) -> List[ProductInDB]:
+    async def select_all(
+        self,
+        query: str,
+        tags: List[str] = [],
+        page: int = None,
+        page_size: int = None
+    ) -> List[ProductInDB]:
         try:
             products = []
 
@@ -94,10 +106,10 @@ class ProductRepository(Repository):
             if tags:
                 objects = objects.filter(tags__in=tags)
 
-            if limit is not None:
-                objects = objects.limit(limit)
+            skip = (page - 1) * page_size
+            objects = objects.order_by("name").skip(skip).limit(page_size)
 
-            for product_model in objects.order_by("name"):
+            for product_model in objects:
                 products.append(ProductInDB.model_validate(product_model))
 
             return products

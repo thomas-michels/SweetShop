@@ -1,5 +1,4 @@
 from typing import List
-from app.api.dependencies.bucket import S3BucketManager
 from app.api.dependencies.get_plan_feature import get_plan_feature
 from app.api.exceptions.authentication_exceptions import UnauthorizedException, BadRequestException
 from app.core.utils.features import Feature
@@ -21,7 +20,6 @@ class ProductServices:
         self.__product_repository = product_repository
         self.__tag_repository = tag_repository
         self.__file_repository = file_repository
-        self.__s3_manager = S3BucketManager(mode="private")
 
     async def create(self, product: Product) -> ProductInDB:
         plan_feature = await get_plan_feature(
@@ -66,8 +64,8 @@ class ProductServices:
 
         return product_in_db
 
-    async def search_count(self) -> int:
-        return await self.__product_repository.select_count()
+    async def search_count(self, query: str = None, tags: List[str] = []) -> int:
+        return await self.__product_repository.select_count(query=query, tags=tags)
 
     async def search_by_id(self, id: str, expand: List[str] = []) -> ProductInDB:
         product_in_db = await self.__product_repository.select_by_id(id=id)
@@ -78,11 +76,19 @@ class ProductServices:
         complete_product = await self.__build_complete_product(products=[product_in_db], expand=expand)
         return complete_product[0]
 
-    async def search_all(self, query: str, tags: List[str] = [], limit: int = None, expand: List[str] = []) -> List[ProductInDB]:
+    async def search_all(
+            self,
+            query: str,
+            tags: List[str] = [],
+            expand: List[str] = [],
+            page: int = None,
+            page_size: int = None
+        ) -> List[ProductInDB]:
         products = await self.__product_repository.select_all(
             query=query,
             tags=tags,
-            limit=limit
+            page=page,
+            page_size=page_size
         )
 
         if not expand:
