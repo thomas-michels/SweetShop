@@ -81,6 +81,58 @@ class OrderRepository(Repository):
             _logger.error(f"Error on select_count_by_date: {str(error)}")
             return 0
 
+    async def select_count(
+        self,
+        customer_id: str,
+        status: OrderStatus,
+        payment_status: List[PaymentStatus],
+        delivery_type: DeliveryType,
+        tags: List[str],
+        start_date: datetime,
+        end_date: datetime,
+        min_total_amount: float,
+        max_total_amount: float,
+    ) -> int:
+        try:
+            objects = OrderModel.objects(
+                is_active=True,
+                is_fast_order=False,
+                organization_id=self.organization_id,
+            )
+
+            if customer_id:
+                objects = objects.filter(customer_id=customer_id)
+
+            if status:
+                objects = objects.filter(status=status.value)
+
+            if payment_status:
+                objects = objects.filter(payment_status__in=payment_status)
+
+            if delivery_type:
+                objects = objects.filter(delivery__delivery_type=delivery_type.value)
+
+            if start_date:
+                objects = objects.filter(order_date__gte=start_date)
+
+            if end_date:
+                objects = objects.filter(order_date__lt=end_date)
+
+            if tags:
+                objects = objects.filter(tags__in=tags)
+
+            if min_total_amount:
+                objects = objects.filter(total_amount__gte=min_total_amount)
+
+            if max_total_amount:
+                objects = objects.filter(total_amount__lte=max_total_amount)
+
+            return max(objects.count(), 0)
+
+        except Exception as error:
+            _logger.error(f"Error on select_count_by_date: {str(error)}")
+            return 0
+
     async def select_by_id(self, id: str, fast_order: bool = False) -> OrderInDB:
         try:
             objects = OrderModel.objects(
@@ -118,7 +170,9 @@ class OrderRepository(Repository):
         min_total_amount: float,
         max_total_amount: float,
         order_by: str = None,
-        ignore_default_filters: bool = False
+        ignore_default_filters: bool = False,
+        page: int = None,
+        page_size: int = None
     ) -> List[OrderInDB]:
         try:
             orders = []
@@ -166,7 +220,10 @@ class OrderRepository(Repository):
             if not order_by:
                 order_by = "order_date"
 
-            objects = objects.order_by(f"-{order_by}").aggregate(
+            skip = (page - 1) * page_size
+            objects = objects.order_by(f"-{order_by}").skip(skip).limit(page_size)
+
+            objects = objects.aggregate(
                 OrderModel.get_payments()
             )
 

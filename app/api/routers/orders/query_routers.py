@@ -1,10 +1,13 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import List
 
-from fastapi import APIRouter, Depends, Query, Response, Security
+from fastapi import APIRouter, Depends, Query, Request, Response, Security
 
 from app.api.composers import order_composer
 from app.api.dependencies import build_response, decode_jwt
+from app.api.dependencies.pagination_parameters import pagination_parameters
+from app.api.dependencies.paginator import Paginator
+from app.api.dependencies.response import build_list_response
 from app.crud.orders import OrderInDB, OrderServices
 from app.crud.orders.schemas import DeliveryType, OrderStatus
 from app.crud.shared_schemas.payment import PaymentStatus
@@ -35,6 +38,7 @@ async def get_order_by_id(
 
 @router.get("/orders", responses={200: {"model": List[OrderInDB]}})
 async def get_orders(
+    request: Request,
     customer_id: str = Query(default=None, alias="customerId"),
     status: OrderStatus = Query(default=None),
     payment_status: List[PaymentStatus] = Query(default=[], alias="paymentStatus"),
@@ -46,6 +50,7 @@ async def get_orders(
     max_total_amount: float | None = Query(default=None, alias="maxTotalAmount"),
     expand: List[str] = Query(default=[]),
     order_by: str | None = Query(default=None),
+    pagination: dict = Depends(pagination_parameters),
     current_user: UserInDB = Security(decode_jwt, scopes=["order:get"]),
     order_services: OrderServices = Depends(order_composer),
 ):
@@ -61,6 +66,22 @@ async def get_orders(
             second=0
         )
 
+    paginator = Paginator(
+        request=request, pagination=pagination
+    )
+
+    total = await order_services.search_count(
+        customer_id=customer_id,
+        status=status,
+        delivery_type=delivery_type,
+        payment_status=payment_status,
+        start_date=start_order_date,
+        end_date=end_order_date,
+        tags=tags,
+        min_total_amount=min_total_amount,
+        max_total_amount=max_total_amount,
+    )
+
     orders = await order_services.search_all(
         customer_id=customer_id,
         status=status,
@@ -73,11 +94,18 @@ async def get_orders(
         max_total_amount=max_total_amount,
         expand=expand,
         order_by=order_by,
+        page=pagination["page"],
+        page_size=pagination["page_size"]
     )
 
+    paginator.set_total(total=total)
+
     if orders:
-        return build_response(
-            status_code=200, message="Orders found with success", data=orders
+        return build_list_response(
+            status_code=200,
+            message="Orders found with success",
+            pagination=paginator.pagination,
+            data=orders
         )
 
     else:

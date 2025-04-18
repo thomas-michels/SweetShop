@@ -196,6 +196,31 @@ class OrderServices:
 
         return await self.__build_complete_order(order_in_db=order_in_db, expand=expand)
 
+    async def search_count(
+        self,
+        status: OrderStatus,
+        payment_status: List[PaymentStatus],
+        delivery_type: DeliveryType,
+        customer_id: str,
+        start_date: datetime,
+        end_date: datetime,
+        tags: List[str],
+        min_total_amount: float,
+        max_total_amount: float,
+    ) -> int:
+        quantity = await self.__order_repository.select_count(
+            customer_id=customer_id,
+            status=status,
+            payment_status=payment_status,
+            delivery_type=delivery_type,
+            start_date=start_date,
+            end_date=end_date,
+            min_total_amount=min_total_amount,
+            max_total_amount=max_total_amount,
+            tags=tags,
+        )
+        return quantity
+
     async def search_all(
         self,
         status: OrderStatus,
@@ -210,6 +235,8 @@ class OrderServices:
         expand: List[str],
         order_by: str = None,
         ignore_default_filters: bool = False,
+        page: int = None,
+        page_size: int = None
     ) -> List[CompleteOrder]:
 
         orders = await self.__order_repository.select_all(
@@ -224,6 +251,8 @@ class OrderServices:
             tags=tags,
             order_by=order_by,
             ignore_default_filters=ignore_default_filters,
+            page=page,
+            page_size=page_size
         )
 
         complete_orders = []
