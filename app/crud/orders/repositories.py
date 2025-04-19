@@ -106,6 +106,12 @@ class OrderRepository(Repository):
             if status:
                 objects = objects.filter(status=status.value)
 
+            else:
+                objects = objects.filter(
+                    Q(status__ne=OrderStatus.DONE.value) |
+                    Q(payment_status__ne=PaymentStatus.PAID.value)
+                )
+
             if payment_status:
                 objects = objects.filter(payment_status__in=payment_status)
 
