@@ -23,7 +23,7 @@ class OrderRepository(Repository):
     async def create(self, order: Order, total_amount: float) -> OrderInDB:
         try:
             order_model = OrderModel(
-                total_amount=total_amount,
+                total_amount=round(total_amount, 2),
                 organization_id=self.organization_id,
                 payment_status=PaymentStatus.PENDING,
                 is_fast_order=False,
@@ -51,6 +51,7 @@ class OrderRepository(Repository):
 
             order_model.update(**order)
             order_model.description = order_model.description.strip() if order_model.description else None
+            order_model.total_amount = round(order_model.total_amount, 2)
 
             order_model.save()
 

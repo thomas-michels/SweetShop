@@ -19,7 +19,7 @@ class Pagination(GenericModel):
     links: Links
 
 
-async def pagination_parameters(page: int = 1, pageSize: int = 1000):
+async def pagination_parameters(page: int = 1, pageSize: int = 15):
     page_size = max(1, pageSize)
     page = max(1, page)
 

@@ -31,7 +31,7 @@ class FastOrderRepository(Repository):
         try:
             order_model = self.__build_order_model(
                 fast_order=fast_order,
-                total_amount=total_amount,
+                total_amount=round(total_amount, 2),
                 payment_status=PaymentStatus.PENDING,
             )
 
@@ -52,10 +52,11 @@ class FastOrderRepository(Repository):
                 organization_id=self.__organization_id,
             ).first()
 
-            for field, total_amount in fast_order.items():
+            for field, value in fast_order.items():
                 if hasattr(order_model, field):
-                    setattr(order_model, field, total_amount)
+                    setattr(order_model, field, value)
 
+            order_model.total_amount = round(order_model.total_amount, 2)
             order_model.save()
 
             return await self.select_by_id(id=fast_order_id)
