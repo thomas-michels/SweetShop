@@ -39,17 +39,29 @@ class MenuServices:
 
         return menu_in_db
 
-    async def search_count(self) -> int:
-        return await self.__menu_repository.select_count()
+    async def search_count(self, query: str = None, is_visible: bool = None) -> int:
+        return await self.__menu_repository.select_count(
+            query=query,
+            is_visible=is_visible
+        )
 
     async def search_by_id(self, id: str) -> MenuInDB:
         menu_in_db = await self.__menu_repository.select_by_id(id=id)
         return menu_in_db
 
-    async def search_all(self, query: str, is_visible: bool = None, expand: List[str] = []) -> List[MenuInDB]:
+    async def search_all(
+        self,
+        query: str,
+        is_visible: bool = None,
+        expand: List[str] = [],
+        page: int = None,
+        page_size: int = None
+    ) -> List[MenuInDB]:
         menus = await self.__menu_repository.select_all(
             query=query,
-            is_visible=is_visible
+            is_visible=is_visible,
+            page=page,
+            page_size=page_size
         )
         return menus
 

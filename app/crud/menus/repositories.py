@@ -51,14 +51,20 @@ class MenuRepository(Repository):
             _logger.error(f"Error on update_menu: {str(error)}")
             raise UnprocessableEntity(message="Error on update menu")
 
-    async def select_count(self) -> int:
+    async def select_count(self, query: str, is_visible: bool = None) -> int:
         try:
-            count = MenuModel.objects(
+            objects = MenuModel.objects(
                 is_active=True,
                 organization_id=self.organization_id,
-            ).count()
+            )
 
-            return count if count else 0
+            if query:
+                objects = objects.filter(name__iregex=query)
+
+            if is_visible is not None:
+                objects = objects.filter(is_visible=is_visible)
+
+            return max(objects.count(), 0)
 
         except Exception as error:
             _logger.error(f"Error on select_count: {str(error)}")
@@ -79,7 +85,13 @@ class MenuRepository(Repository):
             if raise_404:
                 raise NotFoundError(message=f"Menu #{id} not found")
 
-    async def select_all(self, query: str, is_visible: bool = None) -> List[MenuInDB]:
+    async def select_all(
+        self,
+        query: str,
+        is_visible: bool = None,
+        page: int = None,
+        page_size: int = None
+    ) -> List[MenuInDB]:
         try:
             menus = []
 
@@ -94,7 +106,13 @@ class MenuRepository(Repository):
             if is_visible is not None:
                 objects = objects.filter(is_visible=is_visible)
 
-            for menu_model in objects.order_by("created_at"):
+            objects = objects.order_by("name")
+
+            if page and page_size:
+                skip = (page - 1) * page_size
+                objects = objects.skip(skip).limit(page_size)
+
+            for menu_model in objects:
                 menus.append(MenuInDB.model_validate(menu_model))
 
             return menus
