@@ -12,6 +12,7 @@ class OfferModel(BaseDocument):
     unit_cost = FloatField(required=True)
     unit_price = FloatField(required=True)
     products = ListField(DictField(), min_lenght=1)
+    additionals = ListField(DictField(), required=False)
 
     meta = {
         "collection": "offers"
