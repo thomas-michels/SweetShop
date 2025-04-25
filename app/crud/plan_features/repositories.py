@@ -91,7 +91,11 @@ class PlanFeatureRepository(Repository):
                 is_active=True,
             ).first()
 
-            return PlanFeatureInDB.model_validate(plan_feature_model)
+            if plan_feature_model:
+                return PlanFeatureInDB.model_validate(plan_feature_model)
+
+            elif raise_404:
+                raise NotFoundError(message=f"PlanFeature with name {name.value} not found")
 
         except Exception as error:
             _logger.error(f"Error on select_by_name: {str(error)}")

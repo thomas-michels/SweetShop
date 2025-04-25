@@ -82,23 +82,32 @@ class CustomerRepository(Repository):
                 organization_id=self.organization_id
             ).first()
 
-            return CustomerInDB.model_validate(customer_model)
+            if customer_model:
+                return CustomerInDB.model_validate(customer_model)
+
+            elif raise_404:
+                raise NotFoundError(message=f"Customer #{id} not found")
 
         except Exception as error:
-            _logger.error(f"Error on select_by_id: {str(error)}")
             if raise_404:
                 raise NotFoundError(message=f"Customer #{id} not found")
 
+            _logger.error(f"Error on select_by_id: {str(error)}")
+
     async def select_by_name(self, name: str) -> CustomerInDB:
         try:
-            name = name.capitalize()
+            name = name.strip().title()
+
             customer_model: CustomerModel = CustomerModel.objects(
                 name=name,
                 is_active=True,
                 organization_id=self.organization_id
             ).first()
 
-            return CustomerInDB.model_validate(customer_model)
+            if customer_model:
+                return CustomerInDB.model_validate(customer_model)
+
+            raise NotFoundError(message=f"Customer with {name} not found")
 
         except Exception as error:
             _logger.error(f"Error on select_by_name: {str(error)}")
