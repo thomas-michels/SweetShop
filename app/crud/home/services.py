@@ -35,6 +35,7 @@ class HomeServices:
         key = f"metrics:organizations:{self.order_services.organization_id}"
 
         raw_metric = self.redis_manager.get_value(key=key)
+
         if raw_metric:
             raw_metric = json.loads(raw_metric)
             return HomeMetric(**raw_metric)
@@ -83,7 +84,7 @@ class HomeServices:
                 day=now.day, month=now.month, year=now.year
             )
 
-            return orders
+            return orders if orders is not None else []
 
         except UnauthorizedException:
             return []
