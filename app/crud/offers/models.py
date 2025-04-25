@@ -1,4 +1,4 @@
-from mongoengine import StringField, BooleanField, ListField, DictField, FloatField
+from mongoengine import StringField, BooleanField, ListField, DictField, FloatField, IntField
 
 from app.core.models.base_document import BaseDocument
 
@@ -6,6 +6,7 @@ from app.core.models.base_document import BaseDocument
 class OfferModel(BaseDocument):
     organization_id = StringField(required=True)
     section_id = StringField(required=True)
+    position = IntField(required=False)
     name = StringField(max_length=100, required=True)
     description = StringField(required=True)
     is_visible = BooleanField(default=True, required=False)

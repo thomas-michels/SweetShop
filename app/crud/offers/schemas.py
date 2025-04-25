@@ -26,6 +26,7 @@ class CompleteOfferProduct(OfferProduct):
 
 class RequestOffer(GenericModel):
     section_id: str = Field(example="men_123")
+    position: int | None = Field(default=1, example=1)
     name: str = Field(example="Doces")
     description: str = Field(example="Bolos e tortas")
     is_visible: bool = Field(default=False, example=True)
@@ -35,6 +36,7 @@ class RequestOffer(GenericModel):
 
 class Offer(GenericModel):
     section_id: str = Field(example="men_123")
+    position: int | None = Field(default=1, example=1)
     name: str = Field(example="Doces")
     description: str = Field(example="Bolos e tortas")
     is_visible: bool = Field(default=False, example=True)
@@ -45,6 +47,10 @@ class Offer(GenericModel):
 
     def validate_updated_fields(self, update_offer: "UpdateOffer") -> bool:
         is_updated = False
+
+        if update_offer.position is not None:
+            self.position = update_offer.position
+            is_updated = True
 
         if update_offer.name is not None:
             self.name = update_offer.name
@@ -70,6 +76,7 @@ class Offer(GenericModel):
 
 
 class UpdateOffer(GenericModel):
+    position: Optional[int] = Field(default=None, example=1)
     name: Optional[str] = Field(default=None, example="Doces")
     description: Optional[str] = Field(default=None, example="Bolos e tortas")
     is_visible: Optional[bool] = Field(default=None, example=True)

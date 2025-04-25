@@ -88,7 +88,7 @@ class OfferRepository(Repository):
             if is_visible is not None:
                 objects = objects.filter(is_visible=is_visible)
 
-            for offer_model in objects.order_by("created_at"):
+            for offer_model in objects.order_by("position"):
                 offers.append(OfferInDB.model_validate(offer_model))
 
             return offers
