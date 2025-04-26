@@ -16,6 +16,9 @@ class MenuRepository(Repository):
         self.organization_id = organization_id
 
     async def create(self, menu: Menu) -> MenuInDB:
+        if self.select_by_name(name=menu.name, raise_404=False):
+            raise UnprocessableEntity("Um catálogo com esse nome já existe")
+
         try:
             menu_model = MenuModel(
                 created_at=datetime.now(),
@@ -35,6 +38,9 @@ class MenuRepository(Repository):
             raise UnprocessableEntity(message="Error on create new menu")
 
     async def update(self, menu: MenuInDB) -> MenuInDB:
+        if self.select_by_name(name=menu.name, raise_404=False):
+            raise UnprocessableEntity("Um catálogo com esse nome já existe")
+
         try:
             menu_model: MenuModel = MenuModel.objects(
                 id=menu.id,
@@ -84,6 +90,25 @@ class MenuRepository(Repository):
             _logger.error(f"Error on select_by_id: {str(error)}")
             if raise_404:
                 raise NotFoundError(message=f"Menu #{id} not found")
+
+    async def select_by_name(self, name: str, raise_404: bool = True) -> MenuInDB:
+        try:
+            menu_model: MenuModel = MenuModel.objects(
+                name=name.title(),
+                is_active=True,
+                organization_id=self.organization_id
+            ).first()
+
+            if menu_model:
+                return MenuInDB.model_validate(menu_model)
+
+            elif raise_404:
+                raise NotFoundError(message=f"Menu with name {name} not found")
+
+        except Exception as error:
+            _logger.error(f"Error on select_by_name: {str(error)}")
+            if raise_404:
+                raise NotFoundError(message=f"Menu with name {name} not found")
 
     async def select_all(
         self,
