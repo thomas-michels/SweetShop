@@ -16,7 +16,15 @@ class CustomerRepository(Repository):
         super().__init__()
         self.organization_id = organization_id
 
-    async def create(self, customer: Customer) -> CustomerInDB:
+    async def create(self, customer: Customer, skip_validation: bool = False) -> CustomerInDB:
+        if not skip_validation and customer.ddd and customer.phone_number:
+            if self.select_by_phone(
+                ddd=customer.ddd,
+                phone_number=customer.phone_number,
+                raise_404=False
+            ):
+                raise UnprocessableEntity(message="Um cliente com esse telefone já foi cadastrado")
+
         try:
             customer_model = CustomerModel(
                 created_at=datetime.now(),
@@ -36,9 +44,17 @@ class CustomerRepository(Repository):
 
         except Exception as error:
             _logger.error(f"Error on create_customer: {str(error)}")
-            raise UnprocessableEntity(message="Error on create new Customer")
+            raise UnprocessableEntity(message="Erro ao criar cliente")
 
     async def update(self, customer: CustomerInDB) -> CustomerInDB:
+        if customer.ddd and customer.phone_number:
+            if self.select_by_phone(
+                ddd=customer.ddd,
+                phone_number=customer.phone_number,
+                raise_404=False
+            ):
+                raise UnprocessableEntity(message="Um cliente com esse telefone já foi cadastrado")
+
         try:
             customer_model: CustomerModel = CustomerModel.objects(
                 id=customer.id,
@@ -53,7 +69,7 @@ class CustomerRepository(Repository):
 
         except Exception as error:
             _logger.error(f"Error on update_customer: {str(error)}")
-            raise UnprocessableEntity(message="Error on update Customer")
+            raise UnprocessableEntity(message="Erro ao atualizar cliente")
 
     async def select_count(self, query: str = None, tags: List[str] = []) -> int:
         try:
@@ -86,13 +102,34 @@ class CustomerRepository(Repository):
                 return CustomerInDB.model_validate(customer_model)
 
             elif raise_404:
-                raise NotFoundError(message=f"Customer #{id} not found")
+                raise NotFoundError(message=f"Cliente com o ID #{id} não foi encontrado")
 
         except Exception as error:
             if raise_404:
-                raise NotFoundError(message=f"Customer #{id} not found")
+                raise NotFoundError(message=f"Cliente com o ID #{id} não foi encontrado")
 
             _logger.error(f"Error on select_by_id: {str(error)}")
+
+    async def select_by_phone(self, ddd: str, phone_number: str, raise_404: bool = True) -> CustomerInDB:
+        try:
+            customer_model: CustomerModel = CustomerModel.objects(
+                ddd=ddd,
+                phone_number=phone_number,
+                is_active=True,
+                organization_id=self.organization_id
+            ).first()
+
+            if customer_model:
+                return CustomerInDB.model_validate(customer_model)
+
+            elif raise_404:
+                raise NotFoundError(message=f"Cliente com o telefone {ddd} {phone_number} não foi encontrado")
+
+        except Exception as error:
+            if raise_404:
+                raise NotFoundError(message=f"Cliente com o telefone {ddd} {phone_number} não foi encontrado")
+
+            _logger.error(f"Error on select_by_phone: {str(error)}")
 
     async def select_by_name(self, name: str) -> CustomerInDB:
         try:
@@ -107,11 +144,11 @@ class CustomerRepository(Repository):
             if customer_model:
                 return CustomerInDB.model_validate(customer_model)
 
-            raise NotFoundError(message=f"Customer with {name} not found")
+            raise NotFoundError(message=f"Cliente com o nome {name} não foi encontrado")
 
         except Exception as error:
             _logger.error(f"Error on select_by_name: {str(error)}")
-            raise NotFoundError(message=f"Customer with {name} not found")
+            raise NotFoundError(message=f"Cliente com o nome {name} não foi encontrado")
 
     async def select_all(
         self,
@@ -144,7 +181,7 @@ class CustomerRepository(Repository):
 
         except Exception as error:
             _logger.error(f"Error on select_all: {str(error)}")
-            raise NotFoundError(message=f"Customers not found")
+            raise NotFoundError(message=f"Clientes não foram encontrados")
 
     async def delete_by_id(self, id: str) -> CustomerInDB:
         try:
@@ -159,8 +196,8 @@ class CustomerRepository(Repository):
 
                 return CustomerInDB.model_validate(customer_model)
 
-            raise NotFoundError(message=f"Customer #{id} not found")
+            raise NotFoundError(message=f"Cliente com o ID #{id} não foi encontrado")
 
         except Exception as error:
             _logger.error(f"Error on delete_by_id: {str(error)}")
-            raise NotFoundError(message=f"Customer #{id} not found")
+            raise NotFoundError(message=f"Cliente com o ID #{id} não foi encontrado")

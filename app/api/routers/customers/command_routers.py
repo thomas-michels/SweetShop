@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Security
+from fastapi import APIRouter, Depends, Query, Security
 
 from app.api.composers import customer_composer
 from app.api.dependencies import build_response, decode_jwt
@@ -16,10 +16,14 @@ router = APIRouter(tags=["Customers"])
 @router.post("/customers", responses={201: {"model": CustomerInDB}})
 async def create_customer(
     customer: Customer,
+    skip_validation: bool = Query(default=False, alias="skipValidation"),
     customer_services: CustomerServices = Depends(customer_composer),
     current_user: UserInDB = Security(decode_jwt, scopes=["customer:create"]),
 ):
-    customer_in_db = await customer_services.create(customer=customer)
+    customer_in_db = await customer_services.create(
+        customer=customer,
+        skip_validation=skip_validation
+    )
 
     if customer_in_db:
         return build_response(
