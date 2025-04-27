@@ -38,8 +38,8 @@ class MenuRepository(Repository):
             raise UnprocessableEntity(message="Error on create new menu")
 
     async def update(self, menu: MenuInDB) -> MenuInDB:
-        if await self.select_by_name(name=menu.name, raise_404=False):
-            raise UnprocessableEntity("Um catálogo com esse nome já existe")
+        # if await self.select_by_name(name=menu.name, raise_404=False):
+        #     raise UnprocessableEntity("Um catálogo com esse nome já existe")
 
         try:
             menu_model: MenuModel = MenuModel.objects(
