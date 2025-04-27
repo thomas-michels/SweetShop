@@ -82,7 +82,8 @@ class OrganizationServices:
                     raise_404=False
                 )
 
-                self.__s3_manager.delete_file_by_url(file_url=old_file.url)
+                if old_file:
+                    self.__s3_manager.delete_file_by_url(file_url=old_file.url)
 
         is_updated = organization_in_db.validate_updated_fields(update_organization=updated_organization)
 
