@@ -77,7 +77,10 @@ class OrganizationServices:
                 raise BadRequestException(detail="Invalid image for the organization")
 
             if organization_in_db.file_id:
-                old_file = await file_repository.delete_by_id(id=organization_in_db.file_id)
+                old_file = await file_repository.delete_by_id(
+                    id=organization_in_db.file_id,
+                    raise_404=False
+                )
 
                 self.__s3_manager.delete_file_by_url(file_url=old_file.url)
 
