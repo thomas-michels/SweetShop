@@ -18,7 +18,7 @@ class CustomerRepository(Repository):
 
     async def create(self, customer: Customer, skip_validation: bool = False) -> CustomerInDB:
         if not skip_validation and customer.ddd and customer.phone_number:
-            if self.select_by_phone(
+            if await self.select_by_phone(
                 ddd=customer.ddd,
                 phone_number=customer.phone_number,
                 raise_404=False
@@ -48,7 +48,7 @@ class CustomerRepository(Repository):
 
     async def update(self, customer: CustomerInDB) -> CustomerInDB:
         if customer.ddd and customer.phone_number:
-            if self.select_by_phone(
+            if await self.select_by_phone(
                 ddd=customer.ddd,
                 phone_number=customer.phone_number,
                 raise_404=False

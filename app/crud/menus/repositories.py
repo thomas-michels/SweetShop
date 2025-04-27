@@ -16,7 +16,7 @@ class MenuRepository(Repository):
         self.organization_id = organization_id
 
     async def create(self, menu: Menu) -> MenuInDB:
-        if self.select_by_name(name=menu.name, raise_404=False):
+        if await self.select_by_name(name=menu.name, raise_404=False):
             raise UnprocessableEntity("Um catálogo com esse nome já existe")
 
         try:
@@ -38,7 +38,7 @@ class MenuRepository(Repository):
             raise UnprocessableEntity(message="Error on create new menu")
 
     async def update(self, menu: MenuInDB) -> MenuInDB:
-        if self.select_by_name(name=menu.name, raise_404=False):
+        if await self.select_by_name(name=menu.name, raise_404=False):
             raise UnprocessableEntity("Um catálogo com esse nome já existe")
 
         try:
