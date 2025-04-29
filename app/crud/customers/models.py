@@ -1,4 +1,4 @@
-from mongoengine import StringField, ListField, DictField
+from mongoengine import StringField, ListField, DictField, DateTimeField
 
 from app.core.models.base_document import BaseDocument
 
@@ -11,6 +11,7 @@ class CustomerModel(BaseDocument):
     document = StringField(required=False, default=None)
     addresses = ListField(DictField())
     tags = ListField(StringField(), required=False)
+    date_of_birth = DateTimeField(required=False)
 
     meta = {
         "collection": "customers"

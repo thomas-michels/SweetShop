@@ -1,3 +1,4 @@
+from datetime import datetime
 import re
 from typing import List, Optional
 
@@ -17,6 +18,7 @@ class Customer(GenericModel):
     document: str | None = Field(default=None, example="111.555.219-99")
     addresses: List[Address] = Field(default=[])
     tags: List[str] = Field(default=[])
+    date_of_birth: datetime | None = Field(default=None)
 
     @model_validator(mode="after")
     def validate_model(self) -> "Customer":
@@ -73,6 +75,10 @@ class Customer(GenericModel):
             self.tags = update_customer.tags
             is_updated = True
 
+        if update_customer.date_of_birth is not None:
+            self.date_of_birth = update_customer.date_of_birth
+            is_updated = True
+
         return is_updated
 
 
@@ -83,6 +89,7 @@ class UpdateCustomer(GenericModel):
     addresses: Optional[List[Address]] = Field(default=None)
     tags: Optional[List[str]] = Field(default=None)
     document: Optional[str] = Field(default=None)
+    date_of_birth: Optional[datetime] = Field(default=None)
 
     @model_validator(mode="after")
     def validate_model(self) -> "UpdateCustomer":
