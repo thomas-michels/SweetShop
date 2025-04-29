@@ -36,6 +36,6 @@ async def get_plan_feature(organization_id: str, feature_name: Feature) -> PlanF
         plan_id=active_plan.plan_id
     )
 
-    redis_manager.set_value(cache_key, plan_feature.model_dump_json(), expiration=600)
+    redis_manager.set_value(cache_key, plan_feature.model_dump_json(), expiration=900)
 
     return plan_feature

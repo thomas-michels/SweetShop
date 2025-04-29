@@ -14,7 +14,7 @@ router = APIRouter(tags=["Sections"])
 async def get_section_by_id(
     section_id: str,
     expand: List[str] = Query(default=[]),
-    current_user: UserInDB = Security(decode_jwt, scopes=[]),
+    current_user: UserInDB = Security(decode_jwt, scopes=["section:get"]),
     section_services: SectionServices = Depends(section_composer),
 ):
     section_in_db = await section_services.search_by_id(
@@ -38,7 +38,7 @@ async def get_sections(
     menu_id: str,
     is_visible: bool = Query(default=None),
     expand: List[str] = Query(default=[]),
-    current_user: UserInDB = Security(decode_jwt, scopes=[]),
+    current_user: UserInDB = Security(decode_jwt, scopes=["section:get"]),
     section_services: SectionServices = Depends(section_composer),
 ):
     sections = await section_services.search_all(

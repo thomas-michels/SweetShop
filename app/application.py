@@ -29,6 +29,7 @@ from app.api.routers import (
     menu_router,
     offer_router,
     home_router,
+    pre_order_router
 )
 from app.api.routers.exception_handlers import (
     unprocessable_entity_error_422,
@@ -82,6 +83,7 @@ app.include_router(user_router, prefix="/api")
 app.include_router(term_of_use_router, prefix="/api")
 app.include_router(product_router, prefix="/api")
 app.include_router(order_router, prefix="/api")
+app.include_router(pre_order_router, prefix="/api")
 app.include_router(payment_router, prefix="/api")
 app.include_router(fast_order_router, prefix="/api")
 app.include_router(menu_router, prefix="/api")

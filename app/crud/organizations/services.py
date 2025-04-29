@@ -108,7 +108,6 @@ class OrganizationServices:
 
     async def search_all(self, user_id: str = None, expand: List[str] = []) -> List[CompleteOrganization]:
         organizations = await self.__organization_repository.select_all(user_id=user_id)
-
         complete_organizations = []
 
         if not expand:
@@ -201,6 +200,10 @@ class OrganizationServices:
         key = f"user:{user_in_db.user_id}"
         self.redis_manager.delete_value(key=key)
 
+        # organization key
+        key = f"users:{user_in_db.user_id}:organizations"
+        self.redis_manager.delete_value(key=key)
+
         return True
 
     async def update_user_role(self, organization_id: str, user_making_request: str, user_id: str, role: RoleEnum) -> bool:
@@ -280,7 +283,12 @@ class OrganizationServices:
             organization=organization_in_db.model_dump()
         )
 
+        # User key
         key = f"user:{user_in_db.user_id}"
+        self.redis_manager.delete_value(key=key)
+
+        # organization key
+        key = f"users:{user_id}:organizations"
         self.redis_manager.delete_value(key=key)
 
         return True

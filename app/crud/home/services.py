@@ -56,7 +56,7 @@ class HomeServices:
         home_metric.orders_today = len(orders)
 
         self.redis_manager.set_value(
-            key=key, expiration=600, value=home_metric.model_dump_json()
+            key=key, expiration=900, value=home_metric.model_dump_json()
         )
 
         return home_metric

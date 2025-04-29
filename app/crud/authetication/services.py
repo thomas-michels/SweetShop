@@ -36,7 +36,7 @@ class AuthenticationServices:
         self.redis_manager.set_value(
             key=key,
             value=complete_user_in_db.model_dump_json(),
-            expiration=300
+            expiration=3600
         )
 
         return complete_user_in_db
