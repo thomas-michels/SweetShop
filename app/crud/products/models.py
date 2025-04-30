@@ -7,7 +7,7 @@ from app.core.models.base_document import BaseDocument
 class ProductModel(BaseDocument):
     organization_id = StringField(required=True)
     name = StringField(max_length=100, required=True)
-    description = StringField(max_length=255, required=True)
+    description = StringField(required=True)
     unit_price = FloatField(min_value=0, required=True)
     unit_cost = FloatField(min_value=0, required=True)
     tags = ListField(StringField(), required=False)

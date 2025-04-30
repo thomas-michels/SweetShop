@@ -3,6 +3,7 @@ from typing import List
 from pydantic import Field
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
+from app.crud.offers.schemas import OfferInDB
 from app.crud.orders.schemas import Delivery
 from app.crud.shared_schemas.payment import PaymentMethod
 
@@ -62,3 +63,7 @@ class PreOrderInDB(DatabaseModel):
 
 class UpdatePreOrder(GenericModel):
     status: PreOrderStatus = Field()
+
+
+class CompletePreOrder(PreOrderInDB):
+    offers: List[SelectedOffer | OfferInDB] = Field(default=[])

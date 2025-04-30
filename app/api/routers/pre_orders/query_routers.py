@@ -13,10 +13,11 @@ router = APIRouter(tags=["Pre-Orders"])
 @router.get("/pre_orders", responses={200: {"model": List[PreOrderInDB]}})
 async def get_pre_orders(
     status: PreOrderStatus = Query(default=None),
+    expand: List[str] = Query(default=[]),
     current_user: UserInDB = Security(decode_jwt, scopes=["pre-order:get"]),
     pre_order_services: PreOrderServices = Depends(pre_order_composer),
 ):
-    pre_orders = await pre_order_services.search_all(status=status)
+    pre_orders = await pre_order_services.search_all(status=status, expand=expand)
 
     if pre_orders:
         return build_response(
