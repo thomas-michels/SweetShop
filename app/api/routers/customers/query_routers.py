@@ -27,12 +27,12 @@ async def get_customer_by_id(
 
     if customer_in_db:
         return build_response(
-            status_code=200, message="Customer found with success", data=customer_in_db
+            status_code=200, message="Cliente encontrado", data=customer_in_db
         )
 
     else:
         return build_response(
-            status_code=404, message=f"Customer {customer_id} not found", data=None
+            status_code=404, message=f"Cliente #{customer_id} não encontrado", data=None
         )
 
 
@@ -68,7 +68,7 @@ async def get_customers(
     if customers:
         return build_list_response(
             status_code=200,
-            message="Customers found with success",
+            message="Clientes encontrados com sucesso",
             pagination=paginator.pagination,
             data=customers
         )
@@ -86,7 +86,7 @@ async def get_customers_count(
 
     if quantity:
         return build_response(
-            status_code=200, message="Customers count found with success", data=quantity
+            status_code=200, message="Contagem de clientes feita com sucesso", data=quantity
         )
 
     else:

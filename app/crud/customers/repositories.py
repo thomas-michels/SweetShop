@@ -16,8 +16,8 @@ class CustomerRepository(Repository):
         super().__init__()
         self.organization_id = organization_id
 
-    async def create(self, customer: Customer, skip_validation: bool = False) -> CustomerInDB:
-        if not skip_validation and customer.ddd and customer.phone_number:
+    async def create(self, customer: Customer) -> CustomerInDB:
+        if customer.ddd and customer.phone_number:
             if await self.select_by_phone(
                 ddd=customer.ddd,
                 phone_number=customer.phone_number,
@@ -48,11 +48,12 @@ class CustomerRepository(Repository):
 
     async def update(self, customer: CustomerInDB) -> CustomerInDB:
         if customer.ddd and customer.phone_number:
-            if await self.select_by_phone(
+            customer_with_same_phone = await self.select_by_phone(
                 ddd=customer.ddd,
                 phone_number=customer.phone_number,
                 raise_404=False
-            ):
+            )
+            if customer_with_same_phone and customer_with_same_phone.id != customer.id:
                 raise UnprocessableEntity(message="Um cliente com esse telefone já foi cadastrado")
 
         try:

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, Security
+from fastapi import APIRouter, Depends, Security
 
 from app.api.composers import customer_composer
 from app.api.dependencies import build_response, decode_jwt
@@ -16,23 +16,19 @@ router = APIRouter(tags=["Customers"])
 @router.post("/customers", responses={201: {"model": CustomerInDB}})
 async def create_customer(
     customer: Customer,
-    skip_validation: bool = Query(default=False, alias="skipValidation"),
     customer_services: CustomerServices = Depends(customer_composer),
     current_user: UserInDB = Security(decode_jwt, scopes=["customer:create"]),
 ):
-    customer_in_db = await customer_services.create(
-        customer=customer,
-        skip_validation=skip_validation
-    )
+    customer_in_db = await customer_services.create(customer=customer)
 
     if customer_in_db:
         return build_response(
-            status_code=201, message="Customer created with success", data=customer_in_db
+            status_code=201, message="Cliente criado com sucesso", data=customer_in_db
         )
 
     else:
         return build_response(
-            status_code=400, message="Some error happened on create a customer", data=None
+            status_code=400, message="Erro ao criar cliente", data=None
         )
 
 
@@ -47,12 +43,12 @@ async def update_customer(
 
     if customer_in_db:
         return build_response(
-            status_code=200, message="Customer updated with success", data=customer_in_db
+            status_code=200, message="Cliente atualizado com sucesso", data=customer_in_db
         )
 
     else:
         return build_response(
-            status_code=400, message="Some error happened on update a customer", data=None
+            status_code=400, message="Erro ao atualizar cliente", data=None
         )
 
 
@@ -66,10 +62,10 @@ async def delete_customer(
 
     if customer_in_db:
         return build_response(
-            status_code=200, message="Customer deleted with success", data=customer_in_db
+            status_code=200, message="Cliente deletado com sucesso", data=customer_in_db
         )
 
     else:
         return build_response(
-            status_code=404, message=f"Customer {customer_id} not found", data=None
+            status_code=404, message=f"Cliente #{customer_id} não encontrado", data=None
         )

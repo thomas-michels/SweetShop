@@ -20,7 +20,7 @@ class CustomerServices:
         self.__tag_repository = tag_repository
         self.__cache_tags = {}
 
-    async def create(self, customer: Customer, skip_validation: bool = False) -> CompleteCustomerInDB:
+    async def create(self, customer: Customer) -> CompleteCustomerInDB:
         plan_feature = await get_plan_feature(
             organization_id=self.__repository.organization_id,
             feature_name=Feature.MAX_CUSTOMERS,
@@ -38,10 +38,8 @@ class CustomerServices:
         for tag in customer.tags:
             await self.__tag_repository.select_by_id(id=tag)
 
-        customer_in_db = await self.__repository.create(
-            customer=customer,
-            skip_validation=skip_validation
-        )
+        customer_in_db = await self.__repository.create(customer=customer)
+
         return await self.__build_complete_customer(customer_in_db=customer_in_db)
 
     async def update(
