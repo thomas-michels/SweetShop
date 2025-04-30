@@ -15,6 +15,7 @@ class MenuModel(BaseDocument):
     allowed_payment_methods = ListField(StringField(), required=False)
     min_order_price = FloatField(required=False)
     min_delivery_price = FloatField(required=False)
+    max_delivery_price = FloatField(required=False)
     km_tax = FloatField(required=False)
 
     meta = {

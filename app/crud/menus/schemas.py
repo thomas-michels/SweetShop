@@ -18,6 +18,7 @@ class Menu(GenericModel):
     allowed_payment_methods: List[PaymentMethod] = Field(default=[], example=[PaymentMethod.CASH])
     min_order_price: float | None = Field(default=None, example=123)
     min_delivery_price: float | None = Field(default=None, example=123)
+    max_delivery_price: float | None = Field(default=None, example=123)
     km_tax: float | None = Field(default=None, example=123)
 
     def validate_updated_fields(self, update_menu: "UpdateMenu") -> bool:
@@ -63,6 +64,10 @@ class Menu(GenericModel):
             self.min_delivery_price = update_menu.min_delivery_price
             is_updated = True
 
+        if update_menu.max_delivery_price is not None:
+            self.max_delivery_price = update_menu.max_delivery_price
+            is_updated = True
+
         if update_menu.km_tax is not None:
             self.km_tax = update_menu.km_tax
             is_updated = True
@@ -81,6 +86,7 @@ class UpdateMenu(GenericModel):
     allowed_payment_methods: List[PaymentMethod] = Field(default=None, example=[PaymentMethod.CASH])
     min_order_price: Optional[float] = Field(default=None, example=123)
     min_delivery_price: Optional[float] = Field(default=None, example=123)
+    max_delivery_price: Optional[float] = Field(default=None, example=123)
     km_tax: Optional[float] = Field(default=None, example=123)
 
 
