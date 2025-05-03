@@ -8,7 +8,7 @@ class Address(GenericModel):
     city: str = Field(example="Blumenau")
     neighborhood: str = Field(example="Bairro")
     line_1: str = Field(example="Rua de Testes")
-    line_2: str = Field(example="Complemento")
+    line_2: str | None = Field(default=None, example="Complemento")
     number: str = Field(example="123")
 
     @model_validator(mode="after")

@@ -5,12 +5,6 @@ from app.core.models.base_schema import GenericModel
 from app.crud.files.schemas import FileInDB
 
 
-class ProductAdditional(GenericModel):
-    name: str = Field(example="Calabresa")
-    unit_price: float = Field(example=1.5)
-    max_quantity: int | None = Field(default=None, example=10)
-
-
 class OfferProduct(GenericModel):
     product_id: str = Field(example="prod_123")
     name: str = Field(example="name")
@@ -31,7 +25,6 @@ class RequestOffer(GenericModel):
     description: str = Field(example="Bolos e tortas")
     is_visible: bool = Field(default=False, example=True)
     products: List[str] = Field(default=[], min_length=1)
-    additionals: List[ProductAdditional] | None = Field(default=[])
 
 
 class Offer(GenericModel):
@@ -43,7 +36,6 @@ class Offer(GenericModel):
     products: List[OfferProduct] = Field(default=[])
     unit_cost: float = Field(example=10)
     unit_price: float = Field(example=12)
-    additionals: List[ProductAdditional] | None = Field(default=[])
 
     def validate_updated_fields(self, update_offer: "UpdateOffer") -> bool:
         is_updated = False
@@ -68,10 +60,6 @@ class Offer(GenericModel):
             self.products = update_offer.products
             is_updated = True
 
-        if update_offer.additionals is not None:
-            self.additionals = update_offer.additionals
-            is_updated = True
-
         return is_updated
 
 
@@ -81,7 +69,6 @@ class UpdateOffer(GenericModel):
     description: Optional[str] = Field(default=None, example="Bolos e tortas")
     is_visible: Optional[bool] = Field(default=None, example=True)
     products: Optional[List[str]] = Field(default=None, min_length=1)
-    additionals: Optional[List[ProductAdditional]] = Field(default=None)
 
 
 class OfferInDB(Offer, DatabaseModel):

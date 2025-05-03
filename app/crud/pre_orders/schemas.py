@@ -29,7 +29,6 @@ class ProductAdditional(GenericModel):
 class SelectedOffer(GenericModel):
     offer_id: str = Field(example="off_123")
     quantity: int = Field(gt=0, example=1)
-    additionals: List[ProductAdditional] | None = Field(default=[])
 
 
 class PreOrderInDB(DatabaseModel):

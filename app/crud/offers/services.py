@@ -36,8 +36,7 @@ class OfferServices:
             is_visible=request_offer.is_visible,
             unit_price=total_price,
             unit_cost=total_cost,
-            products=products,
-            additionals=request_offer.additionals
+            products=products
         )
 
         offer_in_db = await self.__offer_repository.create(offer=offer)
