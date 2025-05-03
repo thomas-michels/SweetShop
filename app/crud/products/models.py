@@ -1,12 +1,10 @@
 from mongoengine import StringField, FloatField, ListField
-
 from app.core.models.base_document import BaseDocument
-
 
 
 class ProductModel(BaseDocument):
     organization_id = StringField(required=True)
-    name = StringField(max_length=100, required=True)
+    name = StringField(required=True)
     description = StringField(required=True)
     unit_price = FloatField(min_value=0, required=True)
     unit_cost = FloatField(min_value=0, required=True)
@@ -14,14 +12,7 @@ class ProductModel(BaseDocument):
     file_id = StringField(required=False)
 
     meta = {
-        "collection": "products",
-        "indexes": [
-            {
-                "fields": ["$name", "$description"],
-                "default_language": "portuguese",
-                "weights": {"name": 10, "description": 9}
-            }
-        ]
+        "collection": "products"
     }
 
     def update(self, **kwargs):

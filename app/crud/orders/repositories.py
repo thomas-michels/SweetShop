@@ -55,9 +55,6 @@ class OrderRepository(Repository):
 
             order_model.save()
 
-            if order_model.status == OrderStatus.CANCELED:
-                return await self.delete_by_id(id=order_id)
-
             return await self.select_by_id(id=order_id)
 
         except ValidationError:

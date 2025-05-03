@@ -7,7 +7,7 @@ class OfferModel(BaseDocument):
     organization_id = StringField(required=True)
     section_id = StringField(required=True)
     position = IntField(required=False)
-    name = StringField(max_length=100, required=True)
+    name = StringField(required=True)
     description = StringField(required=True)
     is_visible = BooleanField(default=True, required=False)
     unit_cost = FloatField(required=True)
