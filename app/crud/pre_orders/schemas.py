@@ -21,11 +21,6 @@ class PreOrderCustomer(GenericModel):
     phone_number: str = Field(example="998899889")
 
 
-class ProductAdditional(GenericModel):
-    name: str = Field(example="Calabresa")
-    quantity: int = Field(default=1, example=10, gt=0)
-
-
 class SelectedOffer(GenericModel):
     offer_id: str = Field(example="off_123")
     quantity: int = Field(gt=0, example=1)

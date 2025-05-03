@@ -26,3 +26,23 @@ async def get_pre_orders(
 
     else:
         return Response(status_code=204)
+
+
+@router.get("/pre_orders/{pre_order_id}", responses={200: {"model": List[PreOrderInDB]}})
+async def get_pre_orders(
+    pre_order_id: str,
+    expand: List[str] = Query(default=[]),
+    current_user: UserInDB = Security(decode_jwt, scopes=["pre-order:get"]),
+    pre_order_services: PreOrderServices = Depends(pre_order_composer),
+):
+    pre_order_in_db = await pre_order_services.search_by_id(id=pre_order_id, expand=expand)
+
+    if pre_order_in_db:
+        return build_response(
+            status_code=200, message="Pré pedido encontrado com sucesso", data=pre_order_in_db
+        )
+
+    else:
+        return build_response(
+            status_code=404, message="Pré pedido encontrado não encontrado"
+        )
