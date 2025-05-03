@@ -28,8 +28,8 @@ async def get_pre_orders(
         return Response(status_code=204)
 
 
-@router.get("/pre_orders/{pre_order_id}", responses={200: {"model": List[PreOrderInDB]}})
-async def get_pre_orders(
+@router.get("/pre_orders/{pre_order_id}", responses={200: {"model": PreOrderInDB}})
+async def get_pre_order_by_id(
     pre_order_id: str,
     expand: List[str] = Query(default=[]),
     current_user: UserInDB = Security(decode_jwt, scopes=["pre-order:get"]),
