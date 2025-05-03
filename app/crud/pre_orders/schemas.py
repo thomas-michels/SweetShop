@@ -32,6 +32,7 @@ class SelectedOffer(GenericModel):
 
 
 class PreOrderInDB(DatabaseModel):
+    code: str = Field(example="45623")
     menu_id: str = Field(example="men_123")
     payment_method: PaymentMethod = Field(example=PaymentMethod.CASH)
     customer: PreOrderCustomer = Field(example={
