@@ -91,7 +91,9 @@ class PreOrderServices:
                     offer_in_db = self.__cache_offers.get(offer.offer_id)
 
                 if offer_in_db:
-                    complete_offers.append(offer_in_db)
+                    offer_copy = offer_in_db.model_copy(deep=True)
+                    offer_copy.quantity = offer.quantity
+                    complete_offers.append(offer_copy)
 
             complete_pre_order.offers = complete_offers
 
