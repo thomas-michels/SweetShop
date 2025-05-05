@@ -45,9 +45,6 @@ class Delivery(GenericModel):
     @model_validator(mode="after")
     def validate_model(self) -> "Delivery":
         if self.delivery_type == DeliveryType.DELIVERY:
-            if not self.delivery_at:
-                raise ValueError("`delivery_at` must be set for DELIVERY type")
-
             if self.address is None:
                 raise ValueError("`address` must be set for DELIVERY type")
 
