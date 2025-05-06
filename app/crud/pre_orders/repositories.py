@@ -68,9 +68,6 @@ class PreOrderRepository(Repository):
             if status is not None:
                 objects = objects.filter(status=status.value)
 
-            else:
-                objects = objects.filter(status__in=[PreOrderStatus.PENDING.value, None])
-
             for pre_order_model in objects.order_by("-created_at"):
                 pre_orders.append(PreOrderInDB.model_validate(pre_order_model))
 
