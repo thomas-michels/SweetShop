@@ -39,8 +39,8 @@ class Delivery(GenericModel):
         default=DeliveryType.WITHDRAWAL, example=DeliveryType.WITHDRAWAL
     )
     delivery_at: datetime | None = Field(default=None, example=str(datetime.now()))
-    address: Address | None = Field(default=None)
     delivery_value: float | None = Field(default=None)
+    address: Address | None = Field(default=None)
 
     @model_validator(mode="after")
     def validate_model(self) -> "Delivery":
@@ -50,6 +50,9 @@ class Delivery(GenericModel):
 
             if self.delivery_value is None:
                 raise ValueError("`delivery_value` must be set for DELIVERY type")
+
+            if self.delivery_at is None:
+                raise ValueError("`delivery_at` must be set for DELIVERY type")
 
         else:  # WITHDRAWAL
             if self.delivery_at or self.address or self.delivery_value:
