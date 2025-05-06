@@ -54,6 +54,7 @@ class PreOrderInDB(GenericModel, DatabaseModel):
         }
     ])
     status: PreOrderStatus | None = Field(default=PreOrderStatus.PENDING, example=PreOrderStatus.ACCEPTED)
+    total_amount: float | None = Field(default=None, example=123)
 
 
 class UpdatePreOrder(GenericModel):

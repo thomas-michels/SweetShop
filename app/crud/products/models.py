@@ -1,5 +1,26 @@
-from mongoengine import StringField, FloatField, ListField
+from mongoengine import StringField, FloatField, ListField, EmbeddedDocument, EmbeddedDocumentListField, IntField, BooleanField
 from app.core.models.base_document import BaseDocument
+
+
+class Item(EmbeddedDocument):
+    id = StringField(required=True)
+    name = StringField(required=True)
+    description = StringField(required=False)
+    file_id = StringField(required=False)
+    unit_price = FloatField(min_value=0, required=True)
+    unit_cost = FloatField(min_value=0, required=True)
+
+
+class Section(EmbeddedDocument):
+    title = StringField(required=True)
+    description = StringField(required=False)
+    position = IntField(min_value=1, required=True)
+    type = StringField(required=True)
+    min_choices = IntField(min_value=0, required=True)
+    max_choices = IntField(min_value=0, required=True)
+    is_required = BooleanField(default=False)
+    default_item_id = StringField(required=False)
+    items = EmbeddedDocumentListField(Item, required=True)
 
 
 class ProductModel(BaseDocument):
@@ -10,6 +31,7 @@ class ProductModel(BaseDocument):
     unit_cost = FloatField(min_value=0, required=True)
     tags = ListField(StringField(), required=False)
     file_id = StringField(required=False)
+    sections = EmbeddedDocumentListField(Section, required=False)
 
     meta = {
         "collection": "products"

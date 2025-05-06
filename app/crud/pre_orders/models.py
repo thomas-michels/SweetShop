@@ -1,4 +1,4 @@
-from mongoengine import StringField, ListField, DictField
+from mongoengine import StringField, ListField, DictField, FloatField
 from app.core.models.base_document import BaseDocument
 
 
@@ -12,6 +12,7 @@ class PreOrderModel(BaseDocument):
     observation = StringField(required=False)
     offers = ListField(DictField(), min_lenght=1)
     status = StringField(default=None, required=False)
+    total_amount = FloatField(required=False)
 
     meta = {
         "collection": "pre_orders"

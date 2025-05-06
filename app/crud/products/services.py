@@ -1,6 +1,7 @@
 from typing import List
 from app.api.dependencies.get_plan_feature import get_plan_feature
 from app.api.exceptions.authentication_exceptions import UnauthorizedException, BadRequestException
+from app.core.exceptions.users import UnprocessableEntity
 from app.core.utils.features import Feature
 from app.crud.files.schemas import FilePurpose
 from app.crud.tags.repositories import TagRepository
@@ -41,6 +42,8 @@ class ProductServices:
         for tag in product.tags:
             await self.__tag_repository.select_by_id(id=tag)
 
+        await self.validade_additionals(product=product)
+
         product_in_db = await self.__product_repository.create(product=product)
         return product_in_db
 
@@ -59,6 +62,9 @@ class ProductServices:
             if updated_product.tags is not None:
                 for tag in updated_product.tags:
                     await self.__tag_repository.select_by_id(id=tag)
+
+            if updated_product.sections is not None:
+                await self.validade_additionals(product=updated_product)
 
             product_in_db = await self.__product_repository.update(product=product_in_db)
 
@@ -96,6 +102,20 @@ class ProductServices:
 
         return await self.__build_complete_product(products=products, expand=expand)
 
+    async def delete_by_id(self, id: str) -> ProductInDB:
+        product_in_db = await self.__product_repository.delete_by_id(id=id)
+        return product_in_db
+
+    async def validade_additionals(self, product: Product | UpdateProduct) -> bool:
+        valid = True
+
+        for section in product.sections:
+            if not any(item.id == section.default_item_id for item in product.sections):
+                valid = False
+
+            if not valid:
+                raise UnprocessableEntity(message=f"Um item da seção {section.title} está inválido")
+
     async def __build_complete_product(self, products: List[ProductInDB], expand: List[str]) -> List[CompleteProduct]:
         complete_products = []
         tags = {}
@@ -129,7 +149,3 @@ class ProductServices:
             complete_products.append(complete_product)
 
         return complete_products
-
-    async def delete_by_id(self, id: str) -> ProductInDB:
-        product_in_db = await self.__product_repository.delete_by_id(id=id)
-        return product_in_db
