@@ -165,9 +165,11 @@ class FastOrderRepository(Repository):
                 is_fast_order=True,
                 organization_id=self.__organization_id,
             ).first()
-            order_model.delete()
 
-            return self.__from_order_model(order_model=order_model)
+            if order_model:
+                order_model.delete()
+
+                return self.__from_order_model(order_model=order_model)
 
         except Exception as error:
             _logger.error(f"Error on delete_by_id: {str(error)}")

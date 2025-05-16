@@ -313,16 +313,17 @@ class OrderRepository(Repository):
                 is_fast_order=False,
                 organization_id=self.organization_id,
             ).first()
-            order_model.delete()
 
-            return self.__from_order_model(order_model=order_model)
+            if order_model:
+                order_model.delete()
+                return self.__from_order_model(order_model=order_model)
 
         except ValidationError:
-            raise NotFoundError(message=f"Order #{id} not found")
+            raise NotFoundError(message=f"Pedido #{id} não encontrado")
 
         except Exception as error:
             _logger.error(f"Error on delete_by_id: {str(error)}")
-            raise NotFoundError(message=f"Order #{id} not found")
+            raise NotFoundError(message=f"Pedido #{id} não encontrado")
 
     def __from_order_model(self, order_model: dict | OrderModel) -> OrderInDB:
         try:
