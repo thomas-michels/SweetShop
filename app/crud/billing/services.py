@@ -232,7 +232,7 @@ class BillingServices:
         self.redis_manager.set_value(
             key=key,
             value=billing.model_dump_json(),
-            expiration=600
+            expiration=1800
         )
 
         return billing
