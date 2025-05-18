@@ -18,6 +18,9 @@ class Feature(str, Enum):
     # Menu
     DISPLAY_MENU = "DISPLAY_MENU"
 
+    # Support
+    SUPPORT = "SUPPORT"
+
 
 def get_translation(name: Feature) -> str:
     translations = {
@@ -31,6 +34,7 @@ def get_translation(name: Feature) -> str:
         Feature.DISPLAY_DASHBOARD: "Painel financeiro",
         Feature.DISPLAY_DELINQUENCY: "Inadimplência",
         Feature.DISPLAY_MENU: "Catálogo",
+        Feature.SUPPORT: "Suporte via WhatsApp",
         "-": "Ilimitado",
         "true": "Incluído",
         "false": "Não incluído",

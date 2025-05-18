@@ -28,7 +28,7 @@ class PlanFeatureRepository(Repository):
             plan_feature_model = PlanFeatureModel(
                 created_at=datetime.now(),
                 updated_at=datetime.now(),
-                **plan_feature.model_dump(exclude=["display_name"])
+                **plan_feature.model_dump(exclude=["display_name", "display_value"])
             )
 
             plan_feature_model.save()
