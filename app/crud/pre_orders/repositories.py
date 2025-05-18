@@ -56,7 +56,28 @@ class PreOrderRepository(Repository):
             if raise_404:
                 raise NotFoundError(message=f"PreOrder #{id} not found")
 
-    async def select_all(self, status: PreOrderStatus = None) -> List[PreOrderInDB]:
+    async def select_count(self, status: PreOrderStatus = None) -> int:
+        try:
+            objects = PreOrderModel.objects(
+                is_active=True,
+                organization_id=self.organization_id
+            )
+
+            if status is not None:
+                objects = objects.filter(status=status.value)
+
+            return max(objects.count(), 0)
+
+        except Exception as error:
+            _logger.error(f"Error on select_count: {str(error)}")
+            return 0
+
+    async def select_all(
+            self,
+            status: PreOrderStatus = None,
+            page: int = None,
+            page_size: int = None
+        ) -> List[PreOrderInDB]:
         try:
             pre_orders = []
 
@@ -68,7 +89,11 @@ class PreOrderRepository(Repository):
             if status is not None:
                 objects = objects.filter(status=status.value)
 
-            for pre_order_model in objects.order_by("-created_at"):
+            if page and page_size:
+                skip = (page - 1) * page_size
+                objects = objects.order_by("-created_at").skip(skip).limit(page_size)
+
+            for pre_order_model in objects:
                 pre_orders.append(PreOrderInDB.model_validate(pre_order_model))
 
             return pre_orders
