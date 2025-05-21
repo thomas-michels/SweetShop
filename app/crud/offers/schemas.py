@@ -3,6 +3,7 @@ from pydantic import Field
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
 from app.crud.files.schemas import FileInDB
+from app.crud.products.schemas import CompleteProductSection, ProductSection
 
 
 class OfferProduct(GenericModel):
@@ -12,6 +13,7 @@ class OfferProduct(GenericModel):
     unit_cost: float = Field(example=10)
     unit_price: float = Field(example=12)
     file_id: str | None = Field(default=None, example="file_123")
+    sections: List[ProductSection | CompleteProductSection] | None = Field(default=[])
 
 
 class CompleteOfferProduct(OfferProduct):

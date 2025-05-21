@@ -6,7 +6,7 @@ from app.core.utils.features import Feature
 from app.crud.files.schemas import FilePurpose
 from app.crud.tags.repositories import TagRepository
 from app.crud.files.repositories import FileRepository
-from .schemas import CompleteItem, CompleteProduct, CompleteSection, Product, ProductInDB, UpdateProduct
+from .schemas import CompleteItem, CompleteProduct, CompleteProductSection, Product, ProductInDB, UpdateProduct
 from .repositories import ProductRepository
 
 
@@ -149,7 +149,7 @@ class ProductServices:
                 if complete_product.sections:
                     sections = []
                     for section in complete_product.sections:
-                        complete_section = CompleteSection(**section.model_dump())
+                        complete_section = CompleteProductSection(**section.model_dump())
 
                         items = []
 

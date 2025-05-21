@@ -56,7 +56,7 @@ class ProductSection(GenericModel):
         return self
 
 
-class CompleteSection(ProductSection):
+class CompleteProductSection(ProductSection):
     items: List[CompleteItem] = Field(default=[])
 
 
@@ -67,7 +67,7 @@ class Product(GenericModel):
     unit_cost: float = Field(example=0.75)
     tags: List[str] = Field(default=[])
     file_id: str | None = Field(default=None, example="fil_123")
-    sections: List[ProductSection] | None = Field(default=[])
+    sections: List[ProductSection | CompleteProductSection] | None = Field(default=[])
 
     def get_section_by_id(self, section_id: str) -> "ProductSection":
         if self.sections:
@@ -148,4 +148,3 @@ class ProductInDB(Product, DatabaseModel):
 class CompleteProduct(ProductInDB):
     tags: List[str | TagInDB] = Field(default=[])
     file: str | FileInDB | None = Field(default=None)
-    sections: List[CompleteSection] = Field(default=[])
