@@ -39,8 +39,14 @@ class ProductSection(GenericModel):
     is_required: bool = Field(default=False)
     items: List[Item] = Field(default=[])
 
+    def get_item_by_id(self, item_id: str) -> "Item":
+        if self.items:
+            for item in self.items:
+                if item.id == item_id:
+                    return item
+
     @model_validator(mode="after")
-    def validate_section(self) -> "ProductSection":
+    def validate_product_section(self) -> "ProductSection":
         if not self.id:
             self.id = uuid4().hex
 
@@ -62,6 +68,12 @@ class Product(GenericModel):
     tags: List[str] = Field(default=[])
     file_id: str | None = Field(default=None, example="fil_123")
     sections: List[ProductSection] | None = Field(default=[])
+
+    def get_section_by_id(self, section_id: str) -> "ProductSection":
+        if self.sections:
+            for section in self.sections:
+                if section.id == section_id:
+                    return section
 
     @model_validator(mode="after")
     def validate_price_and_cost(self) -> "Product":

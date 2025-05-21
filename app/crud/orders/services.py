@@ -3,8 +3,9 @@ from typing import List
 
 from app.api.dependencies.get_plan_feature import get_plan_feature
 from app.api.exceptions.authentication_exceptions import UnauthorizedException
+from app.builder.order_calculator import OrderCalculator
 from app.core.configs import get_logger
-from app.core.exceptions import NotFoundError, UnprocessableEntity
+from app.core.exceptions import UnprocessableEntity
 from app.core.utils.features import Feature
 from app.core.utils.get_start_and_end_day_of_month import get_start_and_end_day_of_month
 from app.crud.customers.repositories import CustomerRepository
@@ -41,9 +42,15 @@ class OrderServices:
         self.__product_repository = product_repository
         self.__tag_repository = tag_repository
         self.__customer_repository = customer_repository
+
         self.organization_id = self.__order_repository.organization_id
+
         self.__cache_tags = {}
         self.__cache_customers = {}
+
+        self.__order_calculator = OrderCalculator(
+            product_repository=self.__product_repository
+        )
 
     async def create(self, order: RequestOrder) -> CompleteOrder:
         plan_feature = await get_plan_feature(
@@ -64,35 +71,19 @@ class OrderServices:
                 detail=f"Maximum number of orders reached, Max value: {plan_feature.value}"
             )
 
-        products = []
+        for tag in order.tags:
+            await self.__tag_repository.select_by_id(id=tag)
 
         if order.customer_id is not None:
             await self.__customer_repository.select_by_id(id=order.customer_id)
 
-        for product in order.products:
-            product_in_db = await self.__product_repository.select_by_id(
-                id=product.product_id
-            )
-            products.append(
-                StoredProduct(
-                    product_id=product.product_id,
-                    quantity=product.quantity,
-                    name=product_in_db.name,
-                    unit_cost=product_in_db.unit_cost,
-                    unit_price=product_in_db.unit_price,
-                )
-            )
+        products = await self.__validate_products(raw_products=order.products)
 
-        for tag in order.tags:
-            await self.__tag_repository.select_by_id(id=tag)
-
-        total_amount = await self.__calculate_order_total_amount(
-            products=order.products,
+        total_amount = await self.__order_calculator.calculate(
             additional=order.additional,
+            delivery_value=order.delivery.delivery_value if order.delivery.delivery_value is not None else 0,
             discount=order.discount,
-            delivery_value=(
-                order.delivery.delivery_value if order.delivery.delivery_value else 0
-            ),
+            products=products
         )
 
         order.products = []
@@ -113,20 +104,9 @@ class OrderServices:
             await self.__customer_repository.select_by_id(id=updated_order.customer_id)
 
         if updated_order.products is not None:
-            updated_fields["products"] = []
-
-            for product in updated_order.products:
-                product_in_db = await self.__product_repository.select_by_id(
-                    id=product.product_id
-                )
-                stored_product = StoredProduct(
-                    product_id=product.product_id,
-                    quantity=product.quantity,
-                    name=product_in_db.name,
-                    unit_cost=product_in_db.unit_cost,
-                    unit_price=product_in_db.unit_price,
-                )
-                updated_fields["products"].append(stored_product)
+            updated_fields["products"] = await self.__validate_products(
+                raw_products=updated_order.products
+            )
 
             updated_order.products = None
 
@@ -155,7 +135,7 @@ class OrderServices:
         if updated_order.delivery and updated_order.delivery.delivery_value is not None:
             delivery_value = updated_order.delivery.delivery_value
 
-        total_amount = await self.__calculate_order_total_amount(
+        total_amount = await self.__order_calculator.calculate(
             products=(
                 updated_fields["products"]
                 if updated_fields.get("products") is not None
@@ -176,7 +156,7 @@ class OrderServices:
 
         is_updated = order_in_db.validate_updated_fields(update_order=updated_order)
 
-        if is_updated:
+        if is_updated or updated_fields.get("products"):
             if "products" in updated_fields:
                 updated_fields["products"] = [
                     product.model_dump() for product in updated_fields["products"]
@@ -360,26 +340,47 @@ class OrderServices:
 
         return complete_order
 
-    async def __calculate_order_total_amount(
-        self,
-        products: List[RequestedProduct],
-        delivery_value: float,
-        additional: float,
-        discount: float,
-    ) -> float:
-        total_amount = delivery_value + additional - discount
+    async def __validate_products(self, raw_products: List[RequestedProduct]) -> List[StoredProduct]:
+        products = []
 
-        for product in products:
-            try:
-                product_in_db = await self.__product_repository.select_by_id(
-                    id=product.product_id
-                )
+        for product in raw_products:
+            product_in_db = await self.__product_repository.select_by_id(
+                id=product.product_id
+            )
 
-                total_amount += product_in_db.unit_price * product.quantity
+            stored_product = StoredProduct(
+                product_id=product.product_id,
+                quantity=product.quantity,
+                name=product_in_db.name,
+                unit_cost=product_in_db.unit_cost,
+                unit_price=product_in_db.unit_price,
+            )
 
-            except NotFoundError:
-                raise UnprocessableEntity(
-                    message=f"Product {product.product_id} is invalid!"
-                )
+            if product.items:
+                for item in product.items:
+                    section_in_db = product_in_db.get_section_by_id(section_id=item.section_id)
 
-        return total_amount
+                    if not section_in_db:
+                        raise UnprocessableEntity(message=f"Seção {item.section_id} não encontrada para o produto {product_in_db.name}")
+
+                    item_in_db = section_in_db.get_item_by_id(item_id=item.item_id)
+
+                    if not item_in_db:
+                        raise UnprocessableEntity(message=f"Item {item.item_id} não encontrada na seção {section_in_db.title}")
+
+                    if section_in_db.min_choices > item.quantity:
+                        raise UnprocessableEntity(message=f"A quantidade minima para a seção {section_in_db.title} é {section_in_db.min_choices}")
+
+                    if section_in_db.max_choices < item.quantity:
+                        raise UnprocessableEntity(message=f"A quantidade máxima para a seção {section_in_db.title} é {section_in_db.max_choices}")
+
+                    item.name = item_in_db.name
+                    item.file_id = item_in_db.file_id
+                    item.unit_cost = item_in_db.unit_cost
+                    item.unit_price = item_in_db.unit_price
+
+                stored_product.items.append(item)
+
+            products.append(stored_product)
+
+        return products

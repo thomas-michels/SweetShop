@@ -12,6 +12,7 @@ class Item(EmbeddedDocument):
 
 
 class Section(EmbeddedDocument):
+    id = StringField(required=True)
     title = StringField(required=True)
     description = StringField(required=False)
     position = IntField(min_value=1, required=True)

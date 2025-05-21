@@ -7,6 +7,7 @@ from pydantic import Field, model_validator
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
 from app.crud.customers.schemas import CustomerInDB
+from app.crud.files.schemas import FileInDB
 from app.crud.shared_schemas.address import Address
 from app.crud.shared_schemas.payment import PaymentMethod, PaymentStatus
 from app.crud.tags.schemas import TagInDB
@@ -24,6 +25,20 @@ class DeliveryType(str, Enum):
     FAST_ORDER = "FAST_ORDER"
     WITHDRAWAL = "WITHDRAWAL"
     DELIVERY = "DELIVERY"
+
+
+class SelectedItem(GenericModel):
+    item_id: str = Field(example="123")
+    section_id: str = Field(example="123")
+    name: str = Field(example="Bacon")
+    file_id: str | None = Field(default=None)
+    unit_price: float = Field(ge=0)
+    unit_cost: float = Field(ge=0)
+    quantity: int = Field(ge=1, example=1)
+
+
+class CompleteSelectedItem(SelectedItem):
+    file: FileInDB | None = Field(default=None)
 
 
 class PaymentInOrder(GenericModel, DatabaseModel):
@@ -66,14 +81,16 @@ class Delivery(GenericModel):
 class RequestedProduct(GenericModel):
     product_id: str = Field()
     quantity: int = Field(gt=0, example=1)
+    items: List[SelectedItem] | None = Field(default=[])
 
 
 class StoredProduct(RequestedProduct):
-    product_id: str = Field()
+    product_id: str = Field(example="pro_123")
     name: str = Field(example="Brigadeiro")
     unit_price: float = Field(example=1.5)
     unit_cost: float = Field(example=0.75)
     quantity: int = Field(gt=0, example=1)
+    items: List[SelectedItem | CompleteSelectedItem] | None = Field(default=[])
 
 
 class RequestOrder(GenericModel):
@@ -93,11 +110,6 @@ class RequestOrder(GenericModel):
 
     @model_validator(mode="after")
     def validate_model(self) -> "Order":
-        product_ids = [str(product.product_id) for product in self.products]
-
-        if len(product_ids) != len(set(product_ids)):
-            raise ValueError("Products must contain unique items.")
-
         if len(self.tags) != len(set(self.tags)):
             raise ValueError("Tags must contain unique items.")
 
@@ -149,6 +161,9 @@ class RequestOrder(GenericModel):
             self.discount = update_order.discount
             is_updated = True
 
+        if update_order.products is not None:
+            is_updated = True
+
         return is_updated
 
 
@@ -182,11 +197,6 @@ class UpdateOrder(GenericModel):
         if self.discount is not None:
             if self.discount < 0:
                 raise ValueError("Discount must be grater than zero")
-
-        if self.products is not None:
-            product_ids = [str(product.product_id) for product in self.products]
-            if len(product_ids) != len(set(product_ids)):
-                raise ValueError("Products must contain unique items.")
 
         if self.tags is not None:
             if len(self.tags) != len(set(self.tags)):
