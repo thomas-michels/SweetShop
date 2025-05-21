@@ -6,6 +6,7 @@ from app.crud.billing.services import BillingServices
 from app.crud.expenses.services import ExpenseServices
 from app.crud.fast_orders.services import FastOrderServices
 from app.crud.orders.services import OrderServices
+from app.crud.products.repositories import ProductRepository
 
 
 async def billing_composer(
@@ -15,6 +16,7 @@ async def billing_composer(
 ) -> BillingServices:
 
     billing_services = BillingServices(
+        product_repository=ProductRepository(order_services.organization_id),
         order_services=order_services,
         expenses_services=expense_services,
         fast_order_services=fast_order_services
