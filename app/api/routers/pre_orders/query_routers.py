@@ -16,6 +16,7 @@ router = APIRouter(tags=["Pre-Orders"])
 @router.get("/pre_orders", responses={200: {"model": List[PreOrderInDB]}})
 async def get_pre_orders(
     request: Request,
+    code: str = Query(default=None),
     status: PreOrderStatus = Query(default=None),
     expand: List[str] = Query(default=[]),
     pagination: dict = Depends(pagination_parameters),
@@ -26,10 +27,14 @@ async def get_pre_orders(
         request=request, pagination=pagination
     )
 
-    total = await pre_order_services.search_count(status=status)
+    total = await pre_order_services.search_count(
+        status=status,
+        code=code
+    )
 
     pre_orders = await pre_order_services.search_all(
         status=status,
+        code=code,
         expand=expand,
         page=pagination["page"],
         page_size=pagination["page_size"]

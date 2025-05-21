@@ -40,18 +40,20 @@ class PreOrderServices:
 
         return pre_order_in_db
 
-    async def search_count(self, status: PreOrderStatus = None,) -> int:
-        return await self.__pre_order_repository.select_count(status=status)
+    async def search_count(self, status: PreOrderStatus = None, code: str = None) -> int:
+        return await self.__pre_order_repository.select_count(status=status, code=code)
 
     async def search_all(
             self,
             status: PreOrderStatus = None,
+            code: str = None,
             expand: List[str] = [],
             page: int = None,
             page_size: int = None
         ) -> List[PreOrderInDB]:
         pre_orders = await self.__pre_order_repository.select_all(
             status=status,
+            code=code,
             page=page,
             page_size=page_size
         )
