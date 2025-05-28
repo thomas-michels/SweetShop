@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from typing import List
 from uuid import uuid4
+from app.api.dependencies.email_sender import send_email
 from app.api.dependencies.mercado_pago_integration import MercadoPagoIntegration
 from app.api.exceptions.authentication_exceptions import BadRequestException
 from app.api.shared_schemas.mercado_pago import MPPreferenceModel
@@ -9,10 +10,11 @@ from app.core.utils.get_start_and_end_day_of_month import get_start_and_end_day_
 from app.crud.coupons.services import CouponServices
 from app.crud.invoices.schemas import Invoice, InvoiceInDB, InvoiceStatus, UpdateInvoice
 from app.crud.invoices.services import InvoiceServices
-from app.crud.organization_plans.schemas import OrganizationPlan, UpdateOrganizationPlan
+from app.crud.organization_plans.schemas import OrganizationPlan
 from app.crud.organization_plans.services import OrganizationPlanServices
 from app.crud.organizations.services import OrganizationServices
 from app.crud.plans.services import PlanServices
+from app.crud.shared_schemas.roles import RoleEnum
 from app.crud.users.schemas import UserInDB
 from app.core.configs import get_logger
 
@@ -323,6 +325,8 @@ class SubscriptionBuilder:
 
             current_organization_plan = await self.__organization_plan_service.search_by_id(id=invoice_in_db.organization_plan_id)
 
+            user_in_db = await self.__get_organization_owner(organization_id=current_organization_plan.organization_id)
+
             # Cancel previous plans
             organization_plans = await self.__organization_plan_service.check_if_period_is_available(
                 organization_id=current_organization_plan.organization_id,
@@ -348,6 +352,12 @@ class SubscriptionBuilder:
                         updated_organization_plan=organization_plan
                     )
                     _logger.info(f"Plano atual finalizado em {organization_plan.end_date}")
+
+            with open("./templates/purchase-successed-email.html", mode="r", encoding="UTF-8") as file:
+                message = file.read()
+                message = message.replace("$USER_NAME$", user_in_db.name.title())
+
+            send_email(email_to=[user_in_db.email], title=f"Seu pagamento foi confirmado! Seu plano está ativo no PedidoZ", message=message)
 
         updated_invoice = await self.__invoice_service.update(
             id=invoice_in_db.id,
@@ -398,3 +408,12 @@ class SubscriptionBuilder:
         for invoice_in_db in invoices:
             if invoice_in_db.status == InvoiceStatus.PAID:
                 return invoice_in_db
+
+    async def __get_organization_owner(self, organization_id: str):
+        organization_in_db = await self.__organization_service.search_by_id(
+            id=organization_id, expand=["users"]
+        )
+
+        for user in organization_in_db.users:
+            if user.role == RoleEnum.OWNER:
+                return user
