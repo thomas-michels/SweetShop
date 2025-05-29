@@ -12,14 +12,13 @@ class Item(EmbeddedDocument):
 
 
 class Section(EmbeddedDocument):
+    id = StringField(required=True)
     title = StringField(required=True)
     description = StringField(required=False)
     position = IntField(min_value=1, required=True)
-    type = StringField(required=True)
     min_choices = IntField(min_value=0, required=True)
     max_choices = IntField(min_value=0, required=True)
     is_required = BooleanField(default=False)
-    default_item_id = StringField(required=False)
     items = EmbeddedDocumentListField(Item, required=True)
 
 

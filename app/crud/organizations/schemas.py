@@ -9,6 +9,8 @@ from app.core.utils.validate_document import validate_cnpj, validate_cpf
 from app.crud.files.schemas import FileInDB
 from app.crud.organization_plans.schemas import OrganizationPlanInDB
 from app.crud.shared_schemas.address import Address
+from app.crud.shared_schemas.currency import Currency
+from app.crud.shared_schemas.language import Language
 from app.crud.shared_schemas.roles import RoleEnum
 from app.crud.shared_schemas.user_organization import UserOrganization
 from app.crud.users.schemas import UserInDB
@@ -24,15 +26,21 @@ class CompleteUserOrganization(GenericModel):
 
 class Organization(GenericModel):
     name: str = Field(example="org_123", max_length=100)
+    international_code: str | None = Field(default=None, example="+55")
     ddd: str | None = Field(default=None, example="047", max_length=3)
     phone_number: str | None = Field(default=None, max_length=9)
     address: Address | None = Field(default=None)
     email: str | None = Field(default=None, example="contact@your_company.com")
     document: str | None = Field(default=None, example="111.555.219-99")
+    currency: Currency | None = Field(default=None, example=Currency.BRL)
+    language: Language | None = Field(default=None, example=Language.PORTUGUESE)
     file_id: str | None = Field(default=None, example="file_123")
 
     @model_validator(mode="after")
     def validate_model(self) -> "Organization":
+        if self.international_code is None:
+            self.international_code = "+55"
+
         if self.ddd is not None and self.phone_number is not None:
             if not self.ddd.isdigit() or not self.phone_number.isdigit():
                 raise ValueError("DDD or phone number must be only numbers")
@@ -41,7 +49,7 @@ class Organization(GenericModel):
                 raise ValueError("DDD must have 3 numbers")
 
             if len(self.phone_number) not in [8, 9]:
-                raise ValueError("Phone number must have 8 or 9 digits")
+                raise ValueError("Phone number must have 7, 8 or 9 digits")
 
         if self.email is not None:
             if not re.match(EMAIL_REGEX, self.email):
@@ -92,6 +100,16 @@ class Organization(GenericModel):
 
         if update_organization.document is not None:
             self.document = update_organization.document
+
+        if update_organization.international_code is not None:
+            self.international_code = update_organization.international_code
+
+        if update_organization.language is not None:
+            self.language = update_organization.language
+            is_updated = True
+
+        if update_organization.currency is not None:
+            self.currency = update_organization.currency
             is_updated = True
 
         return is_updated
@@ -99,12 +117,15 @@ class Organization(GenericModel):
 
 class UpdateOrganization(GenericModel):
     name: Optional[str] = Field(default=None, example="org_123", max_length=100)
+    international_code: Optional[str] = Field(default=None, example="+55")
     ddd: Optional[str] = Field(default=None, example="047", max_length=3, pattern=r"^\d+$")
     phone_number: Optional[str] = Field(default=None, max_length=9, pattern=r"^\d+$")
     email: Optional[str] = Field(default=None)
     address: Optional[Address] = Field(default=None)
     file_id: Optional[str] = Field(default=None)
     document: Optional[str] = Field(default=None)
+    language: Optional[Language] = Field(default=None)
+    currency: Optional[Currency] = Field(default=None)
 
     @model_validator(mode="after")
     def validate_model(self) -> "UpdateOrganization":
@@ -115,8 +136,8 @@ class UpdateOrganization(GenericModel):
             if len(self.ddd) != 3:
                 raise ValueError("DDD must have 3 numbers")
 
-            if len(self.phone_number) not in [8, 9]:
-                raise ValueError("Phone number must have 8 or 9 digits")
+            if len(self.phone_number) not in [7, 8, 9]:
+                raise ValueError("Phone number must have 7, 8 or 9 digits")
 
         if self.email is not None:
             if not re.match(EMAIL_REGEX, self.email):

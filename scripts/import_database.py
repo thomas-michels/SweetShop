@@ -5,7 +5,7 @@ from pymongo import MongoClient
 # Configurações
 DATA_DIR = "./backup"  # Caminho para a pasta com os arquivos JSON
 MONGO_URI = "mongodb://user:password@localhost:27017/?authSource=admin"  # URI do MongoDB
-DB_NAME = "sweet-shop"  # Nome do banco de dados
+DB_NAME = "dev"  # Nome do banco de dados
 
 # Conectar ao MongoDB
 client = MongoClient(MONGO_URI)

@@ -1,4 +1,3 @@
-from enum import Enum
 from typing import List, Optional
 from uuid import uuid4
 
@@ -10,12 +9,6 @@ from app.crud.files.schemas import FileInDB
 from app.crud.tags.schemas import TagInDB
 
 
-class SectionType(str, Enum):
-    RADIO_GROUP = "RADIO_GROUP"
-    CHECKBOX = "CHECKBOX"
-    NUMBER = "NUMBER"
-
-
 class Item(GenericModel):
     id: str | None = Field(default=None)
     name: str = Field(example="Bacon")
@@ -25,8 +18,8 @@ class Item(GenericModel):
     unit_cost: float = Field(ge=0)
 
     @model_validator(mode="after")
-    def model_validate(self) -> "Item":
-        if self.id is None:
+    def validate_item(self) -> "Item":
+        if not self.id:
             self.id = uuid4().hex
 
         return self
@@ -36,37 +29,34 @@ class CompleteItem(Item):
     file: FileInDB | None = Field(default=None)
 
 
-class Section(GenericModel):
+class ProductSection(GenericModel):
+    id: str | None = Field(default=None)
     title: str = Field(example="test")
     description: str | None = Field(default=None)
-    position: int = Field(ge=1)
-    type: SectionType = Field(example=SectionType.RADIO_GROUP)
+    position: int | None = Field(default=1, ge=1)
     min_choices: int = Field(ge=0)
     max_choices: int = Field(ge=0)
     is_required: bool = Field(default=False)
-    default_item_id: str | None = Field(default=None)
     items: List[Item] = Field(default=[])
 
+    def get_item_by_id(self, item_id: str) -> "Item":
+        if self.items:
+            for item in self.items:
+                if item.id == item_id:
+                    return item
+
     @model_validator(mode="after")
-    def validate_section(self):
+    def validate_product_section(self) -> "ProductSection":
+        if not self.id:
+            self.id = uuid4().hex
+
         if not self.items:
             raise ValueError("Pelo menos 1 item deve ser adicionado a seção")
-
-        if self.type == SectionType.RADIO_GROUP:
-            if self.min_choices != 1 or self.max_choices != 1:
-                raise ValueError("Para o RADIO_GROUP, min_choices and max_choices precisa ser 1.")
-
-            if not self.default_item_id:
-                raise ValueError("default_item_id é necessário para o RADIO_GROUP.")
-
-        elif self.type == SectionType.CHECKBOX or self.type == SectionType.NUMBER:
-            if self.min_choices > self.max_choices:
-                raise ValueError("min_choices não pode ser maior que o max_choices.")
 
         return self
 
 
-class CompleteSection(Section):
+class CompleteProductSection(ProductSection):
     items: List[CompleteItem] = Field(default=[])
 
 
@@ -77,6 +67,13 @@ class Product(GenericModel):
     unit_cost: float = Field(example=0.75)
     tags: List[str] = Field(default=[])
     file_id: str | None = Field(default=None, example="fil_123")
+    sections: List[ProductSection | CompleteProductSection] | None = Field(default=[])
+
+    def get_section_by_id(self, section_id: str) -> "ProductSection":
+        if self.sections:
+            for section in self.sections:
+                if section.id == section_id:
+                    return section
 
     @model_validator(mode="after")
     def validate_price_and_cost(self) -> "Product":
@@ -129,7 +126,7 @@ class UpdateProduct(GenericModel):
     unit_cost: Optional[float] = Field(default=None, example=0.75)
     tags: Optional[List[str]] = Field(default=None)
     file_id: Optional[str] = Field(default=None, example="fil_123")
-    sections: Optional[List[Section]] = Field(default=None)
+    sections: Optional[List[ProductSection]] = Field(default=None)
 
     @model_validator(mode="after")
     def validate_price_and_cost(self) -> "Product":
@@ -151,4 +148,3 @@ class ProductInDB(Product, DatabaseModel):
 class CompleteProduct(ProductInDB):
     tags: List[str | TagInDB] = Field(default=[])
     file: str | FileInDB | None = Field(default=None)
-    sections: List[CompleteSection] = Field(default=[])

@@ -1,6 +1,7 @@
 from typing import List
 
 from app.api.dependencies.bucket import S3BucketManager
+from app.api.dependencies.email_sender import send_email
 from app.api.dependencies.get_plan_feature import get_plan_feature
 from app.api.dependencies.redis_manager import RedisManager
 from app.api.exceptions.authentication_exceptions import UnauthorizedException, BadRequestException
@@ -42,7 +43,15 @@ class OrganizationServices:
             role=RoleEnum.OWNER,
         )
 
-        return await self.search_by_id(id=organization_in_db.id)
+        organization_in_db = await self.search_by_id(id=organization_in_db.id)
+
+        with open("./templates/post-register-email.html", mode="r", encoding="UTF-8") as file:
+            message = file.read()
+            message = message.replace("$USER_NAME$", owner.name.title())
+
+        send_email(email_to=[owner.email], title=f"Bem-vindo à Pedidoz!", message=message)
+
+        return organization_in_db
 
     async def check_if_can_add_more_users(self, organization_id: str) -> None:
         organization_in_db = await self.search_by_id(id=organization_id)

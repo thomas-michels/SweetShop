@@ -6,7 +6,7 @@ from app.core.utils.features import Feature
 from app.crud.files.schemas import FilePurpose
 from app.crud.tags.repositories import TagRepository
 from app.crud.files.repositories import FileRepository
-from .schemas import CompleteProduct, Product, ProductInDB, UpdateProduct
+from .schemas import CompleteItem, CompleteProduct, CompleteProductSection, Product, ProductInDB, UpdateProduct
 from .repositories import ProductRepository
 
 
@@ -107,12 +107,28 @@ class ProductServices:
         return product_in_db
 
     async def validade_additionals(self, product: Product | UpdateProduct) -> bool:
-        return True
+        if not product.sections:
+            return True
+
         valid = True
 
         for section in product.sections:
-            if not any(item.id == section.default_item_id for item in product.sections):
+            if section.min_choices < 1:
                 valid = False
+
+            if section.max_choices < 1:
+                valid = False
+
+            for item in section.items:
+                if item.file_id is not None:
+                    file = await self.__file_repository.select_by_id(
+                        id=item.file_id,
+                        raise_404=False
+                    )
+
+                    if not file:
+                        valid = False
+                        break
 
             if not valid:
                 raise UnprocessableEntity(message=f"Um item da seção {section.title} está inválido")
@@ -129,6 +145,29 @@ class ProductServices:
                     id=complete_product.file_id,
                     raise_404=False
                 )
+
+                if complete_product.sections:
+                    sections = []
+                    for section in complete_product.sections:
+                        complete_section = CompleteProductSection(**section.model_dump())
+
+                        items = []
+
+                        for item in section.items:
+                            complete_item = CompleteItem(**item.model_dump())
+
+                            if item.file_id:
+                                complete_item.file = await self.__file_repository.select_by_id(
+                                    id=item.file_id,
+                                    raise_404=False
+                                )
+
+                            items.append(complete_item)
+
+                        complete_section.items = items
+                        sections.append(complete_section)
+
+                    complete_product.sections = sections
 
             if "tags" in expand:
                 complete_product.tags = []

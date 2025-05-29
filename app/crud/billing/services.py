@@ -4,11 +4,13 @@ from typing import Dict, List, Tuple
 from app.api.dependencies.get_plan_feature import get_plan_feature
 from app.api.dependencies.redis_manager import RedisManager
 from app.api.exceptions.authentication_exceptions import UnauthorizedException
+from app.builder.order_calculator import OrderCalculator
 from app.core.utils.features import Feature
 from app.crud.expenses.services import ExpenseServices
 from app.crud.fast_orders.services import FastOrderServices
 from app.crud.orders.schemas import PaymentInOrder
 from app.crud.orders.services import OrderServices
+from app.crud.products.repositories import ProductRepository
 from app.crud.shared_schemas.payment import PaymentMethod
 
 from .schemas import Billing, DailySale, ExpanseCategory, ProductProfit, SellingProduct
@@ -18,6 +20,7 @@ class BillingServices:
 
     def __init__(
             self,
+            product_repository: ProductRepository,
             order_services: OrderServices,
             fast_order_services: FastOrderServices,
             expenses_services: ExpenseServices,
@@ -26,6 +29,7 @@ class BillingServices:
         self.fast_order_services = fast_order_services
         self.expenses_services = expenses_services
         self.redis_manager = RedisManager()
+        self.order_calculator = OrderCalculator(product_repository=product_repository)
 
     async def get_billing_for_dashboard(self, month: int, year: int) -> Billing:
         await self.__verify_plan_feature()
@@ -89,17 +93,20 @@ class BillingServices:
         products_profiting: Dict[str, ProductProfit] = {}
 
         for order in orders:
-            for order_product in order.products:
-                if order_product.product_id not in products_profiting:
-                    products_profiting[order_product.product_id] = ProductProfit(
-                        product_id=order_product.product_id,
-                        product_name=order_product.name
+            products = await self.order_calculator.get_totals_per_product(order=order)
+
+            for product in products.values():
+                if product["product_id"] not in products_profiting:
+                    products_profiting[product["product_id"]] = ProductProfit(
+                        product_id=product["product_id"],
+                        product_name=product["name"]
                     )
 
-                product_profit = products_profiting[order_product.product_id]
-                product_profit.total_amount += (order_product.unit_price * order_product.quantity)
-                product_profit.total_profit += ((order_product.unit_price - order_product.unit_cost) * order_product.quantity)
-                product_profit.quantity += order_product.quantity
+                product_profit = products_profiting[product["product_id"]]
+
+                product_profit.total_amount += product["total_amount"]
+                product_profit.total_profit += ((product["total_amount"] - product["total_cost"]))
+                product_profit.quantity += product["quantity"]
 
         products_profiting = list(products_profiting.values())
 
