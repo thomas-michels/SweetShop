@@ -9,11 +9,14 @@ from app.core.models.base_document import BaseDocument
 
 class OrganizationModel(BaseDocument):
     name = StringField(required=True, unique=True)
+    international_code = StringField(required=False)
     ddd = StringField(max_length=3, required=False)
     phone_number = StringField(max_length=9, required=False)
     email = StringField(required=False, default=None)
     address = DictField(required=False, default=None)
     document = StringField(required=False, default=None)
+    language = StringField(required=False, default=None)
+    currency = StringField(required=False, default=None)
     users = ListField(DictField())
     file_id = StringField(required=False, default=None)
 
