@@ -13,6 +13,7 @@ class Billing(GenericModel):
     pix_received: float = Field(default=0, example=123)
     credit_card_received: float = Field(default=0, example=123)
     debit_card_received: float = Field(default=0, example=123)
+    zelle_received: float = Field(default=0, example=123)
     pending_payments: float = Field(default=0, example=123)
 
     def round_numbers(self):
@@ -23,6 +24,7 @@ class Billing(GenericModel):
         self.pix_received = round(self.pix_received, 2)
         self.credit_card_received = round(self.credit_card_received, 2)
         self.debit_card_received = round(self.debit_card_received, 2)
+        self.zelle_received = round(self.zelle_received, 2)
         self.pending_payments = round(self.pending_payments, 2)
 
 

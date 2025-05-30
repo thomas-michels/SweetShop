@@ -19,6 +19,7 @@ class OrganizationModel(BaseDocument):
     currency = StringField(required=False, default=None)
     users = ListField(DictField())
     file_id = StringField(required=False, default=None)
+    unit_distance = StringField(required=False, default=None)
 
     meta = {
         "collection": "organizations"

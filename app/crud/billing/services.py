@@ -268,6 +268,9 @@ class BillingServices:
             elif payment.method == PaymentMethod.DEBIT_CARD:
                 billing.debit_card_received += payment.amount
 
+            elif payment.method == PaymentMethod.ZELLE:
+                billing.zelle_received += payment.amount
+
         if total_paid < total_amount:
             billing.pending_payments += round((total_amount - total_paid), 2)
 

@@ -10,6 +10,7 @@ from app.crud.files.schemas import FileInDB
 from app.crud.organization_plans.schemas import OrganizationPlanInDB
 from app.crud.shared_schemas.address import Address
 from app.crud.shared_schemas.currency import Currency
+from app.crud.shared_schemas.distance import UnitDistance
 from app.crud.shared_schemas.language import Language
 from app.crud.shared_schemas.roles import RoleEnum
 from app.crud.shared_schemas.user_organization import UserOrganization
@@ -35,6 +36,7 @@ class Organization(GenericModel):
     currency: Currency | None = Field(default=None, example=Currency.BRL)
     language: Language | None = Field(default=None, example=Language.PORTUGUESE)
     file_id: str | None = Field(default=None, example="file_123")
+    unit_distance: UnitDistance | None = Field(default=None, example=UnitDistance.KM)
 
     @model_validator(mode="after")
     def validate_model(self) -> "Organization":
@@ -112,6 +114,10 @@ class Organization(GenericModel):
             self.currency = update_organization.currency
             is_updated = True
 
+        if update_organization.unit_distance is not None:
+            self.unit_distance = update_organization.unit_distance
+            is_updated = True
+
         return is_updated
 
 
@@ -126,6 +132,7 @@ class UpdateOrganization(GenericModel):
     document: Optional[str] = Field(default=None)
     language: Optional[Language] = Field(default=None)
     currency: Optional[Currency] = Field(default=None)
+    unit_distance: Optional[UnitDistance] = Field(default=None)
 
     @model_validator(mode="after")
     def validate_model(self) -> "UpdateOrganization":
