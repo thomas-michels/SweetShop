@@ -1,5 +1,5 @@
-from datetime import datetime
 import re
+from datetime import datetime
 from typing import List, Optional
 
 from pydantic import Field, model_validator
@@ -7,18 +7,21 @@ from pydantic import Field, model_validator
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
 from app.core.utils.validate_document import validate_cnpj, validate_cpf
+from app.crud.organizations.schemas import EMAIL_REGEX
 from app.crud.shared_schemas.address import Address
 from app.crud.tags.schemas import TagInDB
 
 
 class Customer(GenericModel):
     name: str = Field(example="Ted Mosby")
+    international_code: str | None = Field(default=None, example="55")
     ddd: str | None = Field(default=None, example="047", max_length=3)
     phone_number: str | None = Field(default=None, max_length=9)
     document: str | None = Field(default=None, example="111.555.219-99")
     addresses: List[Address] = Field(default=[])
     tags: List[str] = Field(default=[])
     date_of_birth: datetime | None = Field(default=None)
+    email: str | None = Field(default=None, example="contact@your_company.com")
 
     @model_validator(mode="after")
     def validate_model(self) -> "Customer":
@@ -29,11 +32,11 @@ class Customer(GenericModel):
             if len(self.ddd) != 3:
                 raise ValueError("DDD must have 3 numbers")
 
-            if len(self.phone_number) not in [8, 9]:
-                raise ValueError("Phone number must have 8 or 9 digits")
+            if len(self.phone_number) not in [7, 8, 9]:
+                raise ValueError("Phone number must have 7, 8 or 9 digits")
 
         if self.document is not None:
-            self.document = re.sub(r'\D', '', self.document)
+            self.document = re.sub(r"\D", "", self.document)
 
             if len(self.document) == 11:
                 if not validate_cpf(self.document):
@@ -45,6 +48,13 @@ class Customer(GenericModel):
 
             else:
                 raise ValueError("Document must be a valid CPF or CNPJ")
+
+        if self.email is not None:
+            if not re.match(EMAIL_REGEX, self.email):
+                raise ValueError("Invalid email")
+
+        if self.international_code is None:
+            self.international_code = "55"
 
         return self
 
@@ -79,17 +89,27 @@ class Customer(GenericModel):
             self.date_of_birth = update_customer.date_of_birth
             is_updated = True
 
+        if update_customer.email is not None:
+            self.email = update_customer.email
+            is_updated = True
+
+        if update_customer.international_code is not None:
+            self.international_code = update_customer.international_code
+            is_updated = True
+
         return is_updated
 
 
 class UpdateCustomer(GenericModel):
     name: Optional[str] = Field(default=None, example="Ted Mosby")
+    international_code: Optional[str] = Field(default=None)
     ddd: Optional[str] = Field(default=None, example="047", max_length=3)
     phone_number: Optional[str] = Field(default=None, max_length=9)
     addresses: Optional[List[Address]] = Field(default=None)
     tags: Optional[List[str]] = Field(default=None)
     document: Optional[str] = Field(default=None)
     date_of_birth: Optional[datetime] = Field(default=None)
+    email: Optional[str] = Field(default=None)
 
     @model_validator(mode="after")
     def validate_model(self) -> "UpdateCustomer":
@@ -100,11 +120,11 @@ class UpdateCustomer(GenericModel):
             if len(self.ddd) != 3:
                 raise ValueError("DDD must have 3 numbers")
 
-            if len(self.phone_number) not in [8, 9]:
-                raise ValueError("Phone number must have 8 or 9 digits")
+            if len(self.phone_number) not in [7, 8, 9]:
+                raise ValueError("Phone number must have 7, 8 or 9 digits")
 
         if self.document is not None:
-            self.document = re.sub(r'\D', '', self.document)
+            self.document = re.sub(r"\D", "", self.document)
 
             if len(self.document) == 11:
                 if not validate_cpf(self.document):
@@ -116,6 +136,10 @@ class UpdateCustomer(GenericModel):
 
             else:
                 raise ValueError("Document must be a valid CPF or CNPJ")
+
+        if self.email is not None:
+            if not re.match(EMAIL_REGEX, self.email):
+                raise ValueError("Invalid email")
 
         return self
 

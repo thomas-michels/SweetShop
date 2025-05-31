@@ -6,9 +6,11 @@ from app.core.models.base_document import BaseDocument
 class CustomerModel(BaseDocument):
     organization_id = StringField(required=True)
     name = StringField(max_length=100, required=True)
+    international_code = StringField(required=False, default=None)
     ddd = StringField(max_length=3, required=False)
     phone_number = StringField(max_length=9, required=False)
     document = StringField(required=False, default=None)
+    email = StringField(required=False, default=None)
     addresses = ListField(DictField())
     tags = ListField(StringField(), required=False)
     date_of_birth = DateTimeField(required=False)

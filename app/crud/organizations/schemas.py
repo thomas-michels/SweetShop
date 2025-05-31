@@ -27,7 +27,7 @@ class CompleteUserOrganization(GenericModel):
 
 class Organization(GenericModel):
     name: str = Field(example="org_123", max_length=100)
-    international_code: str | None = Field(default=None, example="+55")
+    international_code: str | None = Field(default=None, example="55")
     ddd: str | None = Field(default=None, example="047", max_length=3)
     phone_number: str | None = Field(default=None, max_length=9)
     address: Address | None = Field(default=None)
@@ -41,7 +41,7 @@ class Organization(GenericModel):
     @model_validator(mode="after")
     def validate_model(self) -> "Organization":
         if self.international_code is None:
-            self.international_code = "+55"
+            self.international_code = "55"
 
         if self.ddd is not None and self.phone_number is not None:
             if not self.ddd.isdigit() or not self.phone_number.isdigit():
