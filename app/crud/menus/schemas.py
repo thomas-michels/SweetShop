@@ -20,6 +20,8 @@ class Menu(GenericModel):
     min_delivery_price: float | None = Field(default=None, example=123)
     max_delivery_price: float | None = Field(default=None, example=123)
     km_tax: float | None = Field(default=None, example=123)
+    unit_tax: float | None = Field(default=None, example=123)
+    accept_delivery: bool | None = Field(default=None, example=True)
 
     def validate_updated_fields(self, update_menu: "UpdateMenu") -> bool:
         is_updated = False
@@ -72,6 +74,14 @@ class Menu(GenericModel):
             self.km_tax = update_menu.km_tax
             is_updated = True
 
+        if update_menu.unit_tax is not None:
+            self.unit_tax = update_menu.unit_tax
+            is_updated = True
+
+        if update_menu.accept_delivery is not None:
+            self.accept_delivery = update_menu.accept_delivery
+            is_updated = True
+
         return is_updated
 
 
@@ -88,6 +98,8 @@ class UpdateMenu(GenericModel):
     min_delivery_price: Optional[float] = Field(default=None, example=123)
     max_delivery_price: Optional[float] = Field(default=None, example=123)
     km_tax: Optional[float] = Field(default=None, example=123)
+    unit_tax: Optional[float] = Field(default=None, example=123)
+    accept_delivery: Optional[bool] = Field(default=None, example=False)
 
 
 class MenuInDB(Menu, DatabaseModel):
