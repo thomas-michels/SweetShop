@@ -1,8 +1,8 @@
-from datetime import datetime
-
 from pydantic import Field
+
 from app.core.models.base_model import DatabaseModel
 from app.core.models.base_schema import GenericModel
+from app.core.utils.utc_datetime import UTCDateTime
 
 
 class TermOfUse(GenericModel):
@@ -18,15 +18,17 @@ class TermOfUseInDB(TermOfUse, DatabaseModel):
 class TermOfUseAcceptance(GenericModel):
     term_of_use_id: str = Field(example="ter_123")
     user_id: str = Field(example="user_123")
-    accepted_at: float = Field(example=str(datetime.now().timestamp()))
+    accepted_at: float = Field(example=str(UTCDateTime.now().timestamp()))
     ip_address: str = Field(example="192.168.0.1")
     user_agent: str = Field(example="Google Chrome")
     acceptance_method: str = Field(example="button")
     lgpd_consent: bool = Field(default=True, example=True)
     lgpd_purpose: str = Field(default="Aceitação dos Termos de Uso", example="Terms")
-    lgpd_data_retention: str = Field(default="Até a revogação do consentimento ou conforme obrigação legal", example="Terms")
+    lgpd_data_retention: str = Field(
+        default="Até a revogação do consentimento ou conforme obrigação legal",
+        example="Terms",
+    )
     extra_data: dict = Field(default={})
 
 
-class TermOfUseAcceptanceInDB(TermOfUseAcceptance, DatabaseModel):
-    ...
+class TermOfUseAcceptanceInDB(TermOfUseAcceptance, DatabaseModel): ...

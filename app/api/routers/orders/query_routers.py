@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import List
 
 from fastapi import APIRouter, Depends, Query, Request, Response, Security
@@ -8,6 +7,7 @@ from app.api.dependencies import build_response, decode_jwt
 from app.api.dependencies.pagination_parameters import pagination_parameters
 from app.api.dependencies.paginator import Paginator
 from app.api.dependencies.response import build_list_response
+from app.core.utils.utc_datetime import UTCDateTimeType, UTCDateTime
 from app.crud.orders import OrderInDB, OrderServices
 from app.crud.orders.schemas import DeliveryType, OrderStatus
 from app.crud.shared_schemas.payment import PaymentStatus
@@ -44,8 +44,8 @@ async def get_orders(
     payment_status: List[PaymentStatus] = Query(default=[], alias="paymentStatus"),
     delivery_type: DeliveryType = Query(default=None, alias="deliveryType"),
     tags: List[str] = Query(default=[]),
-    start_order_date: datetime = Query(default=None, alias="startOrderDate"),
-    end_order_date: datetime = Query(default=None, alias="endOrderDate"),
+    start_order_date: UTCDateTimeType = Query(default=None, alias="startOrderDate"),
+    end_order_date: UTCDateTimeType = Query(default=None, alias="endOrderDate"),
     min_total_amount: float | None = Query(default=None, alias="minTotalAmount"),
     max_total_amount: float | None = Query(default=None, alias="maxTotalAmount"),
     expand: List[str] = Query(default=[]),
@@ -55,9 +55,9 @@ async def get_orders(
     order_services: OrderServices = Depends(order_composer),
 ):
     if not start_order_date and not end_order_date and not status:
-        today = datetime.today()
+        today = UTCDateTime.today()
 
-        start_order_date = datetime(
+        start_order_date = UTCDateTime(
             year=today.year,
             month=today.month,
             day=1,

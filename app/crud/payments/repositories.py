@@ -1,10 +1,11 @@
-from datetime import datetime
 from typing import List
 
 from pydantic_core import ValidationError
+
 from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.core.repositories.base_repository import Repository
+from app.core.utils.utc_datetime import UTCDateTime
 
 from .models import PaymentModel
 from .schemas import Payment, PaymentInDB
@@ -21,9 +22,9 @@ class PaymentRepository(Repository):
         try:
             payment_model = PaymentModel(
                 organization_id=self.__organization_id,
-                created_at=datetime.now(),
-                updated_at=datetime.now(),
-                **payment.model_dump()
+                created_at=UTCDateTime.now(),
+                updated_at=UTCDateTime.now(),
+                **payment.model_dump(),
             )
             payment_model.save()
 
@@ -36,9 +37,7 @@ class PaymentRepository(Repository):
     async def update(self, payment: PaymentInDB) -> PaymentInDB:
         try:
             payment_model: PaymentModel = PaymentModel.objects(
-                id=payment.id,
-                is_active=True,
-                organization_id=self.__organization_id
+                id=payment.id, is_active=True, organization_id=self.__organization_id
             ).first()
 
             payment_model.update(**payment.model_dump())
@@ -52,9 +51,7 @@ class PaymentRepository(Repository):
     async def select_by_id(self, id: str, raise_404: bool = True) -> PaymentInDB:
         try:
             payment_model: PaymentModel = PaymentModel.objects(
-                id=id,
-                is_active=True,
-                organization_id=self.__organization_id
+                id=id, is_active=True, organization_id=self.__organization_id
             ).first()
 
             return PaymentInDB.model_validate(payment_model)
@@ -74,7 +71,7 @@ class PaymentRepository(Repository):
             objects = PaymentModel.objects(
                 order_id=order_id,
                 is_active=True,
-                organization_id=self.__organization_id
+                organization_id=self.__organization_id,
             )
 
             for payment_model in objects.order_by("payment_date"):
@@ -91,9 +88,7 @@ class PaymentRepository(Repository):
     async def delete_by_id(self, id: str) -> PaymentInDB:
         try:
             payment_model: PaymentModel = PaymentModel.objects(
-                id=id,
-                is_active=True,
-                organization_id=self.__organization_id
+                id=id, is_active=True, organization_id=self.__organization_id
             ).first()
             if payment_model:
                 payment_model.delete()

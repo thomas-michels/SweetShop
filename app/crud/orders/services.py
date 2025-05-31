@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import List
 
 from app.api.dependencies.get_plan_feature import get_plan_feature
@@ -8,6 +7,7 @@ from app.core.configs import get_logger
 from app.core.exceptions import UnprocessableEntity
 from app.core.utils.features import Feature
 from app.core.utils.get_start_and_end_day_of_month import get_start_and_end_day_of_month
+from app.core.utils.utc_datetime import UTCDateTime
 from app.crud.customers.repositories import CustomerRepository
 from app.crud.products.repositories import ProductRepository
 from app.crud.shared_schemas.payment import PaymentStatus
@@ -182,8 +182,8 @@ class OrderServices:
         payment_status: List[PaymentStatus],
         delivery_type: DeliveryType,
         customer_id: str,
-        start_date: datetime,
-        end_date: datetime,
+        start_date: UTCDateTime,
+        end_date: UTCDateTime,
         tags: List[str],
         min_total_amount: float,
         max_total_amount: float,
@@ -207,8 +207,8 @@ class OrderServices:
         payment_status: List[PaymentStatus],
         delivery_type: DeliveryType,
         customer_id: str,
-        start_date: datetime,
-        end_date: datetime,
+        start_date: UTCDateTime,
+        end_date: UTCDateTime,
         tags: List[str],
         min_total_amount: float,
         max_total_amount: float,
@@ -246,8 +246,8 @@ class OrderServices:
 
     async def search_all_without_filters(
         self,
-        start_date: datetime,
-        end_date: datetime,
+        start_date: UTCDateTime,
+        end_date: UTCDateTime,
         expand: List[str] = [],
     ) -> List[CompleteOrder]:
 

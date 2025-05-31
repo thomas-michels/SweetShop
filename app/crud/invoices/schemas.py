@@ -1,4 +1,3 @@
-from datetime import datetime
 from enum import Enum
 from typing import Optional
 
@@ -6,6 +5,7 @@ from pydantic import Field, model_validator
 
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
+from app.core.utils.utc_datetime import UTCDateTime, UTCDateTimeType
 
 
 class InvoiceStatus(str, Enum):
@@ -22,8 +22,10 @@ class Invoice(GenericModel):
     integration_type: str = Field(example="org_plan_123")
     amount: float = Field(example=39.9)
     amount_paid: float | None = Field(default=None, example=39.9)
-    paid_at: datetime | None = Field(default=None, example=str(datetime.now()))
-    status: InvoiceStatus = Field(default=InvoiceStatus.PENDING, example=InvoiceStatus.PENDING)
+    paid_at: UTCDateTimeType | None = Field(default=None, example=str(UTCDateTime.now()))
+    status: InvoiceStatus = Field(
+        default=InvoiceStatus.PENDING, example=InvoiceStatus.PENDING
+    )
     observation: dict | None = Field(default=None, example={})
 
     @model_validator(mode="after")
@@ -70,7 +72,7 @@ class UpdateInvoice(GenericModel):
     integration_id: Optional[str] = Field(default=None, example="org_plan_123")
     amount: Optional[float] = Field(default=None, example=39.9)
     amount_paid: Optional[float] = Field(default=None, example=39.9)
-    paid_at: Optional[datetime] = Field(default=None, example=str(datetime.now()))
+    paid_at: Optional[UTCDateTimeType] = Field(default=None, example=str(UTCDateTime.now()))
     status: Optional[InvoiceStatus] = Field(default=None, example=InvoiceStatus.PENDING)
     observation: Optional[dict] = Field(default=None, example={})
 

@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import List
 
 from mongoengine import Q
@@ -7,6 +6,7 @@ from pydantic_core import ValidationError
 from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.core.repositories.base_repository import Repository
+from app.core.utils.utc_datetime import UTCDateTime
 from app.crud.shared_schemas.payment import PaymentStatus
 
 from .models import OrderModel
@@ -27,12 +27,14 @@ class OrderRepository(Repository):
                 organization_id=self.organization_id,
                 payment_status=PaymentStatus.PENDING,
                 is_fast_order=False,
-                created_at=datetime.now(),
-                updated_at=datetime.now(),
+                created_at=UTCDateTime.now(),
+                updated_at=UTCDateTime.now(),
                 **order.model_dump(),
             )
 
-            order_model.description = order_model.description.strip() if order_model.description else None
+            order_model.description = (
+                order_model.description.strip() if order_model.description else None
+            )
             order_model.save()
 
             return await self.select_by_id(id=order_model.id)
@@ -50,7 +52,9 @@ class OrderRepository(Repository):
             ).first()
 
             order_model.update(**order)
-            order_model.description = order_model.description.strip() if order_model.description else None
+            order_model.description = (
+                order_model.description.strip() if order_model.description else None
+            )
             order_model.total_amount = round(order_model.total_amount, 2)
 
             order_model.save()
@@ -64,13 +68,15 @@ class OrderRepository(Repository):
             _logger.error(f"Error on update_order: {error}")
             raise UnprocessableEntity(message="Error on update order")
 
-    async def select_count_by_date(self, start_date: datetime, end_date: datetime) -> int:
+    async def select_count_by_date(
+        self, start_date: UTCDateTime, end_date: UTCDateTime
+    ) -> int:
         try:
             count = OrderModel.objects(
                 is_active=True,
                 organization_id=self.organization_id,
                 created_at__gte=start_date,
-                created_at__lte=end_date
+                created_at__lte=end_date,
             ).count()
 
             return count if count else 0
@@ -86,8 +92,8 @@ class OrderRepository(Repository):
         payment_status: List[PaymentStatus],
         delivery_type: DeliveryType,
         tags: List[str],
-        start_date: datetime,
-        end_date: datetime,
+        start_date: UTCDateTime,
+        end_date: UTCDateTime,
         min_total_amount: float,
         max_total_amount: float,
     ) -> int:
@@ -106,8 +112,8 @@ class OrderRepository(Repository):
 
             else:
                 objects = objects.filter(
-                    Q(status__ne=OrderStatus.DONE.value) |
-                    Q(payment_status__ne=PaymentStatus.PAID.value)
+                    Q(status__ne=OrderStatus.DONE.value)
+                    | Q(payment_status__ne=PaymentStatus.PAID.value)
                 )
 
             if payment_status:
@@ -169,14 +175,14 @@ class OrderRepository(Repository):
         payment_status: List[PaymentStatus],
         delivery_type: DeliveryType,
         tags: List[str],
-        start_date: datetime,
-        end_date: datetime,
+        start_date: UTCDateTime,
+        end_date: UTCDateTime,
         min_total_amount: float,
         max_total_amount: float,
         order_by: str = None,
         ignore_default_filters: bool = False,
         page: int = None,
-        page_size: int = None
+        page_size: int = None,
     ) -> List[OrderInDB]:
         try:
             orders = []
@@ -230,9 +236,7 @@ class OrderRepository(Repository):
                 skip = (page - 1) * page_size
                 objects = objects.skip(skip).limit(page_size)
 
-            objects = objects.aggregate(
-                OrderModel.get_payments()
-            )
+            objects = objects.aggregate(OrderModel.get_payments())
 
             for order_model in objects:
                 orders.append(self.__from_order_model(order_model=order_model))
@@ -244,9 +248,7 @@ class OrderRepository(Repository):
             raise NotFoundError(message=f"Orders not found")
 
     async def select_all_without_filters(
-        self,
-        start_date: datetime,
-        end_date: datetime
+        self, start_date: UTCDateTime, end_date: UTCDateTime
     ) -> List[OrderInDB]:
         """
         Este metodo retorna todos os pedidos normais e rapidos

@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from mongoengine import (
     BooleanField,
     DateTimeField,
@@ -10,6 +8,7 @@ from mongoengine import (
 )
 
 from app.core.models.base_document import BaseDocument
+from app.core.utils.utc_datetime import UTCDateTime
 from app.crud.orders.schemas import OrderStatus, PaymentStatus
 
 
@@ -83,7 +82,7 @@ class OrderModel(BaseDocument):
             kwargs.pop("updated_at")
             return super().update(updated_at=self.updated_at, **kwargs)
 
-        return super().update(updated_at=datetime.now(), **kwargs)
+        return super().update(updated_at=UTCDateTime.now(), **kwargs)
 
     def delete(self, soft_delete: bool = True, signal_kwargs=None, **write_concern):
         if soft_delete:

@@ -1,12 +1,13 @@
 from bson import ObjectId
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-from datetime import datetime
+
+from app.core.utils.utc_datetime import UTCDateTime, UTCDateTimeType
 
 
 class DatabaseModel(BaseModel):
     id: str = Field(example="123")
-    created_at: datetime = Field(example=str(datetime.now()))
-    updated_at: datetime = Field(example=str(datetime.now()))
+    created_at: UTCDateTimeType = Field(example=str(UTCDateTime.now()))
+    updated_at: UTCDateTimeType = Field(example=str(UTCDateTime.now()))
 
     model_config = ConfigDict(extra="allow", from_attributes=True)
 

@@ -4,6 +4,7 @@ from pydantic import Field
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
 
+
 class Section(GenericModel):
     position: int = Field(example=1)
     menu_id: str = Field(example="men_123")

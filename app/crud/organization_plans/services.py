@@ -1,7 +1,7 @@
-from datetime import datetime
 from typing import List
 from app.core.configs import get_logger
 from app.core.exceptions.users import UnprocessableEntity
+from app.core.utils.utc_datetime import UTCDateTime
 from app.crud.plans.repositories import PlanRepository
 
 from .schemas import OrganizationPlan, OrganizationPlanInDB, UpdateOrganizationPlan
@@ -62,7 +62,7 @@ class OrganizationPlanServices:
         organization_plan = await self.__organization_plan_repository.select_active_plan(organization_id=organization_id)
         return organization_plan
 
-    async def check_if_period_is_available(self, organization_id: str, start_date: datetime, end_date: datetime) -> List[OrganizationPlanInDB]:
+    async def check_if_period_is_available(self, organization_id: str, start_date: UTCDateTime, end_date: UTCDateTime) -> List[OrganizationPlanInDB]:
         organization_plans = await self.__organization_plan_repository.check_if_period_is_available(
             organization_id=organization_id,
             start_date=start_date,

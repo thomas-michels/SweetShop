@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import List
 
 from app.api.exceptions.authentication_exceptions import (
@@ -7,6 +6,7 @@ from app.api.exceptions.authentication_exceptions import (
 )
 from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
+from app.core.utils.utc_datetime import UTCDateTime
 from app.crud.products.repositories import ProductRepository
 from app.crud.shared_schemas.payment import Payment, PaymentStatus
 
@@ -151,9 +151,9 @@ class FastOrderServices:
 
     async def search_count(
         self,
-        day: datetime = None,
-        start_date: datetime = None,
-        end_date: datetime = None
+        day: UTCDateTime = None,
+        start_date: UTCDateTime = None,
+        end_date: UTCDateTime = None
     ) -> FastOrderInDB:
         quantity = await self.__fast_order_repository.select_count(
             day=day,
@@ -166,9 +166,9 @@ class FastOrderServices:
     async def search_all(
         self,
         expand: List[str] = [],
-        day: datetime = None,
-        start_date: datetime = None,
-        end_date: datetime = None,
+        day: UTCDateTime = None,
+        start_date: UTCDateTime = None,
+        end_date: UTCDateTime = None,
         page: int = None,
         page_size: int = None
     ) -> List[FastOrderInDB]:

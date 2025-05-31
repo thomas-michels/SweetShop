@@ -1,10 +1,11 @@
-from datetime import datetime
 from typing import List
 
 from pydantic import ValidationError
+
 from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.core.repositories.base_repository import Repository
+from app.core.utils.utc_datetime import UTCDateTime
 
 from .models import SectionModel
 from .schemas import Section, SectionInDB
@@ -20,16 +21,18 @@ class SectionRepository(Repository):
     async def create(self, section: Section) -> SectionInDB:
         try:
             section_model = SectionModel(
-                created_at=datetime.now(),
-                updated_at=datetime.now(),
+                created_at=UTCDateTime.now(),
+                updated_at=UTCDateTime.now(),
                 organization_id=self.organization_id,
-                **section.model_dump()
+                **section.model_dump(),
             )
             section_model.name = section_model.name.strip().title()
             section_model.description = section_model.description.strip()
 
             section_model.save()
-            _logger.info(f"Section {section.name} saved for organization {self.organization_id}")
+            _logger.info(
+                f"Section {section.name} saved for organization {self.organization_id}"
+            )
 
             return SectionInDB.model_validate(section_model)
 
@@ -40,9 +43,7 @@ class SectionRepository(Repository):
     async def update(self, section: SectionInDB) -> SectionInDB:
         try:
             section_model: SectionModel = SectionModel.objects(
-                id=section.id,
-                is_active=True,
-                organization_id=self.organization_id
+                id=section.id, is_active=True, organization_id=self.organization_id
             ).first()
             section.name = section.name.strip().title()
             section.description = section.description.strip()
@@ -71,9 +72,7 @@ class SectionRepository(Repository):
     async def select_by_id(self, id: str, raise_404: bool = True) -> SectionInDB:
         try:
             section_model: SectionModel = SectionModel.objects(
-                id=id,
-                is_active=True,
-                organization_id=self.organization_id
+                id=id, is_active=True, organization_id=self.organization_id
             ).first()
 
             return SectionInDB.model_validate(section_model)
@@ -87,14 +86,14 @@ class SectionRepository(Repository):
             if raise_404:
                 raise NotFoundError(message=f"Section #{id} not found")
 
-    async def select_all(self, menu_id: str, is_visible: bool = None) -> List[SectionInDB]:
+    async def select_all(
+        self, menu_id: str, is_visible: bool = None
+    ) -> List[SectionInDB]:
         try:
             sections = []
 
             objects = SectionModel.objects(
-                is_active=True,
-                organization_id=self.organization_id,
-                menu_id=menu_id
+                is_active=True, organization_id=self.organization_id, menu_id=menu_id
             )
 
             if is_visible is not None:
@@ -112,9 +111,7 @@ class SectionRepository(Repository):
     async def delete_by_id(self, id: str) -> SectionInDB:
         try:
             section_model: SectionModel = SectionModel.objects(
-                id=id,
-                is_active=True,
-                organization_id=self.organization_id
+                id=id, is_active=True, organization_id=self.organization_id
             ).first()
 
             if section_model:

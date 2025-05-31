@@ -1,11 +1,11 @@
 import re
-from datetime import datetime
 from typing import List, Optional
 
 from pydantic import Field, model_validator
 
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
+from app.core.utils.utc_datetime import UTCDateTimeType
 from app.core.utils.validate_document import validate_cnpj, validate_cpf
 from app.crud.organizations.schemas import EMAIL_REGEX
 from app.crud.shared_schemas.address import Address
@@ -20,7 +20,7 @@ class Customer(GenericModel):
     document: str | None = Field(default=None, example="111.555.219-99")
     addresses: List[Address] = Field(default=[])
     tags: List[str] = Field(default=[])
-    date_of_birth: datetime | None = Field(default=None)
+    date_of_birth: UTCDateTimeType | None = Field(default=None)
     email: str | None = Field(default=None, example="contact@your_company.com")
 
     @model_validator(mode="after")
@@ -108,7 +108,7 @@ class UpdateCustomer(GenericModel):
     addresses: Optional[List[Address]] = Field(default=None)
     tags: Optional[List[str]] = Field(default=None)
     document: Optional[str] = Field(default=None)
-    date_of_birth: Optional[datetime] = Field(default=None)
+    date_of_birth: Optional[UTCDateTimeType] = Field(default=None)
     email: Optional[str] = Field(default=None)
 
     @model_validator(mode="after")

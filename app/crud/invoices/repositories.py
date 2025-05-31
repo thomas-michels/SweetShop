@@ -1,9 +1,9 @@
-from datetime import datetime
-from pydantic import ValidationError
 from typing import List
+from pydantic import ValidationError
 from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.core.repositories.base_repository import Repository
+from app.core.utils.utc_datetime import UTCDateTime
 
 from .models import InvoiceModel
 from .schemas import Invoice, InvoiceInDB
@@ -15,9 +15,9 @@ class InvoiceRepository(Repository):
     async def create(self, invoice: Invoice) -> InvoiceInDB:
         try:
             invoice_model = InvoiceModel(
-                created_at=datetime.now(),
-                updated_at=datetime.now(),
-                **invoice.model_dump()
+                created_at=UTCDateTime.now(),
+                updated_at=UTCDateTime.now(),
+                **invoice.model_dump(),
             )
 
             invoice_model.save()
@@ -57,7 +57,9 @@ class InvoiceRepository(Repository):
             if raise_404:
                 raise NotFoundError(message=f"Invoice #{id} not found")
 
-    async def select_by_organization_plan_id(self, organization_plan_id: str) -> List[InvoiceInDB]:
+    async def select_by_organization_plan_id(
+        self, organization_plan_id: str
+    ) -> List[InvoiceInDB]:
         try:
             invoices = []
 
@@ -75,7 +77,9 @@ class InvoiceRepository(Repository):
             _logger.error(f"Error on select_by_organization_plan_id: {str(error)}")
             return []
 
-    async def select_by_integration(self, integration_id: str, integration_type: str, raise_404: bool = True) -> InvoiceInDB:
+    async def select_by_integration(
+        self, integration_id: str, integration_type: str, raise_404: bool = True
+    ) -> InvoiceInDB:
         try:
             invoice_model: InvoiceModel = InvoiceModel.objects(
                 integration_id=integration_id,
@@ -112,8 +116,7 @@ class InvoiceRepository(Repository):
     async def delete_by_id(self, id: str) -> InvoiceInDB:
         try:
             invoice_model: InvoiceModel = InvoiceModel.objects(
-                id=id,
-                is_active=True
+                id=id, is_active=True
             ).first()
             invoice_model.delete()
 

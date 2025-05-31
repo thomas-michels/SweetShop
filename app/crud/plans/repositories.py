@@ -1,9 +1,11 @@
-from datetime import datetime
 from typing import List
+
 from mongoengine import Q
+
 from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.core.repositories.base_repository import Repository
+from app.core.utils.utc_datetime import UTCDateTime
 
 from .models import PlanModel
 from .schemas import Plan, PlanInDB
@@ -15,9 +17,9 @@ class PlanRepository(Repository):
     async def create(self, plan: Plan) -> PlanInDB:
         try:
             plan_model = PlanModel(
-                created_at=datetime.now(),
-                updated_at=datetime.now(),
-                **plan.model_dump()
+                created_at=UTCDateTime.now(),
+                updated_at=UTCDateTime.now(),
+                **plan.model_dump(),
             )
 
             plan_model.save()
@@ -94,10 +96,7 @@ class PlanRepository(Repository):
 
     async def delete_by_id(self, id: str) -> PlanInDB:
         try:
-            plan_model: PlanModel = PlanModel.objects(
-                id=id,
-                is_active=True
-            ).first()
+            plan_model: PlanModel = PlanModel.objects(id=id, is_active=True).first()
             plan_model.delete()
 
             return PlanInDB.model_validate(plan_model)

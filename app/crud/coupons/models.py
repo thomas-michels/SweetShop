@@ -1,6 +1,6 @@
-from datetime import datetime
-from mongoengine import StringField, FloatField, BooleanField, DateTimeField, IntField
+from mongoengine import BooleanField, DateTimeField, FloatField, IntField, StringField
 from app.core.models.base_document import BaseDocument
+from app.core.utils.utc_datetime import UTCDateTime
 
 
 class CouponModel(BaseDocument):
@@ -11,17 +11,15 @@ class CouponModel(BaseDocument):
     limit = IntField(required=True)
     usage_count = IntField(default=0, required=True)
 
-    meta = {
-        "collection": "coupons"
-    }
+    meta = {"collection": "coupons"}
 
     def update(self, **kwargs):
         self.base_update()
         if kwargs.get("updated_at"):
             kwargs.pop("updated_at")
-            return super().update(updated_at=self.updated_at,**kwargs)
+            return super().update(updated_at=self.updated_at, **kwargs)
 
-        return super().update(updated_at=datetime.now(), **kwargs)
+        return super().update(updated_at=UTCDateTime.now(), **kwargs)
 
     def delete(self, soft_delete: bool = True, signal_kwargs=None, **write_concern):
         if soft_delete:

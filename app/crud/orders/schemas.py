@@ -1,4 +1,3 @@
-from datetime import datetime
 from enum import Enum
 from typing import List, Optional, Type
 
@@ -6,6 +5,7 @@ from pydantic import Field, model_validator
 
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
+from app.core.utils.utc_datetime import UTCDateTime, UTCDateTimeType
 from app.crud.customers.schemas import CustomerInDB
 from app.crud.files.schemas import FileInDB
 from app.crud.shared_schemas.address import Address
@@ -45,7 +45,7 @@ class PaymentInOrder(GenericModel, DatabaseModel):
     id: str = Field(example="123")
     order_id: str = Field(example="ord_123")
     method: PaymentMethod = Field(example=PaymentMethod.CASH)
-    payment_date: datetime = Field(example=str(datetime.now()))
+    payment_date: UTCDateTimeType = Field(example=str(UTCDateTime.now()))
     amount: float = Field(example=10, gt=0)
 
 
@@ -53,7 +53,7 @@ class Delivery(GenericModel):
     delivery_type: DeliveryType = Field(
         default=DeliveryType.WITHDRAWAL, example=DeliveryType.WITHDRAWAL
     )
-    delivery_at: datetime | None = Field(default=None, example=str(datetime.now()))
+    delivery_at: UTCDateTimeType | None = Field(default=None, example=str(UTCDateTime.now()))
     delivery_value: float | None = Field(default=None)
     address: Address | None = Field(default=None)
 
@@ -101,8 +101,8 @@ class RequestOrder(GenericModel):
     products: List[RequestedProduct] = Field(default=[], min_length=1)
     tags: List[str] = Field(default=[])
     delivery: Delivery = Field()
-    preparation_date: datetime = Field(example=str(datetime.now()))
-    order_date: datetime = Field(example=str(datetime.now()))
+    preparation_date: UTCDateTimeType = Field(example=str(UTCDateTime.now()))
+    order_date: UTCDateTimeType = Field(example=str(UTCDateTime.now()))
     description: str | None = Field(default=None, example="Description")
     additional: float = Field(default=0, ge=0, example=12.2)
     discount: float | None = Field(default=0, ge=0, example=12.2)
@@ -178,10 +178,10 @@ class UpdateOrder(GenericModel):
     )
     products: Optional[List[RequestedProduct]] = Field(default=None, min_length=1)
     delivery: Optional[Delivery] = Field(default=None)
-    preparation_date: Optional[datetime] = Field(
-        default=None, example=str(datetime.now())
+    preparation_date: Optional[UTCDateTimeType] = Field(
+        default=None, example=str(UTCDateTime.now())
     )
-    order_date: Optional[datetime] = Field(default=None, example=str(datetime.now()))
+    order_date: Optional[UTCDateTimeType] = Field(default=None, example=str(UTCDateTime.now()))
     description: Optional[str] = Field(default=None, example="Description")
     additional: Optional[float] = Field(default=None, example=12.2)
     discount: Optional[float] = Field(default=None, example=12.2)

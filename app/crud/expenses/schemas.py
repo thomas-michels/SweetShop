@@ -1,23 +1,24 @@
 from typing import List, Optional
-from datetime import datetime
+
 from pydantic import Field, model_validator
 
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
+from app.core.utils.utc_datetime import UTCDateTime, UTCDateTimeType
 from app.crud.shared_schemas.payment import Payment
 from app.crud.tags.schemas import TagInDB
 
 
 class Expense(GenericModel):
     name: str = Field(example="Brasil Atacadista")
-    expense_date: datetime = Field(example=str(datetime.now()))
+    expense_date: UTCDateTimeType = Field(example=str(UTCDateTime.now()))
     payment_details: List[Payment] = Field(default=[])
     tags: List[str] = Field(default=[])
 
     @model_validator(mode="after")
     def validate_model(self) -> "Expense":
         if self.expense_date.second != 0:
-            self.expense_date = datetime(
+            self.expense_date = UTCDateTime(
                 year=self.expense_date.year,
                 month=self.expense_date.month,
                 day=self.expense_date.day,
@@ -52,14 +53,16 @@ class Expense(GenericModel):
 
 class UpdateExpense(GenericModel):
     name: Optional[str] = Field(default=None, example="Brasil Atacadista")
-    expense_date: Optional[datetime] = Field(default=None, example=str(datetime.now()))
+    expense_date: Optional[UTCDateTimeType] = Field(
+        default=None, example=str(UTCDateTime.now())
+    )
     payment_details: Optional[List[Payment]] = Field(default=None)
     tags: Optional[List[str]] = Field(default=None)
 
     @model_validator(mode="after")
     def validate_model(self) -> "Expense":
         if self.expense_date is not None and self.expense_date.second != 0:
-            self.expense_date = datetime(
+            self.expense_date = UTCDateTime(
                 year=self.expense_date.year,
                 month=self.expense_date.month,
                 day=self.expense_date.day,

@@ -1,10 +1,10 @@
-from datetime import datetime
 from typing import List, Optional, Type
 
 from pydantic import Field, model_validator
 
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
+from app.core.utils.utc_datetime import UTCDateTime, UTCDateTimeType
 from app.crud.orders.schemas import PaymentInOrder
 
 
@@ -23,7 +23,7 @@ class StoredProduct(RequestedProduct):
 
 class RequestFastOrder(GenericModel):
     products: List[RequestedProduct] = Field(default=[], min_length=1)
-    order_date: datetime = Field(example=str(datetime.now()))
+    order_date: UTCDateTimeType = Field(example=str(UTCDateTime.now()))
     description: str | None = Field(default=None, example="Description")
     additional: float = Field(default=0, ge=0, example=12.2)
     discount: float | None = Field(default=0, ge=0, example=12.2)
@@ -36,7 +36,7 @@ class RequestFastOrder(GenericModel):
             raise ValueError("Products must contain unique items.")
 
         if self.order_date.second != 0:
-            self.order_date = datetime(
+            self.order_date = UTCDateTime(
                 year=self.order_date.year,
                 month=self.order_date.month,
                 day=self.order_date.day,
@@ -78,7 +78,7 @@ class FastOrder(RequestFastOrder):
 
 class UpdateFastOrder(GenericModel):
     products: Optional[List[RequestedProduct]] = Field(default=None, min_length=1)
-    order_date: Optional[datetime] = Field(default=None, example=str(datetime.now()))
+    order_date: Optional[UTCDateTimeType] = Field(default=None, example=str(UTCDateTime.now()))
     description: Optional[str] = Field(default=None, example="Description")
     additional: Optional[float] = Field(default=None, example=12.2)
     discount: Optional[float] = Field(default=None, example=12.2)
@@ -100,7 +100,7 @@ class UpdateFastOrder(GenericModel):
                 raise ValueError("Discount must be grater than zero")
 
         if self.order_date is not None and self.order_date.second != 0:
-            self.order_date = datetime(
+            self.order_date = UTCDateTime(
                 year=self.order_date.year,
                 month=self.order_date.month,
                 day=self.order_date.day,

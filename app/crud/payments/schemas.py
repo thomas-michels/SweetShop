@@ -1,16 +1,17 @@
-from datetime import datetime
 from typing import Optional
 
 from pydantic import Field, model_validator
+
 from app.core.models.base_model import DatabaseModel
 from app.core.models.base_schema import GenericModel
+from app.core.utils.utc_datetime import UTCDateTime, UTCDateTimeType
 from app.crud.shared_schemas.payment import PaymentMethod
 
 
 class Payment(GenericModel):
     order_id: str = Field(example="ord_123")
     method: PaymentMethod = Field(example=PaymentMethod.CASH)
-    payment_date: datetime = Field(example=str(datetime.now()))
+    payment_date: UTCDateTimeType = Field(example=str(UTCDateTime.now()))
     amount: float = Field(example=10, gt=0)
 
     def validate_updated_fields(self, update_payment: "UpdatePayment") -> bool:
@@ -33,7 +34,9 @@ class Payment(GenericModel):
 
 class UpdatePayment(GenericModel):
     method: Optional[PaymentMethod] = Field(default=None, example=PaymentMethod.CASH)
-    payment_date: Optional[datetime] = Field(default=None, example=str(datetime.now()))
+    payment_date: Optional[UTCDateTimeType] = Field(
+        default=None, example=str(UTCDateTime.now())
+    )
     amount: Optional[float] = Field(default=None, example=10)
 
     @model_validator(mode="after")
@@ -45,5 +48,4 @@ class UpdatePayment(GenericModel):
         return self
 
 
-class PaymentInDB(Payment, DatabaseModel):
-    ...
+class PaymentInDB(Payment, DatabaseModel): ...
