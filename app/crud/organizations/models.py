@@ -1,4 +1,4 @@
-from mongoengine import DictField, ListField, StringField
+from mongoengine import DictField, ListField, StringField, FloatField
 
 from app.core.models.base_document import BaseDocument
 from app.core.utils.utc_datetime import UTCDateTime
@@ -17,6 +17,7 @@ class OrganizationModel(BaseDocument):
     users = ListField(DictField())
     file_id = StringField(required=False, default=None)
     unit_distance = StringField(required=False, default=None)
+    tax = FloatField(required=False, default=0)
 
     meta = {"collection": "organizations"}
 
