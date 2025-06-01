@@ -1,10 +1,10 @@
-from datetime import datetime
 from typing import List
 from mongoengine import Q
 from mongoengine.errors import NotUniqueError
 from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.core.repositories.base_repository import Repository
+from app.core.utils.utc_datetime import UTCDateTime
 
 from .models import InviteModel
 from .schemas import Invite, InviteInDB
@@ -22,9 +22,9 @@ class InviteRepository(Repository):
 
             invite_model = InviteModel(
                 is_accepted=False,
-                created_at=datetime.now(),
-                updated_at=datetime.now(),
-                **invite.model_dump()
+                created_at=UTCDateTime.now(),
+                updated_at=UTCDateTime.now(),
+                **invite.model_dump(),
             )
             invite_model.user_email = invite_model.user_email.lower()
 
@@ -33,8 +33,12 @@ class InviteRepository(Repository):
             return InviteInDB.model_validate(invite_model)
 
         except NotUniqueError:
-            _logger.warning(f"Duplicated invite for email {invite.user_email} and organization {invite.organization_id}!")
-            raise UnprocessableEntity(message="This user already has an active invitation for this organization!")
+            _logger.warning(
+                f"Duplicated invite for email {invite.user_email} and organization {invite.organization_id}!"
+            )
+            raise UnprocessableEntity(
+                message="This user already has an active invitation for this organization!"
+            )
 
         except Exception as error:
             _logger.error(f"Error on create_invite: {str(error)}")
@@ -68,7 +72,9 @@ class InviteRepository(Repository):
             if raise_404:
                 raise NotFoundError(message=f"Invite #{id} not found")
 
-    async def select_by_email(self, user_email: str, accepted: bool = None) -> List[InviteInDB]:
+    async def select_by_email(
+        self, user_email: str, accepted: bool = None
+    ) -> List[InviteInDB]:
         try:
             user_email = user_email.lower()
 
@@ -79,7 +85,7 @@ class InviteRepository(Repository):
             if accepted is not None:
                 objects = objects.filter(is_accepted=accepted)
 
-            now = datetime.now()
+            now = UTCDateTime.now()
 
             objects = objects.filter(
                 (Q(expires_at__exists=False) | Q(expires_at__gt=now))
@@ -96,7 +102,9 @@ class InviteRepository(Repository):
             _logger.error(f"Error on select_by_email: {str(error)}")
             raise NotFoundError(message=f"Invite with email {user_email} not found")
 
-    async def select_all(self, organization_id: str, accepted: bool = None) -> List[InviteInDB]:
+    async def select_all(
+        self, organization_id: str, accepted: bool = None
+    ) -> List[InviteInDB]:
         try:
             invites = []
 
@@ -105,7 +113,7 @@ class InviteRepository(Repository):
             if accepted is not None:
                 objects = objects.filter(is_accepted=accepted)
 
-            now = datetime.now()
+            now = UTCDateTime.now()
 
             objects = objects.filter(
                 (Q(expires_at__exists=False) | Q(expires_at__gt=now))
@@ -134,7 +142,9 @@ class InviteRepository(Repository):
             raise NotFoundError(message=f"Invite #{id} not found")
 
     async def validate_if_is_not_duplicated(self, invite_in_db: Invite) -> None:
-        invites = await self.select_by_email(user_email=invite_in_db.user_email, accepted=False)
+        invites = await self.select_by_email(
+            user_email=invite_in_db.user_email, accepted=False
+        )
 
         for invite in invites:
             if invite.organization_id == invite_in_db.organization_id:

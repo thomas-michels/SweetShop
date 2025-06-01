@@ -1,10 +1,10 @@
-from datetime import datetime
 from typing import List
 from mongoengine.errors import NotUniqueError
 from app.api.exceptions.authentication_exceptions import BadRequestException
 from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.core.repositories.base_repository import Repository
+from app.core.utils.utc_datetime import UTCDateTime
 
 from .models import TermOfUseModel
 from .schemas import TermOfUse, TermOfUseInDB
@@ -16,16 +16,18 @@ class TermOfUseRepository(Repository):
     async def create(self, term_of_use: TermOfUse) -> TermOfUseInDB:
         try:
             term_of_use_model = TermOfUseModel(
-                created_at=datetime.now(),
-                updated_at=datetime.now(),
-                **term_of_use.model_dump()
+                created_at=UTCDateTime.now(),
+                updated_at=UTCDateTime.now(),
+                **term_of_use.model_dump(),
             )
             term_of_use_model.save()
 
             return await self.select_by_id(id=term_of_use_model.id)
 
         except NotUniqueError:
-            _logger.warning(f"TermOfUse with hash {term_of_use.hash} or version {term_of_use.version} are not unique")
+            _logger.warning(
+                f"TermOfUse with hash {term_of_use.hash} or version {term_of_use.version} are not unique"
+            )
             raise BadRequestException(message="Hash or version are not unique")
 
         except Exception as error:
@@ -61,9 +63,7 @@ class TermOfUseRepository(Repository):
         try:
             term_of_uses = []
 
-            objects = TermOfUseModel.objects(
-                is_active=True
-            )
+            objects = TermOfUseModel.objects(is_active=True)
 
             for term_of_use_model in objects.order_by("-created_at"):
                 term_of_uses.append(TermOfUseInDB.model_validate(term_of_use_model))

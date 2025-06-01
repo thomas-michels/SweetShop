@@ -1,19 +1,21 @@
-from datetime import datetime
 from typing import Optional
 
-from pydantic import Field, computed_field, model_validator
+from pydantic import Field, computed_field
 
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
+from app.core.utils.utc_datetime import UTCDateTime, UTCDateTimeType
 
 
 class OrganizationPlan(GenericModel):
     plan_id: str = Field(example="plan_123")
-    start_date: datetime = Field(example=str(datetime.now()))
-    end_date: datetime = Field(example=str(datetime.now()))
+    start_date: UTCDateTimeType = Field(example=str(UTCDateTime.now()))
+    end_date: UTCDateTimeType = Field(example=str(UTCDateTime.now()))
     allow_additional: bool = Field(default=False, example=False)
 
-    def validate_updated_fields(self, update_organization_plan: "UpdateOrganizationPlan") -> bool:
+    def validate_updated_fields(
+        self, update_organization_plan: "UpdateOrganizationPlan"
+    ) -> bool:
         is_updated = False
 
         if update_organization_plan.plan_id is not None:
@@ -37,8 +39,8 @@ class OrganizationPlan(GenericModel):
 
 class UpdateOrganizationPlan(GenericModel):
     plan_id: Optional[str] = Field(default=None, example="plan_123")
-    start_date: Optional[datetime] = Field(default=None, example=str(datetime.now()))
-    end_date: Optional[datetime] = Field(default=None, example=str(datetime.now()))
+    start_date: Optional[UTCDateTimeType] = Field(default=None, example=str(UTCDateTime.now()))
+    end_date: Optional[UTCDateTimeType] = Field(default=None, example=str(UTCDateTime.now()))
     allow_additional: Optional[bool] = Field(default=None, example=False)
 
 
@@ -49,5 +51,5 @@ class OrganizationPlanInDB(OrganizationPlan, DatabaseModel):
     @computed_field
     @property
     def active_plan(self) -> bool:
-        now = datetime.now()
+        now = UTCDateTime.now()
         return self.start_date <= now <= self.end_date

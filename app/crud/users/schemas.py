@@ -1,10 +1,12 @@
 import re
-from datetime import datetime
 from typing import Dict, List
+
 from passlib.context import CryptContext
 from pydantic import ConfigDict, Field, SecretStr
+
 from app.core.exceptions import InvalidPassword, UnprocessableEntity
 from app.core.models.base_schema import GenericModel
+from app.core.utils.utc_datetime import UTCDateTime, UTCDateTimeType
 from app.crud.shared_schemas.user_organization import UserOrganization
 
 _pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -50,9 +52,9 @@ class UserInDB(User):
     user_id: str = Field(example="id-123")
     user_metadata: dict | None = Field(default=None)
     app_metadata: dict | None = Field(default={})
-    last_login: datetime | None = Field(default=None, example=str(datetime.now()))
-    created_at: datetime = Field(example=str(datetime.now()))
-    updated_at: datetime = Field(example=str(datetime.now()))
+    last_login: UTCDateTimeType | None = Field(default=None, example=str(UTCDateTime.now()))
+    created_at: UTCDateTimeType = Field(example=str(UTCDateTime.now()))
+    updated_at: UTCDateTimeType = Field(example=str(UTCDateTime.now()))
 
     model_config = ConfigDict(extra="allow", from_attributes=True)
 
@@ -60,7 +62,7 @@ class UserInDB(User):
 class UpdateUser(GenericModel):
     blocked: bool | None = Field(default=None, example=True)
     email: str | None = Field(default=None, example="test@test.com")
-    name: str | None= Field(default=None, example="test")
+    name: str | None = Field(default=None, example="test")
     nickname: str | None = Field(default=None, example="test")
     picture: str | None = Field(default=None, example="http://localhost")
     user_metadata: dict | None = Field(default=None)

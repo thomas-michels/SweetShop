@@ -1,11 +1,9 @@
-from datetime import datetime
 from typing import List
-
 from app.api.exceptions.authentication_exceptions import UnprocessableEntityException
 from app.core.exceptions.users import UnprocessableEntity
-
-from .schemas import Coupon, CouponInDB, UpdateCoupon
+from app.core.utils.utc_datetime import UTCDateTime
 from .repositories import CouponRepository
+from .schemas import Coupon, CouponInDB, UpdateCoupon
 
 
 class CouponServices:
@@ -14,7 +12,7 @@ class CouponServices:
         self.__coupon_repository = coupon_repository
 
     async def create(self, coupon: Coupon) -> CouponInDB:
-        now = datetime.now()
+        now = UTCDateTime.now()
 
         if coupon.expires_at <= now:
             raise UnprocessableEntity("Expires at should be grater than now")
@@ -28,15 +26,22 @@ class CouponServices:
         is_updated = coupon_in_db.validate_updated_fields(update_coupon=updated_coupon)
 
         if is_updated:
-            if updated_coupon.limit is not None and updated_coupon.limit < coupon_in_db.usage_count:
-                raise UnprocessableEntityException(detail="Limit should be grater than usage")
+            if (
+                updated_coupon.limit is not None
+                and updated_coupon.limit < coupon_in_db.usage_count
+            ):
+                raise UnprocessableEntityException(
+                    detail="Limit should be grater than usage"
+                )
 
             coupon_in_db = await self.__coupon_repository.update(coupon=coupon_in_db)
 
         return coupon_in_db
 
     async def update_usage(self, coupon_id: str, quantity: int) -> CouponInDB:
-        coupon_in_db = await self.__coupon_repository.update_usage(coupon_id=coupon_id, quantity=quantity)
+        coupon_in_db = await self.__coupon_repository.update_usage(
+            coupon_id=coupon_id, quantity=quantity
+        )
         return coupon_in_db
 
     async def search_by_id(self, id: str) -> CouponInDB:

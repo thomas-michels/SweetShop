@@ -1,16 +1,15 @@
-from datetime import datetime
 from typing import Optional
-
 from pydantic import Field, model_validator
 from app.core.models.base_model import DatabaseModel
 from app.core.models.base_schema import GenericModel
+from app.core.utils.utc_datetime import UTCDateTime, UTCDateTimeType
 
 
 class Coupon(GenericModel):
     name: str = Field(example="DESCONTO10")
     value: float = Field(example=10, gt=0)
     is_percent: bool = Field(example=False)
-    expires_at: datetime = Field(example=str(datetime.now()))
+    expires_at: UTCDateTimeType = Field(example=str(UTCDateTime.now()))
     limit: int = Field(gt=0, example=10)
 
     def calculate_discount(self, price: float) -> float:
@@ -63,12 +62,12 @@ class UpdateCoupon(GenericModel):
     name: Optional[str] = Field(default=None, example="DESCONTO10")
     value: Optional[float] = Field(default=None, example=10)
     is_percent: Optional[bool] = Field(default=None, example=False)
-    expires_at: Optional[datetime] = Field(default=None, example=str(datetime.now()))
+    expires_at: Optional[UTCDateTimeType] = Field(default=None, example=str(UTCDateTime.now()))
     limit: Optional[int] = Field(default=None, example=10)
 
     @model_validator(mode="after")
     def validate_model(self) -> "Coupon":
-        now = datetime.now()
+        now = UTCDateTime.now()
 
         if self.expires_at is not None and self.expires_at <= now:
             raise ValueError("Expires at should be grater than now")

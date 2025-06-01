@@ -1,8 +1,8 @@
-from datetime import datetime
 from typing import List
 from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.core.repositories.base_repository import Repository
+from app.core.utils.utc_datetime import UTCDateTime
 
 from .models import MenuModel
 from .schemas import Menu, MenuInDB
@@ -21,15 +21,17 @@ class MenuRepository(Repository):
 
         try:
             menu_model = MenuModel(
-                created_at=datetime.now(),
-                updated_at=datetime.now(),
+                created_at=UTCDateTime.now(),
+                updated_at=UTCDateTime.now(),
                 organization_id=self.organization_id,
-                **menu.model_dump()
+                **menu.model_dump(),
             )
             menu_model.name = menu_model.name.title()
 
             menu_model.save()
-            _logger.info(f"Menu {menu.name} saved for organization {self.organization_id}")
+            _logger.info(
+                f"Menu {menu.name} saved for organization {self.organization_id}"
+            )
 
             return MenuInDB.model_validate(menu_model)
 
@@ -44,9 +46,7 @@ class MenuRepository(Repository):
 
         try:
             menu_model: MenuModel = MenuModel.objects(
-                id=menu.id,
-                is_active=True,
-                organization_id=self.organization_id
+                id=menu.id, is_active=True, organization_id=self.organization_id
             ).first()
             menu.name = menu.name.title()
 
@@ -80,9 +80,7 @@ class MenuRepository(Repository):
     async def select_by_id(self, id: str, raise_404: bool = True) -> MenuInDB:
         try:
             menu_model: MenuModel = MenuModel.objects(
-                id=id,
-                is_active=True,
-                organization_id=self.organization_id
+                id=id, is_active=True, organization_id=self.organization_id
             ).first()
 
             return MenuInDB.model_validate(menu_model)
@@ -95,9 +93,7 @@ class MenuRepository(Repository):
     async def select_by_name(self, name: str, raise_404: bool = True) -> MenuInDB:
         try:
             menu_model: MenuModel = MenuModel.objects(
-                name=name.title(),
-                is_active=True,
-                organization_id=self.organization_id
+                name=name.title(), is_active=True, organization_id=self.organization_id
             ).first()
 
             if menu_model:
@@ -116,14 +112,13 @@ class MenuRepository(Repository):
         query: str,
         is_visible: bool = None,
         page: int = None,
-        page_size: int = None
+        page_size: int = None,
     ) -> List[MenuInDB]:
         try:
             menus = []
 
             objects = MenuModel.objects(
-                is_active=True,
-                organization_id=self.organization_id
+                is_active=True, organization_id=self.organization_id
             )
 
             if query:
@@ -150,9 +145,7 @@ class MenuRepository(Repository):
     async def delete_by_id(self, id: str) -> MenuInDB:
         try:
             menu_model: MenuModel = MenuModel.objects(
-                id=id,
-                is_active=True,
-                organization_id=self.organization_id
+                id=id, is_active=True, organization_id=self.organization_id
             ).first()
             menu_model.delete()
 

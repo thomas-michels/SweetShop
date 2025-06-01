@@ -1,9 +1,9 @@
-from datetime import datetime
 from typing import List
 from mongoengine.errors import NotUniqueError
 from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.core.repositories.base_repository import Repository
+from app.core.utils.utc_datetime import UTCDateTime
 
 from .models import CustomerModel
 from .schemas import Customer, CustomerInDB
@@ -19,18 +19,18 @@ class CustomerRepository(Repository):
     async def create(self, customer: Customer) -> CustomerInDB:
         if customer.ddd and customer.phone_number:
             if await self.select_by_phone(
-                ddd=customer.ddd,
-                phone_number=customer.phone_number,
-                raise_404=False
+                ddd=customer.ddd, phone_number=customer.phone_number, raise_404=False
             ):
-                raise UnprocessableEntity(message="Um cliente com esse telefone já foi cadastrado")
+                raise UnprocessableEntity(
+                    message="Um cliente com esse telefone já foi cadastrado"
+                )
 
         try:
             customer_model = CustomerModel(
-                created_at=datetime.now(),
-                updated_at=datetime.now(),
+                created_at=UTCDateTime.now(),
+                updated_at=UTCDateTime.now(),
                 organization_id=self.organization_id,
-                **customer.model_dump()
+                **customer.model_dump(),
             )
             customer_model.name = customer_model.name.strip().title()
 
@@ -49,18 +49,16 @@ class CustomerRepository(Repository):
     async def update(self, customer: CustomerInDB) -> CustomerInDB:
         if customer.ddd and customer.phone_number:
             customer_with_same_phone = await self.select_by_phone(
-                ddd=customer.ddd,
-                phone_number=customer.phone_number,
-                raise_404=False
+                ddd=customer.ddd, phone_number=customer.phone_number, raise_404=False
             )
             if customer_with_same_phone and customer_with_same_phone.id != customer.id:
-                raise UnprocessableEntity(message="Um cliente com esse telefone já foi cadastrado")
+                raise UnprocessableEntity(
+                    message="Um cliente com esse telefone já foi cadastrado"
+                )
 
         try:
             customer_model: CustomerModel = CustomerModel.objects(
-                id=customer.id,
-                is_active=True,
-                organization_id=self.organization_id
+                id=customer.id, is_active=True, organization_id=self.organization_id
             ).first()
             customer.name = customer.name.strip().title()
 
@@ -94,41 +92,49 @@ class CustomerRepository(Repository):
     async def select_by_id(self, id: str, raise_404: bool = True) -> CustomerInDB:
         try:
             customer_model: CustomerModel = CustomerModel.objects(
-                id=id,
-                is_active=True,
-                organization_id=self.organization_id
+                id=id, is_active=True, organization_id=self.organization_id
             ).first()
 
             if customer_model:
                 return CustomerInDB.model_validate(customer_model)
 
             elif raise_404:
-                raise NotFoundError(message=f"Cliente com o ID #{id} não foi encontrado")
+                raise NotFoundError(
+                    message=f"Cliente com o ID #{id} não foi encontrado"
+                )
 
         except Exception as error:
             if raise_404:
-                raise NotFoundError(message=f"Cliente com o ID #{id} não foi encontrado")
+                raise NotFoundError(
+                    message=f"Cliente com o ID #{id} não foi encontrado"
+                )
 
             _logger.error(f"Error on select_by_id: {str(error)}")
 
-    async def select_by_phone(self, ddd: str, phone_number: str, raise_404: bool = True) -> CustomerInDB:
+    async def select_by_phone(
+        self, ddd: str, phone_number: str, raise_404: bool = True
+    ) -> CustomerInDB:
         try:
             customer_model: CustomerModel = CustomerModel.objects(
                 ddd=ddd,
                 phone_number=phone_number,
                 is_active=True,
-                organization_id=self.organization_id
+                organization_id=self.organization_id,
             ).first()
 
             if customer_model:
                 return CustomerInDB.model_validate(customer_model)
 
             elif raise_404:
-                raise NotFoundError(message=f"Cliente com o telefone {ddd} {phone_number} não foi encontrado")
+                raise NotFoundError(
+                    message=f"Cliente com o telefone {ddd} {phone_number} não foi encontrado"
+                )
 
         except Exception as error:
             if raise_404:
-                raise NotFoundError(message=f"Cliente com o telefone {ddd} {phone_number} não foi encontrado")
+                raise NotFoundError(
+                    message=f"Cliente com o telefone {ddd} {phone_number} não foi encontrado"
+                )
 
             _logger.error(f"Error on select_by_phone: {str(error)}")
 
@@ -137,9 +143,7 @@ class CustomerRepository(Repository):
             name = name.strip().title()
 
             customer_model: CustomerModel = CustomerModel.objects(
-                name=name,
-                is_active=True,
-                organization_id=self.organization_id
+                name=name, is_active=True, organization_id=self.organization_id
             ).first()
 
             if customer_model:
@@ -152,18 +156,13 @@ class CustomerRepository(Repository):
             raise NotFoundError(message=f"Cliente com o nome {name} não foi encontrado")
 
     async def select_all(
-        self,
-        query: str,
-        tags: List[str] = [],
-        page: int = None,
-        page_size: int = None
+        self, query: str, tags: List[str] = [], page: int = None, page_size: int = None
     ) -> List[CustomerInDB]:
         try:
             customers = []
 
             objects = CustomerModel.objects(
-                is_active=True,
-                organization_id=self.organization_id
+                is_active=True, organization_id=self.organization_id
             )
 
             if query:
@@ -187,9 +186,7 @@ class CustomerRepository(Repository):
     async def delete_by_id(self, id: str) -> CustomerInDB:
         try:
             customer_model: CustomerModel = CustomerModel.objects(
-                id=id,
-                is_active=True,
-                organization_id=self.organization_id
+                id=id, is_active=True, organization_id=self.organization_id
             ).first()
 
             if customer_model:

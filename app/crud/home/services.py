@@ -1,9 +1,9 @@
 import json
-from datetime import datetime
 from typing import List
 
 from app.api.dependencies.redis_manager import RedisManager
 from app.api.exceptions.authentication_exceptions import UnauthorizedException
+from app.core.utils.utc_datetime import UTCDateTime
 from app.crud.billing.services import BillingServices
 from app.crud.calendar.schemas import CalendarOrder
 from app.crud.calendar.services import CalendarServices
@@ -41,7 +41,7 @@ class HomeServices:
             return HomeMetric(**raw_metric)
 
         home_metric = HomeMetric()
-        now = datetime.now()
+        now = UTCDateTime.now()
 
         orders = await self.__get_today_orders(now=now)
 
@@ -67,7 +67,9 @@ class HomeServices:
         recent_orders = []
 
         for order in orders:
-            customer_name = order.customer.name if order.customer else "Cliente não identificado"
+            customer_name = (
+                order.customer.name if order.customer else "Cliente não identificado"
+            )
 
             recent_order = RecentOrder(
                 order_id=order.id,
@@ -78,7 +80,7 @@ class HomeServices:
 
         return recent_orders
 
-    async def __get_today_orders(self, now: datetime) -> List[CalendarOrder]:
+    async def __get_today_orders(self, now: UTCDateTime) -> List[CalendarOrder]:
         try:
             orders = await self.calendar_services.get_calendar(
                 day=now.day, month=now.month, year=now.year
@@ -89,7 +91,7 @@ class HomeServices:
         except UnauthorizedException:
             return []
 
-    async def __get_billing(self, now: datetime) -> float:
+    async def __get_billing(self, now: UTCDateTime) -> float:
         try:
             billing = await self.billing_services.get_billing_for_dashboard(
                 month=now.month, year=now.year

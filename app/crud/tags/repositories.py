@@ -1,12 +1,14 @@
-from datetime import datetime
 from typing import List
+
 from mongoengine.errors import NotUniqueError
+
 from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.core.repositories.base_repository import Repository
+from app.core.utils.utc_datetime import UTCDateTime
 
 from .models import TagModel
-from .schemas import Tag, TagInDB, Styling
+from .schemas import Styling, Tag, TagInDB
 
 _logger = get_logger(__name__)
 
@@ -23,9 +25,9 @@ class TagRepository(Repository):
 
             tag_model = TagModel(
                 organization_id=self.organization_id,
-                created_at=datetime.now(),
-                updated_at=datetime.now(),
-                **tag.model_dump()
+                created_at=UTCDateTime.now(),
+                updated_at=UTCDateTime.now(),
+                **tag.model_dump(),
             )
             tag_model.name = tag_model.name.strip().title()
 
@@ -44,13 +46,13 @@ class TagRepository(Repository):
     async def update(self, tag: TagInDB) -> TagInDB:
         try:
             tag_model: TagModel = TagModel.objects(
-                id=tag.id,
-                is_active=True,
-                organization_id=self.organization_id
+                id=tag.id, is_active=True, organization_id=self.organization_id
             ).first()
 
             if tag_model:
-                if tag_model.name != tag.name and await self.select_by_name(name=tag.name):
+                if tag_model.name != tag.name and await self.select_by_name(
+                    name=tag.name
+                ):
                     raise NotUniqueError()
 
                 tag.name = tag.name.strip().title()
@@ -86,9 +88,7 @@ class TagRepository(Repository):
     async def select_by_id(self, id: str, raise_404: bool = True) -> TagInDB:
         try:
             tag_model: TagModel = TagModel.objects(
-                id=id,
-                is_active=True,
-                organization_id=self.organization_id
+                id=id, is_active=True, organization_id=self.organization_id
             ).first()
 
             return self.__build_tag(tag_model=tag_model)
@@ -102,9 +102,7 @@ class TagRepository(Repository):
         try:
             name = name.strip().title()
             tag_model: TagModel = TagModel.objects(
-                name=name,
-                is_active=True,
-                organization_id=self.organization_id
+                name=name, is_active=True, organization_id=self.organization_id
             ).first()
 
             if tag_model:
@@ -119,8 +117,7 @@ class TagRepository(Repository):
             tags = []
 
             objects = TagModel.objects(
-                organization_id=self.organization_id,
-                is_active=True
+                organization_id=self.organization_id, is_active=True
             )
 
             if query:
@@ -143,9 +140,7 @@ class TagRepository(Repository):
     async def delete_by_id(self, id: str) -> TagInDB:
         try:
             tag_model: TagModel = TagModel.objects(
-                id=id,
-                is_active=True,
-                organization_id=self.organization_id
+                id=id, is_active=True, organization_id=self.organization_id
             ).first()
 
             if tag_model:

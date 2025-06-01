@@ -1,10 +1,9 @@
-from datetime import datetime
 from typing import List
-
 from pydantic import ValidationError
 from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.core.repositories.base_repository import Repository
+from app.core.utils.utc_datetime import UTCDateTime
 
 from .models import OfferModel
 from .schemas import Offer, OfferInDB
@@ -20,15 +19,17 @@ class OfferRepository(Repository):
     async def create(self, offer: Offer) -> OfferInDB:
         try:
             offer_model = OfferModel(
-                created_at=datetime.now(),
-                updated_at=datetime.now(),
+                created_at=UTCDateTime.now(),
+                updated_at=UTCDateTime.now(),
                 organization_id=self.organization_id,
-                **offer.model_dump()
+                **offer.model_dump(),
             )
             offer_model.name = offer_model.name.title()
 
             offer_model.save()
-            _logger.info(f"Offer {offer.name} saved for organization {self.organization_id}")
+            _logger.info(
+                f"Offer {offer.name} saved for organization {self.organization_id}"
+            )
 
             return OfferInDB.model_validate(offer_model)
 
@@ -39,9 +40,7 @@ class OfferRepository(Repository):
     async def update(self, offer: OfferInDB) -> OfferInDB:
         try:
             offer_model: OfferModel = OfferModel.objects(
-                id=offer.id,
-                is_active=True,
-                organization_id=self.organization_id
+                id=offer.id, is_active=True, organization_id=self.organization_id
             ).first()
             offer.name = offer.name.title()
 
@@ -59,9 +58,7 @@ class OfferRepository(Repository):
     async def select_by_id(self, id: str, raise_404: bool = True) -> OfferInDB:
         try:
             offer_model: OfferModel = OfferModel.objects(
-                id=id,
-                is_active=True,
-                organization_id=self.organization_id
+                id=id, is_active=True, organization_id=self.organization_id
             ).first()
 
             return OfferInDB.model_validate(offer_model)
@@ -75,14 +72,16 @@ class OfferRepository(Repository):
             if raise_404:
                 raise NotFoundError(message=f"Offer #{id} not found")
 
-    async def select_all(self, section_id: str, is_visible: bool = None) -> List[OfferInDB]:
+    async def select_all(
+        self, section_id: str, is_visible: bool = None
+    ) -> List[OfferInDB]:
         try:
             offers = []
 
             objects = OfferModel.objects(
                 is_active=True,
                 organization_id=self.organization_id,
-                section_id=section_id
+                section_id=section_id,
             )
 
             if is_visible is not None:
@@ -100,9 +99,7 @@ class OfferRepository(Repository):
     async def delete_by_id(self, id: str) -> OfferInDB:
         try:
             offer_model: OfferModel = OfferModel.objects(
-                id=id,
-                is_active=True,
-                organization_id=self.organization_id
+                id=id, is_active=True, organization_id=self.organization_id
             ).first()
 
             if offer_model:

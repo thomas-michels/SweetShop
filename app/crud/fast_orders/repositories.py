@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import List
 
 from pydantic_core import ValidationError
@@ -6,6 +5,7 @@ from pydantic_core import ValidationError
 from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.core.repositories.base_repository import Repository
+from app.core.utils.utc_datetime import UTCDateTime
 from app.crud.orders.models import OrderModel
 from app.crud.orders.schemas import (
     Delivery,
@@ -25,9 +25,7 @@ class FastOrderRepository(Repository):
         super().__init__()
         self.__organization_id = organization_id
 
-    async def create(
-        self, fast_order: FastOrder, total_amount: float
-    ) -> FastOrderInDB:
+    async def create(self, fast_order: FastOrder, total_amount: float) -> FastOrderInDB:
         try:
             order_model = self.__build_order_model(
                 fast_order=fast_order,
@@ -67,12 +65,14 @@ class FastOrderRepository(Repository):
 
     async def select_by_id(self, id: str) -> OrderInDB:
         try:
-            order_model: OrderModel = list(OrderModel.objects(
-                id=id,
-                is_active=True,
-                is_fast_order=True,
-                organization_id=self.__organization_id,
-            ).aggregate(OrderModel.get_payments()))
+            order_model: OrderModel = list(
+                OrderModel.objects(
+                    id=id,
+                    is_active=True,
+                    is_fast_order=True,
+                    organization_id=self.__organization_id,
+                ).aggregate(OrderModel.get_payments())
+            )
 
             if order_model:
                 return self.__from_order_model(order_model=order_model[0])
@@ -88,9 +88,9 @@ class FastOrderRepository(Repository):
 
     async def select_count(
         self,
-        day: datetime = None,
-        start_date: datetime = None,
-        end_date: datetime = None
+        day: UTCDateTime = None,
+        start_date: UTCDateTime = None,
+        end_date: UTCDateTime = None,
     ) -> int:
         try:
             objects = OrderModel.objects(
@@ -116,11 +116,11 @@ class FastOrderRepository(Repository):
 
     async def select_all(
         self,
-        day: datetime = None,
-        start_date: datetime = None,
-        end_date: datetime = None,
+        day: UTCDateTime = None,
+        start_date: UTCDateTime = None,
+        end_date: UTCDateTime = None,
         page: int = None,
-        page_size: int = None
+        page_size: int = None,
     ) -> List[OrderInDB]:
         try:
             fast_orders = []
@@ -146,9 +146,7 @@ class FastOrderRepository(Repository):
                 skip = (page - 1) * page_size
                 objects = objects.skip(skip).limit(page_size)
 
-            for order_model in objects.aggregate(
-                OrderModel.get_payments()
-            ):
+            for order_model in objects.aggregate(OrderModel.get_payments()):
                 fast_orders.append(self.__from_order_model(order_model=order_model))
 
             return fast_orders
@@ -195,8 +193,8 @@ class FastOrderRepository(Repository):
             order_date=fast_order.order_date,
             description=fast_order.description,
             is_fast_order=True,
-            created_at=datetime.now(),
-            updated_at=datetime.now(),
+            created_at=UTCDateTime.now(),
+            updated_at=UTCDateTime.now(),
         )
         return order_model
 
@@ -228,7 +226,9 @@ class FastOrderRepository(Repository):
                 is_active=order_model.is_active,
                 order_date=order_model.order_date,
                 organization_id=order_model.organization_id,
-                payments=order_model.payments if hasattr(order_model, "payments") else [],
+                payments=(
+                    order_model.payments if hasattr(order_model, "payments") else []
+                ),
                 products=order_model.products,
                 total_amount=order_model.total_amount,
                 updated_at=order_model.updated_at,

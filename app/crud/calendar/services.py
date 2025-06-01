@@ -1,8 +1,9 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import List, Tuple
 from app.api.dependencies.get_plan_feature import get_plan_feature
 from app.api.exceptions.authentication_exceptions import UnauthorizedException
 from app.core.utils.features import Feature
+from app.core.utils.utc_datetime import UTCDateTime
 from app.crud.orders.schemas import DeliveryType
 from app.crud.orders.services import OrderServices
 
@@ -66,13 +67,13 @@ class CalendarServices:
 
         return calendars
 
-    def __get_start_and_end_date(self, month: int, year: int) -> Tuple[datetime, datetime]:
-        start_date = datetime(year, month, 1)
+    def __get_start_and_end_date(self, month: int, year: int) -> Tuple[UTCDateTime, UTCDateTime]:
+        start_date = UTCDateTime(year, month, 1)
 
         if month == 12:
-            end_date = datetime(year + 1, 1, 1) - timedelta(minutes=1)
+            end_date = UTCDateTime(year + 1, 1, 1) - timedelta(minutes=1)
 
         else:
-            end_date = datetime(year, month + 1, 1) - timedelta(minutes=1)
+            end_date = UTCDateTime(year, month + 1, 1) - timedelta(minutes=1)
 
         return start_date, end_date

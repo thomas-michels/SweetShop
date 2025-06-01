@@ -1,10 +1,11 @@
 from bson import ObjectId
 import mercadopago
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 from app.api.exceptions.authentication_exceptions import InternalErrorException
 from app.api.shared_schemas.mercado_pago import MPPreferenceModel, MPSubscriptionModel
 from app.core.configs import get_environment, get_logger
 from app.core.exceptions.users import NotFoundError
+from app.core.utils.utc_datetime import UTCDateTime
 
 _logger = get_logger(__name__)
 _env = get_environment()
@@ -32,8 +33,8 @@ class MercadoPagoIntegration:
                     "frequency_type": "months",
                     "transaction_amount": annual_price,
                     "currency_id": "BRL",
-                    "start_date": (datetime.now(timezone.utc) + timedelta(minutes=1)).isoformat() + "Z",
-                    "end_date": (datetime.now(timezone.utc) + timedelta(days=365)).isoformat() + "Z"
+                    "start_date": (UTCDateTime.now() + timedelta(minutes=1)).isoformat() + "Z",
+                    "end_date": (UTCDateTime.now() + timedelta(days=365)).isoformat() + "Z"
                 },
                 "payer_email": user_info["email"] if _env.ENVIRONMENT == "prod" else _env.MP_TEST_EMAIL,
                 "back_url": f"{_env.PEDIDOZ_FRONT_URL}/",

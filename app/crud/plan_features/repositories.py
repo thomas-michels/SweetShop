@@ -1,9 +1,10 @@
-from datetime import datetime
 from typing import List
+
 from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.core.repositories.base_repository import Repository
 from app.core.utils.features import Feature
+from app.core.utils.utc_datetime import UTCDateTime
 
 from .models import PlanFeatureModel
 from .schemas import PlanFeature, PlanFeatureInDB
@@ -26,9 +27,9 @@ class PlanFeatureRepository(Repository):
                 )
 
             plan_feature_model = PlanFeatureModel(
-                created_at=datetime.now(),
-                updated_at=datetime.now(),
-                **plan_feature.model_dump(exclude=["display_name", "display_value"])
+                created_at=UTCDateTime.now(),
+                updated_at=UTCDateTime.now(),
+                **plan_feature.model_dump(exclude=["display_name", "display_value"]),
             )
 
             plan_feature_model.save()
@@ -53,7 +54,7 @@ class PlanFeatureRepository(Repository):
                 plan_id=plan_feature.plan_id,
                 name=plan_feature.name.value,
                 is_active=True,
-                id__ne=plan_feature.id
+                id__ne=plan_feature.id,
             ).first()
 
             if existing_feature:
@@ -61,7 +62,9 @@ class PlanFeatureRepository(Repository):
                     message="This feature already exists for this plan!"
                 )
 
-            plan_feature_model.update(**plan_feature.model_dump(exclude=["display_name"]))
+            plan_feature_model.update(
+                **plan_feature.model_dump(exclude=["display_name"])
+            )
 
             return await self.select_by_id(id=plan_feature.id)
 
@@ -83,7 +86,9 @@ class PlanFeatureRepository(Repository):
             if raise_404:
                 raise NotFoundError(message=f"PlanFeature #{id} not found")
 
-    async def select_by_name(self, name: Feature, plan_id: str, raise_404: bool = True) -> PlanFeatureInDB:
+    async def select_by_name(
+        self, name: Feature, plan_id: str, raise_404: bool = True
+    ) -> PlanFeatureInDB:
         try:
             plan_feature_model: PlanFeatureModel = PlanFeatureModel.objects(
                 name=name.value,
@@ -95,21 +100,22 @@ class PlanFeatureRepository(Repository):
                 return PlanFeatureInDB.model_validate(plan_feature_model)
 
             elif raise_404:
-                raise NotFoundError(message=f"PlanFeature with name {name.value} not found")
+                raise NotFoundError(
+                    message=f"PlanFeature with name {name.value} not found"
+                )
 
         except Exception as error:
             _logger.error(f"Error on select_by_name: {str(error)}")
             if raise_404:
-                raise NotFoundError(message=f"PlanFeature with name {name.value} not found")
+                raise NotFoundError(
+                    message=f"PlanFeature with name {name.value} not found"
+                )
 
     async def select_all(self, plan_id: str) -> List[PlanFeatureInDB]:
         try:
             plan_features = []
 
-            objects = PlanFeatureModel.objects(
-                plan_id=plan_id,
-                is_active=True
-            )
+            objects = PlanFeatureModel.objects(plan_id=plan_id, is_active=True)
 
             for plan_feature_model in objects:
                 plan_features.append(PlanFeatureInDB.model_validate(plan_feature_model))
@@ -123,8 +129,7 @@ class PlanFeatureRepository(Repository):
     async def delete_by_id(self, id: str) -> PlanFeatureInDB:
         try:
             plan_feature_model: PlanFeatureModel = PlanFeatureModel.objects(
-                id=id,
-                is_active=True
+                id=id, is_active=True
             ).first()
             plan_feature_model.delete()
 

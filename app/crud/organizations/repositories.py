@@ -1,11 +1,13 @@
-from datetime import datetime
 from typing import List
+
 from fastapi.encoders import jsonable_encoder
 from mongoengine import NotUniqueError
 from pydantic_core import ValidationError
+
 from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.core.repositories.base_repository import Repository
+from app.core.utils.utc_datetime import UTCDateTime
 
 from .models import OrganizationModel
 from .schemas import Organization, OrganizationInDB
@@ -24,9 +26,9 @@ class OrganizationRepository(Repository):
             organization_model = OrganizationModel(
                 is_active=True,
                 users=[],
-                created_at=datetime.now(),
-                updated_at=datetime.now(),
-                **json
+                created_at=UTCDateTime.now(),
+                updated_at=UTCDateTime.now(),
+                **json,
             )
             organization_model.name = organization_model.name.strip()
 
@@ -41,9 +43,13 @@ class OrganizationRepository(Repository):
             _logger.error(f"Error on create_organization: {str(error)}")
             raise UnprocessableEntity(message="Error on create new organization")
 
-    async def update(self, organization_id: str, organization: dict) -> OrganizationInDB:
+    async def update(
+        self, organization_id: str, organization: dict
+    ) -> OrganizationInDB:
         try:
-            organization_model: OrganizationModel = OrganizationModel.objects(id=organization_id, is_active=True).first()
+            organization_model: OrganizationModel = OrganizationModel.objects(
+                id=organization_id, is_active=True
+            ).first()
 
             organization_model.update(**organization)
 
@@ -59,7 +65,9 @@ class OrganizationRepository(Repository):
 
     async def select_by_id(self, id: str) -> OrganizationInDB:
         try:
-            organization_model: OrganizationModel = OrganizationModel.objects(id=id, is_active=True).first()
+            organization_model: OrganizationModel = OrganizationModel.objects(
+                id=id, is_active=True
+            ).first()
 
             return OrganizationInDB.model_validate(organization_model)
 
@@ -80,7 +88,9 @@ class OrganizationRepository(Repository):
                 objects = objects.filter(users__user_id=user_id)
 
             for organization_model in objects.order_by("name"):
-                organizations.append(OrganizationInDB.model_validate(organization_model))
+                organizations.append(
+                    OrganizationInDB.model_validate(organization_model)
+                )
 
             return organizations
 
@@ -90,7 +100,9 @@ class OrganizationRepository(Repository):
 
     async def delete_by_id(self, id: str) -> OrganizationInDB:
         try:
-            organization_model: OrganizationModel = OrganizationModel.objects(id=id, is_active=True).first()
+            organization_model: OrganizationModel = OrganizationModel.objects(
+                id=id, is_active=True
+            ).first()
             organization_model.delete()
 
             return OrganizationInDB.model_validate(organization_model)

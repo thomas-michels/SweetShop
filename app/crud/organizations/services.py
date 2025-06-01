@@ -1,6 +1,5 @@
 from typing import List
 
-from app.api.dependencies.bucket import S3BucketManager
 from app.api.dependencies.email_sender import send_email
 from app.api.dependencies.get_plan_feature import get_plan_feature
 from app.api.dependencies.redis_manager import RedisManager
@@ -30,7 +29,6 @@ class OrganizationServices:
         self.__organization_repository = organization_repository
         self.__organization_plan_repository = organization_plan_repository
         self.__user_repository = user_repository
-        self.__s3_manager = S3BucketManager(mode="private")
         self.redis_manager = RedisManager()
 
     async def create(self, organization: Organization, owner: UserInDB) -> OrganizationInDB:
@@ -84,15 +82,6 @@ class OrganizationServices:
 
             if file_in_db.purpose != FilePurpose.ORGANIZATION:
                 raise BadRequestException(detail="Invalid image for the organization")
-
-            if organization_in_db.file_id:
-                old_file = await file_repository.delete_by_id(
-                    id=organization_in_db.file_id,
-                    raise_404=False
-                )
-
-                if old_file:
-                    self.__s3_manager.delete_file_by_url(file_url=old_file.url)
 
         is_updated = organization_in_db.validate_updated_fields(update_organization=updated_organization)
 

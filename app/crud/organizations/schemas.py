@@ -37,6 +37,7 @@ class Organization(GenericModel):
     language: Language | None = Field(default=None, example=Language.PORTUGUESE)
     file_id: str | None = Field(default=None, example="file_123")
     unit_distance: UnitDistance | None = Field(default=None, example=UnitDistance.KM)
+    tax: float | None = Field(default=0, example=10)
 
     @model_validator(mode="after")
     def validate_model(self) -> "Organization":
@@ -70,6 +71,10 @@ class Organization(GenericModel):
 
             else:
                 raise ValueError("Document must be a valid CPF or CNPJ")
+
+        if self.tax is not None:
+            if self.tax < 0:
+                raise ValueError("O imposto deve ser maior ou igual a zero")
 
         return self
 
@@ -118,6 +123,10 @@ class Organization(GenericModel):
             self.unit_distance = update_organization.unit_distance
             is_updated = True
 
+        if update_organization.tax is not None:
+            self.tax = update_organization.tax
+            is_updated = True
+
         return is_updated
 
 
@@ -133,6 +142,7 @@ class UpdateOrganization(GenericModel):
     language: Optional[Language] = Field(default=None)
     currency: Optional[Currency] = Field(default=None)
     unit_distance: Optional[UnitDistance] = Field(default=None)
+    tax: Optional[float] = Field(default=None)
 
     @model_validator(mode="after")
     def validate_model(self) -> "UpdateOrganization":
@@ -163,6 +173,10 @@ class UpdateOrganization(GenericModel):
 
             else:
                 raise ValueError("Document must be a valid CPF or CNPJ")
+
+        if self.tax is not None:
+            if self.tax < 0:
+                raise ValueError("O imposto deve ser maior ou igual a zero")
 
         return self
 

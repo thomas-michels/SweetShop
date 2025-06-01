@@ -1,7 +1,7 @@
-from datetime import datetime
 from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.core.repositories.base_repository import Repository
+from app.core.utils.utc_datetime import UTCDateTime
 
 from .models import FileModel
 from .schemas import File, FileInDB
@@ -17,14 +17,16 @@ class FileRepository(Repository):
     async def create(self, file: File) -> FileInDB:
         try:
             file_model = FileModel(
-                created_at=datetime.now(),
-                updated_at=datetime.now(),
+                created_at=UTCDateTime.now(),
+                updated_at=UTCDateTime.now(),
                 organization_id=self.organization_id,
-                **file.model_dump()
+                **file.model_dump(),
             )
 
             file_model.save()
-            _logger.info(f"File {file.url} saved for organization {self.organization_id}")
+            _logger.info(
+                f"File {file.url} saved for organization {self.organization_id}"
+            )
 
             return FileInDB.model_validate(file_model)
 
@@ -35,9 +37,7 @@ class FileRepository(Repository):
     async def select_by_id(self, id: str, raise_404: bool = True) -> FileInDB:
         try:
             file_model: FileModel = FileModel.objects(
-                id=id,
-                is_active=True,
-                organization_id=self.organization_id
+                id=id, is_active=True, organization_id=self.organization_id
             ).first()
 
             if file_model:
@@ -54,9 +54,7 @@ class FileRepository(Repository):
     async def delete_by_id(self, id: str, raise_404: bool = True) -> FileInDB:
         try:
             file_model: FileModel = FileModel.objects(
-                id=id,
-                is_active=True,
-                organization_id=self.organization_id
+                id=id, is_active=True, organization_id=self.organization_id
             ).first()
             file_model.delete(soft_delete=False)
 

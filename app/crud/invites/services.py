@@ -1,8 +1,8 @@
-from datetime import datetime, timezone
 from typing import List
 
 from app.api.dependencies.email_sender import send_email
 from app.api.exceptions.authentication_exceptions import BadRequestException, UnauthorizedException, UnprocessableEntityException
+from app.core.utils.utc_datetime import UTCDateTime
 from app.crud.organizations.repositories import OrganizationRepository
 from app.crud.shared_schemas.roles import RoleEnum
 from app.crud.users.repositories import UserRepository
@@ -32,7 +32,7 @@ class InviteServices:
         if invite.role == RoleEnum.OWNER:
             raise UnauthorizedException(detail="You cannot invite a new owner of an organization!")
 
-        if invite.expires_at and invite.expires_at <= datetime.now(tz=timezone.utc):
+        if invite.expires_at and invite.expires_at <= UTCDateTime.now():
             raise UnprocessableEntityException(detail="Expires at should be grater than now!")
 
         user_in_db = await self.__user_repository.select_by_email(email=invite.user_email, raise_404=False)

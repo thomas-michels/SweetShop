@@ -1,8 +1,10 @@
-from datetime import date, datetime
+from datetime import date
 from typing import List
+
 from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.core.repositories.base_repository import Repository
+from app.core.utils.utc_datetime import UTCDateTime
 
 from .models import ExpenseModel
 from .schemas import Expense, ExpenseInDB
@@ -19,15 +21,17 @@ class ExpenseRepository(Repository):
         try:
             expense_model = ExpenseModel(
                 total_paid=total_paid,
-                created_at=datetime.now(),
-                updated_at=datetime.now(),
+                created_at=UTCDateTime.now(),
+                updated_at=UTCDateTime.now(),
                 organization_id=self.organization_id,
-                **expense.model_dump()
+                **expense.model_dump(),
             )
             expense_model.name = expense_model.name.title()
 
             expense_model.save()
-            _logger.info(f"Expense {expense.name} saved for organization {self.organization_id}")
+            _logger.info(
+                f"Expense {expense.name} saved for organization {self.organization_id}"
+            )
 
             return ExpenseInDB.model_validate(expense_model)
 
@@ -38,9 +42,7 @@ class ExpenseRepository(Repository):
     async def update(self, expense: ExpenseInDB) -> ExpenseInDB:
         try:
             expense_model: ExpenseModel = ExpenseModel.objects(
-                id=expense.id,
-                is_active=True,
-                organization_id=self.organization_id
+                id=expense.id, is_active=True, organization_id=self.organization_id
             ).first()
             expense.name = expense.name.title()
 
@@ -52,13 +54,15 @@ class ExpenseRepository(Repository):
             _logger.error(f"Error on update_expense: {str(error)}")
             raise UnprocessableEntity(message="Error on update expense")
 
-    async def select_count_by_date(self, start_date: datetime, end_date: datetime) -> int:
+    async def select_count_by_date(
+        self, start_date: UTCDateTime, end_date: UTCDateTime
+    ) -> int:
         try:
             count = ExpenseModel.objects(
                 is_active=True,
                 organization_id=self.organization_id,
                 created_at__gte=start_date,
-                created_at__lte=end_date
+                created_at__lte=end_date,
             ).count()
 
             return count if count else 0
@@ -72,7 +76,7 @@ class ExpenseRepository(Repository):
         query: str = None,
         start_date: date = None,
         end_date: date = None,
-        tags: List[str] = None
+        tags: List[str] = None,
     ) -> int:
         try:
             objects = ExpenseModel.objects(
@@ -101,9 +105,7 @@ class ExpenseRepository(Repository):
     async def select_by_id(self, id: str, raise_404: bool = True) -> ExpenseInDB:
         try:
             expense_model: ExpenseModel = ExpenseModel.objects(
-                id=id,
-                is_active=True,
-                organization_id=self.organization_id
+                id=id, is_active=True, organization_id=self.organization_id
             ).first()
 
             return ExpenseInDB.model_validate(expense_model)
@@ -114,21 +116,18 @@ class ExpenseRepository(Repository):
                 raise NotFoundError(message=f"Expense #{id} not found")
 
     async def select_all(
-            self,
-            query: str = None,
-            start_date: date = None,
-            end_date: date = None,
-            tags: List[str] = None,
-            page: int = None,
-            page_size: int = None
-        ) -> List[ExpenseInDB]:
+        self,
+        query: str = None,
+        start_date: date = None,
+        end_date: date = None,
+        tags: List[str] = None,
+        page: int = None,
+        page_size: int = None,
+    ) -> List[ExpenseInDB]:
         try:
             expenses = []
 
-            query_filter = {
-                "is_active": True,
-                "organization_id": self.organization_id
-            }
+            query_filter = {"is_active": True, "organization_id": self.organization_id}
 
             if query:
                 query_filter["name__iregex"] = query
@@ -160,9 +159,7 @@ class ExpenseRepository(Repository):
     async def delete_by_id(self, id: str) -> ExpenseInDB:
         try:
             expense_model: ExpenseModel = ExpenseModel.objects(
-                id=id,
-                is_active=True,
-                organization_id=self.organization_id
+                id=id, is_active=True, organization_id=self.organization_id
             ).first()
 
             if expense_model:

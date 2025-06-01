@@ -1,9 +1,9 @@
-from datetime import datetime
 from typing import List
 from mongoengine.errors import NotUniqueError
 from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.core.repositories.base_repository import Repository
+from app.core.utils.utc_datetime import UTCDateTime
 
 from .models import CouponModel
 from .schemas import Coupon, CouponInDB
@@ -16,9 +16,9 @@ class CouponRepository(Repository):
         try:
             coupon_model = CouponModel(
                 usage_count=0,
-                created_at=datetime.now(),
-                updated_at=datetime.now(),
-                **coupon.model_dump()
+                created_at=UTCDateTime.now(),
+                updated_at=UTCDateTime.now(),
+                **coupon.model_dump(),
             )
             coupon_model.name = coupon_model.name.upper()
 
@@ -57,7 +57,7 @@ class CouponRepository(Repository):
                 is_active=True,
             ).first()
 
-            now = datetime.now()
+            now = UTCDateTime.now()
 
             if coupon_model.expires_at <= now:
                 raise UnprocessableEntity(message="Coupon already expired")
@@ -111,9 +111,7 @@ class CouponRepository(Repository):
         try:
             coupons = []
 
-            objects = CouponModel.objects(
-                is_active=True
-            )
+            objects = CouponModel.objects(is_active=True)
 
             if query:
                 objects = objects.filter(name=query.upper())
