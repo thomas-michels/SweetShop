@@ -78,10 +78,11 @@ class PreOrderServices:
     async def __build_pre_order(self, pre_order_in_db: PreOrderInDB, expand: List[str] = []) -> CompletePreOrder:
         complete_pre_order = CompletePreOrder.model_validate(pre_order_in_db)
 
-        full_phone = f"{pre_order_in_db.customer.ddd}{pre_order_in_db.customer.phone_number}"
+        full_phone = f"{pre_order_in_db.customer.international_code}{pre_order_in_db.customer.ddd}{pre_order_in_db.customer.phone_number}"
 
         if full_phone not in self.__cache_customers:
             customer_in_db = await self.__customer_repository.select_by_phone(
+                international_code=pre_order_in_db.customer.international_code,
                 ddd=pre_order_in_db.customer.ddd,
                 phone_number=pre_order_in_db.customer.phone_number,
                 raise_404=False

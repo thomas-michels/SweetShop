@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import List
-from pydantic import Field
+from pydantic import Field, model_validator
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
 from app.crud.offers.schemas import OfferInDB
@@ -17,8 +17,16 @@ class PreOrderStatus(str, Enum):
 class PreOrderCustomer(GenericModel):
     customer_id: str | None = Field(default=None, example="cus_123")
     name: str = Field(example="Ted Mosby")
+    international_code: str | None = Field(default=None, example="55")
     ddd: str = Field(example="047")
     phone_number: str = Field(example="998899889")
+
+    @model_validator(mode="after")
+    def model_validate(self) -> "PreOrderCustomer":
+        if self.international_code is None:
+            self.international_code = "55"
+
+        return self
 
 
 class SelectedOffer(GenericModel):
