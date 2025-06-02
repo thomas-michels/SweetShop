@@ -83,6 +83,7 @@ class OrderServices:
             additional=order.additional,
             delivery_value=order.delivery.delivery_value if order.delivery.delivery_value is not None else 0,
             discount=order.discount,
+            tax=order.tax,
             products=products
         )
 
@@ -152,6 +153,11 @@ class OrderServices:
                 else order_in_db.discount
             ),
             delivery_value=delivery_value,
+            tax=(
+                updated_order.tax
+                if updated_order.tax is not None
+                else order_in_db.tax
+            )
         )
 
         is_updated = order_in_db.validate_updated_fields(update_order=updated_order)
@@ -303,6 +309,7 @@ class OrderServices:
             additional=order_in_db.additional,
             discount=order_in_db.discount,
             payments=order_in_db.payments,
+            tax=order_in_db.tax,
             is_active=order_in_db.is_active,
             created_at=order_in_db.created_at,
             updated_at=order_in_db.updated_at,
