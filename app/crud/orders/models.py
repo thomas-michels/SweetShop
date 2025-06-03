@@ -28,6 +28,7 @@ class OrderModel(BaseDocument):
     total_amount = FloatField(required=True)
     additional = FloatField(default=0, required=False)
     discount = FloatField(default=0, required=False)
+    tax = FloatField(default=0, required=False)
     description = StringField(required=False)
     reason_id = StringField(required=False)
     is_fast_order = BooleanField(required=False, default=False)

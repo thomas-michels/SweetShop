@@ -15,9 +15,10 @@ class OrderCalculator:
             delivery_value: float,
             additional: float,
             discount: float,
-            products: List[StoredProduct]
+            products: List[StoredProduct],
+            tax: float,
         ) -> float:
-        total_amount = delivery_value + additional - discount
+        total_amount = delivery_value + additional - discount + tax
 
         for stored_product in products:
             product_in_db = await self.__product_repository.select_by_id(

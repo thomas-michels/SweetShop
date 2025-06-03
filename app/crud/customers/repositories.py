@@ -17,12 +17,24 @@ class CustomerRepository(Repository):
         self.organization_id = organization_id
 
     async def create(self, customer: Customer) -> CustomerInDB:
-        if customer.ddd and customer.phone_number:
+        if customer.international_code and customer.ddd and customer.phone_number:
             if await self.select_by_phone(
-                ddd=customer.ddd, phone_number=customer.phone_number, raise_404=False
+                international_code=customer.international_code,
+                ddd=customer.ddd,
+                phone_number=customer.phone_number,
+                raise_404=False
             ):
                 raise UnprocessableEntity(
                     message="Um cliente com esse telefone já foi cadastrado"
+                )
+
+        if customer.email:
+            if await self.select_by_email(
+                email=customer.email,
+                raise_404=False
+            ):
+                raise UnprocessableEntity(
+                    message="Um cliente com esse email já foi cadastrado"
                 )
 
         try:
@@ -47,13 +59,26 @@ class CustomerRepository(Repository):
             raise UnprocessableEntity(message="Erro ao criar cliente")
 
     async def update(self, customer: CustomerInDB) -> CustomerInDB:
-        if customer.ddd and customer.phone_number:
+        if customer.international_code and customer.ddd and customer.phone_number:
             customer_with_same_phone = await self.select_by_phone(
-                ddd=customer.ddd, phone_number=customer.phone_number, raise_404=False
+                international_code=customer.international_code,
+                ddd=customer.ddd,
+                phone_number=customer.phone_number,
+                raise_404=False
             )
             if customer_with_same_phone and customer_with_same_phone.id != customer.id:
                 raise UnprocessableEntity(
                     message="Um cliente com esse telefone já foi cadastrado"
+                )
+
+        if customer.email:
+            customer_with_same_email = await self.select_by_email(
+                email=customer.email,
+                raise_404=False
+            )
+            if customer_with_same_email and customer_with_same_email.id != customer.id:
+                raise UnprocessableEntity(
+                    message="Um cliente com esse email já foi cadastrado"
                 )
 
         try:
@@ -112,10 +137,15 @@ class CustomerRepository(Repository):
             _logger.error(f"Error on select_by_id: {str(error)}")
 
     async def select_by_phone(
-        self, ddd: str, phone_number: str, raise_404: bool = True
+        self,
+        ddd: str,
+        phone_number: str,
+        international_code: str = "55",
+        raise_404: bool = True
     ) -> CustomerInDB:
         try:
             customer_model: CustomerModel = CustomerModel.objects(
+                international_code=international_code,
                 ddd=ddd,
                 phone_number=phone_number,
                 is_active=True,
@@ -137,6 +167,34 @@ class CustomerRepository(Repository):
                 )
 
             _logger.error(f"Error on select_by_phone: {str(error)}")
+
+    async def select_by_email(
+        self,
+        email: str,
+        raise_404: bool = True
+    ) -> CustomerInDB:
+        try:
+            customer_model: CustomerModel = CustomerModel.objects(
+                email=email,
+                is_active=True,
+                organization_id=self.organization_id,
+            ).first()
+
+            if customer_model:
+                return CustomerInDB.model_validate(customer_model)
+
+            elif raise_404:
+                raise NotFoundError(
+                    message=f"Cliente com o email {email} não foi encontrado"
+                )
+
+        except Exception as error:
+            if raise_404:
+                raise NotFoundError(
+                    message=f"Cliente com o email {email} não foi encontrado"
+                )
+
+            _logger.error(f"Error on select_by_email: {str(error)}")
 
     async def select_by_name(self, name: str) -> CustomerInDB:
         try:

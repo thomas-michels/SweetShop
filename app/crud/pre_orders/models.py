@@ -13,6 +13,7 @@ class PreOrderModel(BaseDocument):
     observation = StringField(required=False)
     offers = ListField(DictField(), min_lenght=1)
     status = StringField(default=None, required=False)
+    tax = FloatField(required=False)
     total_amount = FloatField(required=False)
 
     meta = {

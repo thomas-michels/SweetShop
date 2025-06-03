@@ -106,6 +106,7 @@ class RequestOrder(GenericModel):
     description: str | None = Field(default=None, example="Description")
     additional: float = Field(default=0, ge=0, example=12.2)
     discount: float | None = Field(default=0, ge=0, example=12.2)
+    tax: float | None = Field(default=0, ge=0, example=12.2)
     reason_id: str | None = Field(default=None, example="123")
 
     @model_validator(mode="after")
@@ -161,6 +162,10 @@ class RequestOrder(GenericModel):
             self.discount = update_order.discount
             is_updated = True
 
+        if update_order.tax is not None:
+            self.tax = update_order.tax
+            is_updated = True
+
         if update_order.products is not None:
             is_updated = True
 
@@ -185,6 +190,7 @@ class UpdateOrder(GenericModel):
     description: Optional[str] = Field(default=None, example="Description")
     additional: Optional[float] = Field(default=None, example=12.2)
     discount: Optional[float] = Field(default=None, example=12.2)
+    tax: Optional[float] = Field(default=None, example=12.2)
     reason_id: Optional[str] = Field(default=None, example="123")
     tags: Optional[List[str]] = Field(default=None)
 
@@ -197,6 +203,10 @@ class UpdateOrder(GenericModel):
         if self.discount is not None:
             if self.discount < 0:
                 raise ValueError("Discount must be grater than zero")
+
+        if self.tax is not None:
+            if self.tax < 0:
+                raise ValueError("Tax must be grater than zero")
 
         if self.tags is not None:
             if len(self.tags) != len(set(self.tags)):
