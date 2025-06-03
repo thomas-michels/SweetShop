@@ -29,7 +29,7 @@ class RedisManager:
         :return: True se bem-sucedido, False caso contrário.
         """
         try:
-            self.client.set(key, value, ex=expiration)
+            self.client.set(f"{_env.ENVIRONMENT}:{key}", value, ex=expiration)
             return True
         except Exception as error:
             _logger.error(f"Error setting key '{key}': {error}")
@@ -43,7 +43,7 @@ class RedisManager:
         :return: Valor armazenado ou None se não encontrado.
         """
         try:
-            return self.client.get(key)
+            return self.client.get(f"{_env.ENVIRONMENT}:{key}")
         except Exception as error:
             _logger.error(f"Error getting key '{key}': {error}")
             return None
@@ -57,7 +57,7 @@ class RedisManager:
         """
         try:
             _logger.info(f"Deleting key '{key}' from Redis...")
-            return self.client.delete(key) > 0
+            return self.client.delete(f"{_env.ENVIRONMENT}:{key}") > 0
 
         except Exception as error:
             _logger.error(f"Error deleting key '{key}': {error}")
@@ -83,9 +83,9 @@ class RedisManager:
         Incrementa um valor no Redis e define um tempo de expiração se necessário.
         """
         try:
-            value = self.client.incr(key)
+            value = self.client.incr(f"{_env.ENVIRONMENT}:{key}")
             if value == 1:
-                self.client.expire(key, expiration)
+                self.client.expire(f"{_env.ENVIRONMENT}:{key}", expiration)
 
             return value
 
