@@ -21,13 +21,16 @@ class PreOrderServices:
         self.__cache_customers = {}
         self.__cache_offers = {}
 
-    async def update_status(self, pre_order_id: str, new_status: PreOrderStatus) -> PreOrderInDB:
+    async def update_status(self, pre_order_id: str, new_status: PreOrderStatus, expand: List[str] = []) -> PreOrderInDB:
         pre_order_in_db = await self.__pre_order_repository.update_status(
             pre_order_id=pre_order_id,
             new_status=new_status
         )
 
-        return pre_order_in_db
+        return await self.__build_pre_order(
+            pre_order_in_db=pre_order_in_db,
+            expand=expand
+        )
 
     async def search_by_id(self, id: str, expand: List[str] = []) -> PreOrderInDB:
         pre_order_in_db = await self.__pre_order_repository.select_by_id(id=id)
