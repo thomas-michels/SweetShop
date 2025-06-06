@@ -9,6 +9,7 @@ from app.core.utils.features import Feature
 from app.core.utils.get_start_and_end_day_of_month import get_start_and_end_day_of_month
 from app.core.utils.utc_datetime import UTCDateTime
 from app.crud.customers.repositories import CustomerRepository
+from app.crud.organizations.repositories import OrganizationRepository
 from app.crud.products.repositories import ProductRepository
 from app.crud.shared_schemas.payment import PaymentStatus
 from app.crud.tags.repositories import TagRepository
@@ -37,11 +38,13 @@ class OrderServices:
         product_repository: ProductRepository,
         tag_repository: TagRepository,
         customer_repository: CustomerRepository,
+        organization_repository: OrganizationRepository,
     ) -> None:
         self.__order_repository = order_repository
         self.__product_repository = product_repository
         self.__tag_repository = tag_repository
         self.__customer_repository = customer_repository
+        self.__organization_repository = organization_repository
 
         self.organization_id = self.__order_repository.organization_id
 
@@ -79,17 +82,25 @@ class OrderServices:
 
         products = await self.__validate_products(raw_products=order.products)
 
+        organization = await self.__organization_repository.select_by_id(
+            id=self.__order_repository.organization_id
+        )
+
         total_amount = await self.__order_calculator.calculate(
             additional=order.additional,
             delivery_value=order.delivery.delivery_value if order.delivery.delivery_value is not None else 0,
             discount=order.discount,
-            tax=order.tax,
             products=products
         )
+
+        if organization.tax:
+            total_tax = round(total_amount * (organization.tax / 100), 2)
+            total_amount += total_tax
 
         order.products = []
         order = Order.model_validate(order)
         order.products = products
+        order.tax = total_tax
 
         order_in_db = await self.__order_repository.create(
             order=order, total_amount=total_amount
@@ -152,12 +163,7 @@ class OrderServices:
                 if updated_order.discount is not None
                 else order_in_db.discount
             ),
-            delivery_value=delivery_value,
-            tax=(
-                updated_order.tax
-                if updated_order.tax is not None
-                else order_in_db.tax
-            )
+            delivery_value=delivery_value
         )
 
         is_updated = order_in_db.validate_updated_fields(update_order=updated_order)
@@ -169,6 +175,16 @@ class OrderServices:
                 ]
 
             updated_fields.update(updated_order.model_dump(exclude_none=True))
+
+            organization = await self.__organization_repository.select_by_id(
+                id=self.__order_repository.organization_id
+            )
+
+            if organization.tax:
+                total_tax = round(total_amount * (organization.tax / 100), 2)
+                total_amount += total_tax
+                updated_fields["tax"] = total_tax
+
             updated_fields["total_amount"] = total_amount
 
             order_in_db = await self.__order_repository.update(
