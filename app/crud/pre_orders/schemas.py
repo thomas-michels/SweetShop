@@ -62,6 +62,7 @@ class PreOrderInDB(GenericModel, DatabaseModel):
         }
     ])
     status: PreOrderStatus | None = Field(default=PreOrderStatus.PENDING, example=PreOrderStatus.ACCEPTED)
+    tax: float | None = Field(default=0)
     total_amount: float | None = Field(default=None, example=123)
 
 
