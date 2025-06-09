@@ -1,7 +1,10 @@
 from typing import List
 
 from app.crud.customers.repositories import CustomerRepository
+from app.crud.messages.services import MessageServices
+from app.crud.messages.schemas import Message, MessageType, Origin
 from app.crud.offers.repositories import OfferRepository
+from app.crud.organizations.repositories import OrganizationRepository
 
 from .repositories import PreOrderRepository
 from .schemas import CompletePreOrder, PreOrderInDB, PreOrderStatus
@@ -14,10 +17,16 @@ class PreOrderServices:
         pre_order_repository: PreOrderRepository,
         customer_repository: CustomerRepository,
         offer_repository: OfferRepository,
+        organization_repository: OrganizationRepository,
+        message_services: MessageServices
     ) -> None:
         self.__pre_order_repository = pre_order_repository
         self.__customer_repository = customer_repository
         self.__offer_repository = offer_repository
+        self.__organization_repository = organization_repository
+
+        self.__message_services = message_services
+
         self.__cache_customers = {}
         self.__cache_offers = {}
 
@@ -25,6 +34,10 @@ class PreOrderServices:
         pre_order_in_db = await self.__pre_order_repository.update_status(
             pre_order_id=pre_order_id,
             new_status=new_status
+        )
+
+        await self.send_client_message(
+            pre_order=pre_order_in_db
         )
 
         return await self.__build_pre_order(
@@ -117,3 +130,35 @@ class PreOrderServices:
             complete_pre_order.offers = complete_offers
 
         return complete_pre_order
+
+    async def send_client_message(self, pre_order: PreOrderInDB) -> bool:
+        if not (pre_order.customer.international_code and pre_order.customer.ddd and pre_order.customer.phone_number):
+            return False
+
+        organization = await self.__organization_repository.select_by_id(
+            id=self.__pre_order_repository.organization_id
+        )
+
+        status = "ACEITO" if pre_order.status.startswith("A") else "RECUSADO"
+
+        text_message = f"""*Seu pedido foi atualizado!*
+
+Olá {pre_order.customer.name.title()},
+
+Informamos que seu pedido foi *{status}*.
+Aguarde o contato estabelecimento para maiores informações!
+
+Em caso de dúvidas o número de contato do estabelecimento para contato é +{organization.international_code} {organization.ddd} {organization.phone_number}
+
+_pedidoZ_"""
+
+        message = Message(
+            international_code=pre_order.customer.international_code,
+            ddd=pre_order.customer.ddd,
+            phone_number=pre_order.customer.phone_number,
+            message_type=MessageType.INFORMATION,
+            origin=Origin.ORDERS,
+            message=text_message
+        )
+
+        return await self.__message_services.create(message=message)
