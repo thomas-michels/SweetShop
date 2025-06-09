@@ -93,6 +93,8 @@ class OrderServices:
             products=products
         )
 
+        total_tax = 0
+
         if organization.tax:
             total_tax = round(total_amount * (organization.tax / 100), 2)
             total_amount += total_tax
