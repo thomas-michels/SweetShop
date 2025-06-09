@@ -34,7 +34,7 @@ class WhatsAppMessageSender:
             return False
 
     def send_message(self, number: str, message: str) -> dict:
-        delay = random.randint(1, 15)
+        delay = random.randint(1, 5)
         time.sleep(delay)
 
         url = f"{_env.EVOLUTION_BASE_URL}/message/sendText/{_env.EVOLUTION_INSTANCE}"
