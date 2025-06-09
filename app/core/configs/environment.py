@@ -65,6 +65,10 @@ class Environment(BaseSettings):
     # PEDIDOZ
     PEDIDOZ_FRONT_URL: str | None = None
 
+    EVOLUTION_BASE_URL: str | None = None
+    EVOLUTION_INSTANCE: str | None = None
+    EVOLUTION_API_KEY: str | None = None
+
 
     class Config:
         """Load config file"""

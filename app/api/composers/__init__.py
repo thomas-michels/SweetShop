@@ -24,3 +24,4 @@ from .menu_composite import menu_composer
 from .offer_composite import offer_composer
 from .home_composite import home_composer
 from .pre_order_composite import pre_order_composer
+from .message_composite import message_composer
