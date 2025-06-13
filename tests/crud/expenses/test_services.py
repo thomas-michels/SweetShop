@@ -151,3 +151,89 @@ async def test_delete_expense():
 
     expense_repo.delete_by_id.assert_awaited_with(id="e1")
     assert result == deleted
+
+
+@pytest.mark.asyncio
+async def test_create_expense_plan_limit(monkeypatch):
+    expense_repo = AsyncMock()
+    tag_repo = AsyncMock()
+    service = ExpenseServices(expense_repository=expense_repo, tag_repository=tag_repo)
+
+    monkeypatch.setattr(
+        "app.crud.expenses.services.get_plan_feature",
+        AsyncMock(return_value=DummyPlanFeature(value="1")),
+    )
+    monkeypatch.setattr(
+        "app.crud.expenses.services.get_start_and_end_day_of_month",
+        lambda: (UTCDateTime.now(), UTCDateTime.now()),
+    )
+
+    expense_repo.select_count_by_date = AsyncMock(return_value=1)
+    expense = Expense(name="test", expense_date=UTCDateTime.now(), payment_details=[], tags=[])
+
+    with pytest.raises(Exception):
+        await service.create(expense)
+
+
+@pytest.mark.asyncio
+async def test_update_expense_invalid_total(monkeypatch):
+    expense_repo = AsyncMock()
+    tag_repo = AsyncMock()
+    service = ExpenseServices(expense_repository=expense_repo, tag_repository=tag_repo)
+
+    existing = ExpenseInDB(
+        id="e1",
+        organization_id="org",
+        name="Market",
+        expense_date=UTCDateTime.now(),
+        payment_details=[],
+        tags=[],
+        total_paid=50,
+        created_at=UTCDateTime.now(),
+        updated_at=UTCDateTime.now(),
+    )
+    expense_repo.select_by_id = AsyncMock(return_value=existing)
+
+    update = UpdateExpense(
+        payment_details=[Payment(method=PaymentMethod.CASH, payment_date=UTCDateTime.now(), amount=0)]
+    )
+
+    with pytest.raises(Exception):
+        await service.update("e1", update)
+
+
+@pytest.mark.asyncio
+async def test_delete_expense_not_found(monkeypatch):
+    expense_repo = AsyncMock()
+    tag_repo = AsyncMock()
+    service = ExpenseServices(expense_repository=expense_repo, tag_repository=tag_repo)
+    expense_repo.delete_by_id = AsyncMock(side_effect=Exception("not found"))
+
+    with pytest.raises(Exception):
+        await service.delete_by_id("e1")
+
+
+@pytest.mark.asyncio
+async def test_search_all_expand(monkeypatch):
+    expense_repo = AsyncMock()
+    tag_repo = AsyncMock()
+    service = ExpenseServices(expense_repository=expense_repo, tag_repository=tag_repo)
+
+    expense = ExpenseInDB(
+        id="e1",
+        organization_id="org",
+        name="Market",
+        expense_date=UTCDateTime.now(),
+        payment_details=[],
+        tags=["t1"],
+        total_paid=10,
+        created_at=UTCDateTime.now(),
+        updated_at=UTCDateTime.now(),
+    )
+
+    expense_repo.select_all = AsyncMock(return_value=[expense])
+    tag_repo.select_by_id = AsyncMock(return_value=TagInDB(id="t1", name="Tag", organization_id="org"))
+
+    result = await service.search_all(query="", expand=["tags"])
+    assert result[0].tags[0].id == "t1"
+    tag_repo.select_by_id.assert_awaited_with(id="t1", raise_404=False)
