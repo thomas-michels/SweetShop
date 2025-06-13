@@ -78,18 +78,18 @@ class SubscriptionBuilder:
         # Aplica desconto de cupom, se fornecido
         discount = 0
         observation = {}
-        if subscription.cupoun_id:
+        if subscription.coupon_id:
             coupon_in_db = await self.__coupon_service.search_by_id(
-                id=subscription.cupoun_id
+                id=subscription.coupon_id
             )
             coupon_in_db = await self.__coupon_service.update_usage(
                 coupon_id=coupon_in_db.id, quantity=1
             )
             discount = coupon_in_db.calculate_discount(price=subscription_price)
             observation["discount"] = discount
-            observation["coupon_id"] = subscription.cupoun_id
+            observation["coupon_id"] = subscription.coupon_id
             _logger.info(
-                f"Desconto de R${discount} aplicado usando cupom {subscription.cupoun_id}"
+                f"Desconto de R${discount} aplicado usando cupom {subscription.coupon_id}"
             )
 
         # Gera a preferência de pagamento e a fatura
