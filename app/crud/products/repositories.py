@@ -100,8 +100,11 @@ class ProductRepository(Repository):
             if tags:
                 objects = objects.filter(tags__in=tags)
 
-            skip = (page - 1) * page_size
-            objects = objects.order_by("name").skip(skip).limit(page_size)
+            if page is not None and page_size is not None:
+                skip = (page - 1) * page_size
+                objects = objects.order_by("name").skip(skip).limit(page_size)
+            else:
+                objects = objects.order_by("name")
 
             for product_model in objects:
                 products.append(ProductInDB.model_validate(product_model))
