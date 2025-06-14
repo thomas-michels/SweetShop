@@ -14,7 +14,7 @@ class RequestSubscription(GenericModel):
     period: SubscriptionPeriodEnum = Field(default=SubscriptionPeriodEnum.ANUALLY, example=False)
     organization_id: str= Field(example="org_123")
     allow_additional: bool = Field(default=False, example=False)
-    cupoun_id: str | None = Field(default=None, example="cou_123")
+    coupon_id: str | None = Field(default=None, example="cou_123")
 
     def get_sub_months(self) -> int:
         months_quantity = {
