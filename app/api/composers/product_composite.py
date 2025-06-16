@@ -3,6 +3,7 @@ from app.api.dependencies.get_current_organization import check_current_organiza
 from app.crud.files.repositories import FileRepository
 from app.crud.tags.repositories import TagRepository
 from app.crud.products.repositories import ProductRepository
+from app.crud.offers.repositories import OfferRepository
 from app.crud.products.services import ProductServices
 
 
@@ -12,10 +13,12 @@ async def product_composer(
     tag_repository = TagRepository(organization_id=organization_id)
     product_repository = ProductRepository(organization_id=organization_id)
     file_repository = FileRepository(organization_id=organization_id)
+    offer_repository = OfferRepository(organization_id=organization_id)
 
     product_services = ProductServices(
         product_repository=product_repository,
         tag_repository=tag_repository,
-        file_repository=file_repository
+        file_repository=file_repository,
+        offer_repository=offer_repository
     )
     return product_services
