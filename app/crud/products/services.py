@@ -6,7 +6,14 @@ from app.core.utils.features import Feature
 from app.crud.files.schemas import FilePurpose
 from app.crud.tags.repositories import TagRepository
 from app.crud.files.repositories import FileRepository
-from .schemas import CompleteItem, CompleteProduct, CompleteProductSection, Product, ProductInDB, UpdateProduct
+from .schemas import (
+    CompleteItem,
+    CompleteProduct,
+    CompleteProductSection,
+    Product,
+    ProductInDB,
+    UpdateProduct,
+)
 from .repositories import ProductRepository
 
 
@@ -189,3 +196,4 @@ class ProductServices:
             complete_products.append(complete_product)
 
         return complete_products
+

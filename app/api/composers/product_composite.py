@@ -12,7 +12,6 @@ async def product_composer(
     tag_repository = TagRepository(organization_id=organization_id)
     product_repository = ProductRepository(organization_id=organization_id)
     file_repository = FileRepository(organization_id=organization_id)
-
     product_services = ProductServices(
         product_repository=product_repository,
         tag_repository=tag_repository,
