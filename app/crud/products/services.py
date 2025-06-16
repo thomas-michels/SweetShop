@@ -6,7 +6,6 @@ from app.core.utils.features import Feature
 from app.crud.files.schemas import FilePurpose
 from app.crud.tags.repositories import TagRepository
 from app.crud.files.repositories import FileRepository
-from app.crud.offers.repositories import OfferRepository
 from .schemas import (
     CompleteItem,
     CompleteProduct,
@@ -25,12 +24,10 @@ class ProductServices:
             product_repository: ProductRepository,
             tag_repository: TagRepository,
             file_repository: FileRepository,
-            offer_repository: OfferRepository,
         ) -> None:
         self.__product_repository = product_repository
         self.__tag_repository = tag_repository
         self.__file_repository = file_repository
-        self.__offer_repository = offer_repository
 
     async def create(self, product: Product) -> ProductInDB:
         plan_feature = await get_plan_feature(
@@ -77,7 +74,6 @@ class ProductServices:
                 await self.validade_additionals(product=updated_product)
 
             product_in_db = await self.__product_repository.update(product=product_in_db)
-            await self.__update_offer_products(product=product_in_db)
 
         return product_in_db
 
@@ -201,25 +197,3 @@ class ProductServices:
 
         return complete_products
 
-    async def __update_offer_products(self, product: ProductInDB) -> None:
-        offers = await self.__offer_repository.select_all_by_product_id(
-            product_id=product.id
-        )
-
-        for offer in offers:
-            updated = False
-
-            for offer_product in offer.products:
-                if offer_product.product_id == product.id:
-                    offer_product.name = product.name
-                    offer_product.description = product.description
-                    offer_product.unit_cost = product.unit_cost
-                    offer_product.unit_price = product.unit_price
-                    offer_product.file_id = product.file_id
-                    offer_product.sections = product.sections
-                    updated = True
-
-            if updated:
-                offer.unit_cost = sum(p.unit_cost for p in offer.products)
-                offer.unit_price = sum(p.unit_price for p in offer.products)
-                await self.__offer_repository.update(offer=offer)
