@@ -2,7 +2,11 @@ from typing import List
 
 from app.crud.files.repositories import FileRepository
 from app.crud.products.repositories import ProductRepository
-from app.crud.products.schemas import CompleteItem, CompleteProductSection
+from app.crud.products.schemas import (
+    CompleteItem,
+    CompleteProductSection,
+    ProductInDB,
+)
 from app.crud.sections.repositories import SectionRepository
 
 from .repositories import OfferRepository
@@ -137,6 +141,29 @@ class OfferServices:
     async def delete_by_id(self, id: str) -> OfferInDB:
         offer_in_db = await self.__offer_repository.delete_by_id(id=id)
         return offer_in_db
+
+    async def update_product_in_offers(self, product: ProductInDB) -> None:
+        offers = await self.__offer_repository.select_all_by_product_id(
+            product_id=product.id
+        )
+
+        for offer in offers:
+            updated = False
+
+            for offer_product in offer.products:
+                if offer_product.product_id == product.id:
+                    offer_product.name = product.name
+                    offer_product.description = product.description
+                    offer_product.unit_cost = product.unit_cost
+                    offer_product.unit_price = product.unit_price
+                    offer_product.file_id = product.file_id
+                    offer_product.sections = product.sections
+                    updated = True
+
+            if updated:
+                offer.unit_cost = sum(p.unit_cost for p in offer.products)
+                offer.unit_price = sum(p.unit_price for p in offer.products)
+                await self.__offer_repository.update(offer=offer)
 
     async def __create_offer_product(self, product_ids: List[str]) -> tuple[float, float, List[OfferProduct]]:
         total_cost = 0

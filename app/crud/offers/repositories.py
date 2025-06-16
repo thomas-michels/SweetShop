@@ -96,6 +96,33 @@ class OfferRepository(Repository):
             _logger.error(f"Error on select_all: {error}")
             raise NotFoundError(message=f"Offers not found")
 
+    async def select_all_by_product_id(self, product_id: str) -> List[OfferInDB]:
+        try:
+            offers = []
+
+            objects = OfferModel.objects(
+                is_active=True,
+                organization_id=self.organization_id,
+            )
+
+            for offer_model in objects:
+                for product in offer_model.products:
+                    if product.get("product_id") == product_id:
+                        try:
+                            offer = OfferInDB.model_validate(offer_model)
+
+                        except Exception:
+                            continue
+
+                        offers.append(offer)
+                        break
+
+            return offers
+
+        except Exception as error:
+            _logger.error(f"Error on select_all_by_product_id: {error}")
+            raise NotFoundError(message=f"Offers not found")
+
     async def delete_by_id(self, id: str) -> OfferInDB:
         try:
             offer_model: OfferModel = OfferModel.objects(
