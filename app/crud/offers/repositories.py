@@ -108,7 +108,13 @@ class OfferRepository(Repository):
             for offer_model in objects:
                 for product in offer_model.products:
                     if product.get("product_id") == product_id:
-                        offers.append(OfferInDB.model_validate(offer_model))
+                        try:
+                            offer = OfferInDB.model_validate(offer_model)
+
+                        except Exception:
+                            continue
+
+                        offers.append(offer)
                         break
 
             return offers
