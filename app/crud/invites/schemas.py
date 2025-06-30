@@ -13,13 +13,6 @@ class Invite(GenericModel):
     role: RoleEnum = Field(example=RoleEnum.MEMBER.value)
     expires_at: UTCDateTimeType | None = Field(default=None, example=str(UTCDateTime.now()))
 
-    @model_validator(mode="after")
-    def validate_expires_at(self):
-        if self.expires_at:
-            self.expires_at = convert_datetime_to_realworld(dt=self.expires_at)
-
-        return self
-
 
 class InviteInDB(Invite, DatabaseModel):
     is_accepted: bool = Field(default=False, example=False)
