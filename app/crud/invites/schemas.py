@@ -1,7 +1,7 @@
-from pydantic import Field, model_validator
+from pydantic import Field
 
 from app.core.models.base_model import DatabaseModel
-from app.core.models.base_schema import GenericModel, convert_datetime_to_realworld
+from app.core.models.base_schema import GenericModel
 from app.core.utils.utc_datetime import UTCDateTime, UTCDateTimeType
 from app.crud.organizations.schemas import OrganizationInDB
 from app.crud.shared_schemas.roles import RoleEnum
