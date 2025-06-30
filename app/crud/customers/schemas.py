@@ -49,8 +49,11 @@ class Customer(GenericModel):
             else:
                 raise ValueError("Document must be a valid CPF or CNPJ")
 
-        if self.email:
-            if not re.match(EMAIL_REGEX, self.email):
+        if self.email is not None:
+            if self.email == "":
+                self.email = None
+
+            if self.email and not re.match(EMAIL_REGEX, self.email):
                 raise ValueError("Invalid email")
 
         if self.international_code is None:
@@ -137,8 +140,11 @@ class UpdateCustomer(GenericModel):
             else:
                 raise ValueError("Document must be a valid CPF or CNPJ")
 
-        if self.email:
-            if not re.match(EMAIL_REGEX, self.email):
+        if self.email is not None:
+            if self.email == "":
+                self.email = None
+
+            if self.email and not re.match(EMAIL_REGEX, self.email):
                 raise ValueError("Invalid email")
 
         return self
