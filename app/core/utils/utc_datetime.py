@@ -77,5 +77,5 @@ UTCDateTimeType = Annotated[
     UTCDateTime,
     BeforeValidator(UTCDateTime.validate_datetime),
     PlainSerializer(lambda x: x, return_type=datetime),
-    WithJsonSchema(core_schema.datetime_schema, mode='serialization'),
+    WithJsonSchema({"type": "string", "format": "date-time"}, mode="serialization"),
 ]
