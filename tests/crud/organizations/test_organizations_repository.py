@@ -39,6 +39,14 @@ class TestOrganizationRepository(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(UnprocessableEntity):
             await self.repo.create(org)
 
+    async def test_create_strips_whitespace_from_name(self):
+        org = await self._build_org(name="  Trim  ")
+
+        result = await self.repo.create(org)
+
+        self.assertEqual(result.name, "Trim")
+
+
     async def test_update_organization_name(self):
         org = await self._build_org(name="Old")
         created = await self.repo.create(org)
@@ -82,3 +90,11 @@ class TestOrganizationRepository(unittest.IsolatedAsyncioTestCase):
     async def test_delete_by_id_not_found(self):
         with self.assertRaises(NotFoundError):
             await self.repo.delete_by_id(id="missing")
+
+    async def test_select_all_sorted_by_name(self):
+        await self.repo.create(await self._build_org(name="Bravo"))
+        await self.repo.create(await self._build_org(name="Alpha"))
+
+        results = await self.repo.select_all()
+
+        self.assertEqual([org.name for org in results], ["Alpha", "Bravo"])

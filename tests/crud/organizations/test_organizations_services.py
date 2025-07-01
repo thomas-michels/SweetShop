@@ -102,3 +102,155 @@ class TestOrganizationServices(unittest.IsolatedAsyncioTestCase):
         updated = await self.service.search_by_id(id=org.id)
         self.assertEqual(len(updated.users), 2)
 
+    async def test_update_user_role_success(self):
+        org = await self.repo.create(Organization(name="Org"))
+        await self.repo.update(org.id, {"users": [
+            {"user_id": "owner", "role": RoleEnum.OWNER},
+            {"user_id": "admin", "role": RoleEnum.ADMIN},
+        ]})
+
+        orig_update = self.repo.update
+
+        async def safe_update(*args, **kwargs):
+            org_dict = kwargs.get("organization") if "organization" in kwargs else args[1]
+            org_dict.pop("plan", None)
+            return await orig_update(*(args if args else [kwargs["organization_id"], org_dict]))
+
+        self.repo.update = safe_update
+
+        async def _select(*args, **kwargs):
+            user_id = args[0] if args else kwargs.get("id")
+            return await self._user(user_id)
+
+        self.user_repo.select_by_id.side_effect = _select
+
+        result = await self.service.update_user_role(
+            organization_id=org.id,
+            user_making_request="owner",
+            user_id="admin",
+            role=RoleEnum.MANAGER,
+        )
+
+        self.assertTrue(result)
+        updated = await self.service.search_by_id(id=org.id)
+        self.assertEqual(
+            updated.get_user_in_organization("admin").role,
+            RoleEnum.MANAGER,
+        )
+
+    async def test_remove_user_as_owner(self):
+        org = await self.repo.create(Organization(name="Org"))
+        await self.repo.update(org.id, {"users": [
+            {"user_id": "owner", "role": RoleEnum.OWNER},
+            {"user_id": "member", "role": RoleEnum.MEMBER},
+        ]})
+
+        orig_update = self.repo.update
+
+        async def safe_update(*args, **kwargs):
+            org_dict = kwargs.get("organization") if "organization" in kwargs else args[1]
+            org_dict.pop("plan", None)
+            return await orig_update(*(args if args else [kwargs["organization_id"], org_dict]))
+
+        self.repo.update = safe_update
+
+        async def _select(*args, **kwargs):
+            user_id = args[0] if args else kwargs.get("id")
+            return await self._user(user_id)
+
+        self.user_repo.select_by_id.side_effect = _select
+
+        result = await self.service.remove_user(
+            organization_id=org.id,
+            user_making_request="owner",
+            user_id="member",
+        )
+
+        self.assertTrue(result)
+        updated = await self.service.search_by_id(id=org.id)
+        self.assertEqual(len(updated.users), 1)
+
+    async def test_transfer_ownership(self):
+        org = await self.repo.create(Organization(name="Org"))
+        await self.repo.update(org.id, {"users": [
+            {"user_id": "owner", "role": RoleEnum.OWNER},
+            {"user_id": "admin", "role": RoleEnum.ADMIN},
+        ]})
+
+        orig_update = self.repo.update
+
+        async def safe_update(*args, **kwargs):
+            org_dict = kwargs.get("organization") if "organization" in kwargs else args[1]
+            org_dict.pop("plan", None)
+            return await orig_update(*(args if args else [kwargs["organization_id"], org_dict]))
+
+        self.repo.update = safe_update
+
+        async def _select(*args, **kwargs):
+            user_id = args[0] if args else kwargs.get("id")
+            return await self._user(user_id)
+
+        self.user_repo.select_by_id.side_effect = _select
+
+        result = await self.service.transfer_ownership(
+            organization_id=org.id,
+            user_making_request="owner",
+            user_id="admin",
+        )
+
+        self.assertTrue(result)
+        updated = await self.service.search_by_id(id=org.id)
+        self.assertEqual(updated.get_user_in_organization("admin").role, RoleEnum.OWNER)
+        self.assertEqual(updated.get_user_in_organization("owner").role, RoleEnum.ADMIN)
+
+    async def test_leave_organization_removes_user(self):
+        org = await self.repo.create(Organization(name="Org"))
+        await self.repo.update(org.id, {"users": [
+            {"user_id": "owner", "role": RoleEnum.OWNER},
+            {"user_id": "member", "role": RoleEnum.MEMBER},
+        ]})
+
+        orig_update = self.repo.update
+
+        async def safe_update(*args, **kwargs):
+            org_dict = kwargs.get("organization") if "organization" in kwargs else args[1]
+            org_dict.pop("plan", None)
+            return await orig_update(*(args if args else [kwargs["organization_id"], org_dict]))
+
+        self.repo.update = safe_update
+
+        async def _select(*args, **kwargs):
+            user_id = args[0] if args else kwargs.get("id")
+            return await self._user(user_id)
+
+        self.user_repo.select_by_id.side_effect = _select
+
+        result = await self.service.leave_the_organization(
+            organization_id=org.id,
+            user_id="member",
+        )
+
+        self.assertTrue(result)
+        updated = await self.service.search_by_id(id=org.id)
+        self.assertEqual(len(updated.users), 1)
+
+    async def test_leave_organization_deletes_when_last_user(self):
+        org = await self.repo.create(Organization(name="Solo"))
+        await self.repo.update(org.id, {"users": [
+            {"user_id": "owner", "role": RoleEnum.OWNER},
+        ]})
+
+        async def _select(*args, **kwargs):
+            user_id = args[0] if args else kwargs.get("id")
+            return await self._user(user_id)
+
+        self.user_repo.select_by_id.side_effect = _select
+
+        result = await self.service.leave_the_organization(
+            organization_id=org.id,
+            user_id="owner",
+        )
+
+        self.assertIsInstance(result, OrganizationInDB)
+        self.assertEqual(await self.repo.select_all(), [])
+
