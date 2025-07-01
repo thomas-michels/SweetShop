@@ -24,16 +24,16 @@ class Environment(BaseSettings):
     API_TOKEN: str | None = None
 
     # AUTH0
-    AUTH0_DOMAIN: str
-    AUTH0_API_AUDIENCE: str
-    AUTH0_ISSUER: str
-    AUTH0_ALGORITHMS: str
-    AUTH0_CLIENT_ID: str
-    AUTH0_CLIENT_SECRET: str
-    APP_SECRET_KEY: str
-    AUTH0_MANAGEMENT_API_CLIENT_ID: str
-    AUTH0_MANAGEMENT_API_CLIENT_SECRET: str
-    AUTH0_MANAGEMENT_API_AUDIENCE: str
+    AUTH0_DOMAIN: str | None = None
+    AUTH0_API_AUDIENCE: str | None = None
+    AUTH0_ISSUER: str | None = None
+    AUTH0_ALGORITHMS: str | None = None
+    AUTH0_CLIENT_ID: str | None = None
+    AUTH0_CLIENT_SECRET: str | None = None
+    APP_SECRET_KEY: str | None = None
+    AUTH0_MANAGEMENT_API_CLIENT_ID: str | None = None
+    AUTH0_MANAGEMENT_API_CLIENT_SECRET: str | None = None
+    AUTH0_MANAGEMENT_API_AUDIENCE: str | None = None
 
     # SENTRY
     SENTRY_DSN: str | None = None
