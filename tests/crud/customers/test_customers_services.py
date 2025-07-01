@@ -121,3 +121,36 @@ class TestCustomerServices(unittest.IsolatedAsyncioTestCase):
         result = await service.search_all(query=None, expand=["tags"])
         self.assertEqual(result[0].tags[0].name, "Tag 1")
         mock_tag_repo.select_by_id.assert_awaited_with(id="tag1", raise_404=False)
+
+    @patch("app.crud.customers.services.get_plan_feature", new_callable=AsyncMock)
+    async def test_create_customer_validates_tags(self, mock_plan):
+        mock_plan.return_value = SimpleNamespace(value="-")
+        mock_tag_repo = AsyncMock()
+        service = CustomerServices(customer_repository=self.service._CustomerServices__repository, tag_repository=mock_tag_repo)
+        customer = await self._customer(name="Tagged")
+        customer.tags = ["t1", "t2"]
+        await service.create(customer)
+        mock_tag_repo.select_by_id.assert_any_await(id="t1")
+        mock_tag_repo.select_by_id.assert_any_await(id="t2")
+
+    async def test_search_all_expand_tags_cache(self):
+        from app.crud.tags.schemas import TagInDB
+        mock_repo = AsyncMock()
+        mock_repo.select_all.return_value = [
+            CustomerInDB(
+                id="1", name="A", organization_id="org1", is_active=True,
+                addresses=[], tags=["tag1"],
+                created_at=UTCDateTime.now(), updated_at=UTCDateTime.now()
+            ),
+            CustomerInDB(
+                id="2", name="B", organization_id="org1", is_active=True,
+                addresses=[], tags=["tag1"],
+                created_at=UTCDateTime.now(), updated_at=UTCDateTime.now()
+            )
+        ]
+        mock_tag_repo = AsyncMock()
+        mock_tag_repo.select_by_id.return_value = TagInDB(id="tag1", name="Tag 1", organization_id="org1")
+        service = CustomerServices(customer_repository=mock_repo, tag_repository=mock_tag_repo)
+        result = await service.search_all(query=None, expand=["tags"])
+        self.assertEqual(len(result), 2)
+        self.assertEqual(mock_tag_repo.select_by_id.await_count, 1)

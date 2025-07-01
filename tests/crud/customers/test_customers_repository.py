@@ -6,6 +6,7 @@ from app.crud.customers.repositories import CustomerRepository
 from app.crud.customers.schemas import Customer
 from app.crud.customers.models import CustomerModel
 from app.core.exceptions import NotFoundError, UnprocessableEntity
+from app.core.utils.utc_datetime import UTCDateTime
 
 
 class TestCustomerRepository(unittest.IsolatedAsyncioTestCase):
@@ -94,3 +95,50 @@ class TestCustomerRepository(unittest.IsolatedAsyncioTestCase):
     async def test_delete_by_id_not_found(self):
         with self.assertRaises(NotFoundError):
             await self.repo.delete_by_id(id="missing")
+
+
+
+    async def test_select_all_filter_by_tags(self):
+        cust1 = await self._customer(name="TaggedA")
+        cust1.tags = ["t1", "t2"]
+        await self.repo.create(cust1)
+
+        cust2 = await self._customer(name="TaggedB")
+        cust2.tags = ["t2"]
+        await self.repo.create(cust2)
+
+        results = await self.repo.select_all(query=None, tags=["t1"], page=1, page_size=10)
+
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].name, "Taggeda")
+
+    async def test_select_count_returns_zero_when_no_results(self):
+        count = await self.repo.select_count(query="Nothing")
+        self.assertEqual(count, 0)
+
+    async def test_select_by_phone_not_found(self):
+        with self.assertRaises(NotFoundError):
+            await self.repo.select_by_phone(ddd="047", phone_number="9999999")
+
+    async def test_select_by_email_not_found(self):
+        with self.assertRaises(NotFoundError):
+            await self.repo.select_by_email(email="nope@test.com")
+
+    async def test_select_by_name_not_found(self):
+        with self.assertRaises(NotFoundError):
+            await self.repo.select_by_name(name="Ghost")
+
+    async def test_update_nonexistent_customer_raises_unprocessable(self):
+        from app.crud.customers.schemas import CustomerInDB
+        missing = CustomerInDB(
+            id="missing",
+            name="Missing",
+            organization_id="org1",
+            addresses=[],
+            tags=[],
+            created_at=UTCDateTime.now(),
+            updated_at=UTCDateTime.now(),
+            is_active=True,
+        )
+        with self.assertRaises(UnprocessableEntity):
+            await self.repo.update(missing)
