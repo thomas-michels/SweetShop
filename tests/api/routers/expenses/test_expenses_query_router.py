@@ -85,3 +85,26 @@ class TestExpensesQueryRouter(unittest.TestCase):
 
         self.assertEqual(response.status_code, 204)
 
+
+    def test_get_expenses_expand_tags(self):
+        from app.crud.tags.models import TagModel
+        tag = TagModel(name="Tag1", organization_id="org_123")
+        tag.save()
+        expense = ExpenseModel(
+            name="With Tag",
+            organization_id="org_123",
+            expense_date=UTCDateTime.now(),
+            total_paid=1.0,
+            payment_details=[],
+            tags=[tag.id],
+            is_active=True,
+        )
+        expense.save()
+
+        response = self.test_client.get(
+            f"/api/expenses?expand=tags",
+            headers={"organization-id": "org_123"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["data"][0]["tags"][0]["name"], "Tag1")
+

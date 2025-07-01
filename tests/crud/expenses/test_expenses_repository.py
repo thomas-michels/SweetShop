@@ -99,3 +99,81 @@ class TestExpenseRepository(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(NotFoundError):
             await self.repo.delete_by_id(id="missing")
 
+
+    async def test_select_all_filter_by_tags(self):
+        expense1 = await self._build_expense(name="TaggedA")
+        expense1.tags = ["t1", "t2"]
+        await self.repo.create(expense=expense1, total_paid=5.0)
+
+        expense2 = await self._build_expense(name="TaggedB")
+        expense2.tags = ["t2"]
+        await self.repo.create(expense=expense2, total_paid=5.0)
+
+        results = await self.repo.select_all(query=None, tags=["t1"], page=None, page_size=None)
+
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].name, "Taggeda")
+
+    async def test_select_count_returns_zero_when_no_results(self):
+        count = await self.repo.select_count(query="Nothing")
+        self.assertEqual(count, 0)
+
+    async def test_select_count_by_date(self):
+        ExpenseModel(
+            name="D",
+            organization_id="org1",
+            expense_date=UTCDateTime(2025, 1, 15),
+            total_paid=5.0,
+            payment_details=[],
+            tags=[],
+            created_at=UTCDateTime(2025, 1, 10),
+            updated_at=UTCDateTime(2025, 1, 10),
+            is_active=True,
+        ).save()
+        ExpenseModel(
+            name="E",
+            organization_id="org1",
+            expense_date=UTCDateTime(2025, 1, 20),
+            total_paid=5.0,
+            payment_details=[],
+            tags=[],
+            created_at=UTCDateTime(2025, 1, 20),
+            updated_at=UTCDateTime(2025, 1, 20),
+            is_active=True,
+        ).save()
+        ExpenseModel(
+            name="F",
+            organization_id="org1",
+            expense_date=UTCDateTime(2025, 2, 5),
+            total_paid=5.0,
+            payment_details=[],
+            tags=[],
+            created_at=UTCDateTime(2025, 2, 5),
+            updated_at=UTCDateTime(2025, 2, 5),
+            is_active=True,
+        ).save()
+
+        count = await self.repo.select_count_by_date(
+            start_date=UTCDateTime(2025, 1, 1),
+            end_date=UTCDateTime(2025, 1, 31),
+        )
+
+        self.assertEqual(count, 2)
+
+    async def test_update_nonexistent_expense_raises_unprocessable(self):
+        from app.crud.expenses.schemas import ExpenseInDB
+
+        missing = ExpenseInDB(
+            id="missing",
+            name="Missing",
+            expense_date=UTCDateTime.now(),
+            payment_details=[],
+            tags=[],
+            organization_id="org1",
+            total_paid=1.0,
+            created_at=UTCDateTime.now(),
+            updated_at=UTCDateTime.now(),
+        )
+
+        with self.assertRaises(UnprocessableEntity):
+            await self.repo.update(missing)

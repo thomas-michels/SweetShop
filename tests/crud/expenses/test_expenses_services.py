@@ -124,3 +124,57 @@ class TestExpenseServices(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result, "deleted")
         mock_repo.delete_by_id.assert_awaited_with(id="d")
 
+
+    @patch("app.crud.expenses.services.get_plan_feature", new_callable=AsyncMock)
+    async def test_create_expense_invalid_total_paid(self, mock_plan):
+        mock_plan.return_value = SimpleNamespace(value="-")
+        expense = await self._expense(amount=5)
+        expense.payment_details[0].amount = -5
+        with self.assertRaises(UnprocessableEntityException):
+            await self.service.create(expense)
+
+    @patch("app.crud.expenses.services.get_plan_feature", new_callable=AsyncMock)
+    async def test_update_expense_invalid_total_paid(self, mock_plan):
+        mock_plan.return_value = SimpleNamespace(value="-")
+        created = await self.service.create(await self._expense())
+        payment = Payment(method=PaymentMethod.CASH, payment_date=UTCDateTime.now(), amount=1)
+        payment.amount = 0
+        with self.assertRaises(UnprocessableEntityException):
+            await self.service.update(
+                id=created.id,
+                updated_expense=UpdateExpense(payment_details=[payment])
+            )
+
+    @patch("app.crud.expenses.services.get_plan_feature", new_callable=AsyncMock)
+    async def test_create_expense_validates_tags(self, mock_plan):
+        mock_plan.return_value = SimpleNamespace(value="-")
+        self.service._ExpenseServices__tag_repository.select_by_id = AsyncMock()
+        expense = await self._expense()
+        expense.tags = ["t1", "t2"]
+        await self.service.create(expense)
+        self.service._ExpenseServices__tag_repository.select_by_id.assert_any_await(id="t1")
+        self.service._ExpenseServices__tag_repository.select_by_id.assert_any_await(id="t2")
+
+    async def test_search_all_expand_tags(self):
+        from app.crud.tags.schemas import TagInDB
+        mock_repo = AsyncMock()
+        mock_repo.select_all.return_value = [
+            ExpenseInDB(
+                id="1",
+                name="A",
+                expense_date=UTCDateTime.now(),
+                payment_details=[],
+                tags=["tag1"],
+                organization_id="org1",
+                total_paid=5.0,
+                created_at=UTCDateTime.now(),
+                updated_at=UTCDateTime.now(),
+            )
+        ]
+        mock_tag_repo = AsyncMock()
+        mock_tag_repo.select_by_id.return_value = TagInDB(id="tag1", name="Tag 1", organization_id="org1")
+        service = ExpenseServices(expense_repository=mock_repo, tag_repository=mock_tag_repo)
+        result = await service.search_all(query=None, expand=["tags"])
+        self.assertEqual(result[0].tags[0].name, "Tag 1")
+        mock_tag_repo.select_by_id.assert_awaited_with(id="tag1", raise_404=False)
+

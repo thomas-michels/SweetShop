@@ -148,3 +148,21 @@ class TestExpensesCommandRouter(unittest.TestCase):
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.json()["message"], "Expense #9999 not found")
 
+
+    def test_post_expense_invalid_payload_returns_422(self):
+        response = self.test_client.post(
+            url="/api/expenses",
+            json={"name": "Only name"},
+            headers={"organization-id": "org_123"},
+        )
+        self.assertEqual(response.status_code, 422)
+
+    def test_put_expense_invalid_payload_returns_422(self):
+        expense_id = self.insert_mock_expense(name="Will Fail")
+        response = self.test_client.put(
+            f"/api/expenses/{expense_id}",
+            json={"expenseDate": "invalid"},
+            headers={"organization-id": "org_123"},
+        )
+        self.assertEqual(response.status_code, 422)
+
