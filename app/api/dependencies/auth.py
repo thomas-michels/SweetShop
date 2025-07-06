@@ -1,12 +1,12 @@
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer, SecurityScopes
 from jose import JWTError
 from pydantic import ValidationError
 
 from app.api.composers import authentication_composer
 from app.api.dependencies.get_current_organization import check_current_organization
-from app.api.dependencies.verify_token import verify_token
+from app.api.dependencies.verify_token import ValidateToken
 from app.api.shared_schemas.token import TokenData
 from app.core.exceptions.users import NotFoundError
 from app.core.utils.permissions import get_role_permissions
@@ -16,15 +16,18 @@ from app.crud.users.schemas import CompleteUserInDB
 
 
 async def decode_jwt(
+    request: Request,
     security_scopes: SecurityScopes,
     token: HTTPAuthorizationCredentials = Depends(HTTPBearer()),
     organization_id: str = Depends(check_current_organization),
     authetication_services: AuthenticationServices = Depends(authentication_composer),
 ) -> CompleteUserInDB:
     try:
-        auth_result = await verify_token(
+        auth: ValidateToken = request.app.state.auth
+
+        auth_result = await auth.verify(
             scopes=security_scopes,
-            token=token
+            token=token.credentials
         )
 
         token_scopes = auth_result.get("scopes", [])

@@ -1,36 +1,40 @@
-import imghdr
+from io import BytesIO
 from fastapi import UploadFile, HTTPException
+from PIL import Image, UnidentifiedImageError
 
 MAX_FILE_SIZE_MB = 25
 ALLOWED_IMAGE_FORMATS = {"jpeg", "png", "jpg"}
 
 
 async def validate_image_file(image: UploadFile) -> str:
-    """Valida se o arquivo é uma imagem válida e tem no máximo 25MB.
-
-    Args:
-        image (UploadFile): Arquivo de imagem enviado.
-
-    Returns:
-        str: Tipo da imagem (jpeg, png, etc.).
-
-    Raises:
-        HTTPException: Se o arquivo não for uma imagem válida ou exceder o tamanho máximo.
     """
-    # Verifica tamanho do arquivo
+    Valida se o arquivo é uma imagem válida, tem tamanho <= 25 MB
+    e está em um dos formatos permitidos. Retorna o formato em lowercase.
+    """
+    # 1) Lê tudo do upload apenas uma vez
+    contents = await image.read()
 
-    image.file.seek(0, 2)  # Move o cursor para o final do arquivo
+    # 2) Valida tamanho
+    size_mb = len(contents) / (1024 * 1024)
+    if size_mb > MAX_FILE_SIZE_MB:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File exceeds {MAX_FILE_SIZE_MB} MB limit"
+        )
 
-    file_size_mb = image.file.tell() / (1024 * 1024)
-
-    if file_size_mb > MAX_FILE_SIZE_MB:
-        raise HTTPException(status_code=400, detail=f"File exceeds {MAX_FILE_SIZE_MB}MB limit")
-
-    image.file.seek(0)  # Retorna o cursor para o início
-
-    # Verifica se é uma imagem válida
-    image_type = imghdr.what(image.file)
-    if image_type not in ALLOWED_IMAGE_FORMATS:
+    # 3) Verifica e extrai o formato via Pillow
+    try:
+        with Image.open(BytesIO(contents)) as img:
+            img.verify()              # detecta corrupções
+            fmt = img.format.lower()  # ex: "jpeg", "png"
+    except (UnidentifiedImageError, Exception):
         raise HTTPException(status_code=400, detail="Invalid image format")
 
-    return image_type
+    # 4) Valida o formato
+    if fmt not in ALLOWED_IMAGE_FORMATS:
+        raise HTTPException(status_code=400, detail="Invalid image format")
+
+    # 5) Reseta o ponteiro para usos futuros (save, process etc.)
+    image.file.seek(0)
+
+    return fmt

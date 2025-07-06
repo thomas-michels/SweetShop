@@ -12,16 +12,14 @@ async def organization_composer(
     cached_users = Depends(get_cached_users)
 ) -> OrganizationServices:
     organization_repository = OrganizationRepository()
-    user_repository = UserRepository(
-        access_token=access_token,
-        cached_users=cached_users
-    )
+    user_repository = UserRepository(access_token=access_token)
 
     organization_plan_repository = OrganizationPlanRepository()
 
     organization_services = OrganizationServices(
         organization_repository=organization_repository,
         organization_plan_repository=organization_plan_repository,
-        user_repository=user_repository
+        user_repository=user_repository,
+        cached_users=cached_users
     )
     return organization_services

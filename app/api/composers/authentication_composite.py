@@ -12,16 +12,14 @@ async def authentication_composer(
     cached_users = Depends(get_cached_users),
     term_of_use_services = Depends(terms_of_use_composer),
 ) -> AuthenticationServices:
-    user_repository = UserRepository(
-        access_token=access_token,
-        cached_users=cached_users
-    )
+    user_repository = UserRepository(access_token=access_token)
 
     organization_repository = OrganizationRepository()
 
     authentication_services = AuthenticationServices(
         user_repository=user_repository,
         organization_repository=organization_repository,
-        terms_of_use_services=term_of_use_services
+        terms_of_use_services=term_of_use_services,
+        cached_users=cached_users
     )
     return authentication_services

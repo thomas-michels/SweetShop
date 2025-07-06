@@ -1,44 +1,8 @@
-import re
 from typing import Dict, List
-
-from passlib.context import CryptContext
-from pydantic import ConfigDict, Field, SecretStr
-
-from app.core.exceptions import InvalidPassword, UnprocessableEntity
+from pydantic import ConfigDict, Field
 from app.core.models.base_schema import GenericModel
 from app.core.utils.utc_datetime import UTCDateTime, UTCDateTimeType
 from app.crud.shared_schemas.user_organization import UserOrganization
-
-_pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-_PASSWORD_REGEX = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()\-=_+{};:\'"\\|,.<>?]).+$'
-
-
-class ConfirmPassword(GenericModel):
-    password: SecretStr = Field(example="abc@1234#", exclude=True)
-    repeat_password: SecretStr = Field(example="abc@1234#", exclude=True)
-
-    def validate_password(self) -> None:
-        errors = []
-
-        if self.password.get_secret_value() != self.repeat_password.get_secret_value():
-            raise UnprocessableEntity(message="Passwords needs to be equals")
-
-        if len(self.password.get_secret_value()) < 8:
-            errors.append("Minimum size is 8 characters.")
-
-        if len(self.password.get_secret_value()) > 24:
-            errors.append("Maximum size is 24 characters.")
-
-        if not re.match(_PASSWORD_REGEX, self.password.get_secret_value()):
-            errors.append(
-                "The password must have special characters and uppercase and lowercase letters."
-            )
-
-        if errors:
-            raise InvalidPassword(message=" ".join(errors))
-
-    def get_password(self, password: str) -> str:
-        return _pwd_context.hash(password)
 
 
 class User(GenericModel):

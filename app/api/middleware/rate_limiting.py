@@ -1,30 +1,30 @@
-from fastapi import FastAPI, Request
+from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
-from app.api.exceptions.authentication_exceptions import TooManyRequestException
-from app.core.configs import get_logger
-from app.api.dependencies.redis_manager import RedisManager
+from cachetools import TTLCache
+import threading
 
-_logger = get_logger(__name__)
+from app.api.exceptions.authentication_exceptions import TooManyRequestException
+
+DEFAULT_LIMIT = 100  # máximo de requisições
+DEFAULT_WINDOW = 60  # janela em segundos
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    """
-    Middleware para limitar a taxa de requisições por IP usando Redis.
-    """
-    def __init__(self, app: FastAPI, limit: int, window: int):
+    def __init__(self, app, limit: int = DEFAULT_LIMIT, window: int = DEFAULT_WINDOW, maxsize: int = 100):
         super().__init__(app)
-        self.redis = RedisManager()
         self.limit = limit
         self.window = window
+        self.cache = TTLCache(maxsize=maxsize, ttl=window)
+        self.lock = threading.Lock()
 
     async def dispatch(self, request: Request, call_next):
-        client_ip = request.headers.get("fly-client-ip")
+        client_ip = request.headers.get("fly-client-ip", request.client.host)
 
-        key = f"pedidoz:rate_limit:{client_ip}"
-        request_count = self.redis.increment_value(key, self.window)
+        with self.lock:
+            count = self.cache.get(client_ip, 0) + 1
+            self.cache[client_ip] = count
 
-        if request_count > self.limit:
-            _logger.warning(f"Rate limit exceeded for {client_ip}")
+        if count > self.limit:
             raise TooManyRequestException()
 
         response = await call_next(request)
