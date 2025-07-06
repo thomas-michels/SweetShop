@@ -9,9 +9,9 @@ async def user_composer(
     access_token = Depends(get_access_token),
     cached_users = Depends(get_cached_users)
 ) -> UserServices:
-    user_repository = UserRepository(
-        access_token=access_token,
+    user_repository = UserRepository(access_token=access_token)
+    user_services = UserServices(
+        user_repository=user_repository,
         cached_users=cached_users
     )
-    user_services = UserServices(user_repository=user_repository)
     return user_services

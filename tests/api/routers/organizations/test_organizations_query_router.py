@@ -39,14 +39,11 @@ class TestOrganizationsQueryRouter(unittest.TestCase):
         self.user_repo = AsyncMock()
         self.plan_repo = AsyncMock()
 
-        patcher_redis = patch("app.crud.organizations.services.RedisManager", return_value=FakeRedis())
-        patcher_redis.start()
-        self.addCleanup(patcher_redis.stop)
-
         self.service = OrganizationServices(
             organization_repository=self.repo,
             user_repository=self.user_repo,
             organization_plan_repository=self.plan_repo,
+            cached_users={}
         )
 
         self.test_client = TestClient(app)

@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 from mongoengine import connect, disconnect
 import mongomock
 
@@ -27,13 +27,11 @@ class TestOrganizationServices(unittest.IsolatedAsyncioTestCase):
         self.repo = OrganizationRepository()
         self.user_repo = AsyncMock()
         self.plan_repo = AsyncMock()
-        patcher = patch("app.crud.organizations.services.RedisManager", return_value=FakeRedis())
-        self.addCleanup(patcher.stop)
-        patcher.start()
         self.service = OrganizationServices(
             organization_repository=self.repo,
             user_repository=self.user_repo,
             organization_plan_repository=self.plan_repo,
+            cached_users={}
         )
 
     def tearDown(self):

@@ -1,11 +1,10 @@
-FROM python:3.10-alpine
+FROM python:3.13-alpine
 
 WORKDIR .
 
-COPY ./requirements/prod.txt ./requirements.txt
+COPY ./requirements/dev.txt ./requirements.txt
 
 RUN pip install --upgrade pip \
-    && pip install Authlib[Starlette] httpx itsdangerous requests PyJWT \
     && pip install --no-cache -r /requirements.txt
 
 COPY ./app ./app
