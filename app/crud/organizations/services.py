@@ -1,14 +1,13 @@
-from typing import List
+from typing import Dict, List
 
 from app.api.dependencies.email_sender import send_email
 from app.api.dependencies.get_plan_feature import get_plan_feature
-from app.api.dependencies.redis_manager import RedisManager
 from app.api.exceptions.authentication_exceptions import UnauthorizedException, BadRequestException
 from app.core.utils.features import Feature
 from app.crud.files.repositories import FileRepository
 from app.crud.files.schemas import FilePurpose
 from app.crud.users.repositories import UserRepository
-from app.crud.users.schemas import UserInDB
+from app.crud.users.schemas import CompleteUserInDB, UserInDB
 
 from .schemas import CompleteOrganization, Organization, OrganizationInDB, RoleEnum, UpdateOrganization, UserOrganization
 from .repositories import OrganizationRepository
@@ -25,11 +24,13 @@ class OrganizationServices:
         organization_repository: OrganizationRepository,
         user_repository: UserRepository,
         organization_plan_repository: OrganizationPlanRepository,
+        cached_complete_users: Dict[str, CompleteUserInDB]
     ) -> None:
         self.__organization_repository = organization_repository
         self.__organization_plan_repository = organization_plan_repository
         self.__user_repository = user_repository
-        self.redis_manager = RedisManager()
+
+        self.__cached_complete_users = cached_complete_users
 
     async def create(self, organization: Organization, owner: UserInDB) -> OrganizationInDB:
         organization_in_db = await self.__organization_repository.create(organization=organization)
@@ -131,22 +132,25 @@ class OrganizationServices:
             raise UnauthorizedException(detail="Only the owner can delete an organization")
 
         organization_in_db = await self.__organization_repository.delete_by_id(id=id)
+
+        self.__cached_complete_users.clear()
+
         return organization_in_db
 
     async def __build_complete_organization(self, organization: OrganizationInDB, expand: List[str] = []) -> CompleteOrganization:
         complete_organization = CompleteOrganization.model_validate(organization)
-        file_repository = FileRepository(organization_id=organization.id)
 
         if "users" in expand:
             for user in complete_organization.users:
                 user_in_db = await self.__user_repository.select_by_id(id=user.user_id)
                 user.user = user_in_db
 
-        if "plan":
+        if "plan" in expand:
             organization_plan = await self.__organization_plan_repository.select_active_plan(organization_id=organization.id)
             complete_organization.plan = organization_plan
 
-        if "file":
+        if "file" in expand:
+            file_repository = FileRepository(organization_id=organization.id)
             complete_organization.file = await file_repository.select_by_id(
                 id=complete_organization.file_id,
                 raise_404=False
@@ -195,12 +199,8 @@ class OrganizationServices:
             organization=organization_in_db.model_dump(exclude={"plan"})
         )
 
-        key = f"user:{user_in_db.user_id}"
-        self.redis_manager.delete_value(key=key)
-
-        # organization key
-        key = f"users:{user_in_db.user_id}:organizations"
-        self.redis_manager.delete_value(key=key)
+        self.clear_user_cache(user_id=user_making_request)
+        self.clear_user_cache(user_id=user_id)
 
         return True
 
@@ -246,6 +246,8 @@ class OrganizationServices:
             organization=organization_in_db.model_dump()
         )
 
+        self.clear_user_cache(user_id=user_id)
+
         return True
 
     async def remove_user(self, organization_id: str, user_making_request: str, user_id: str) -> bool:
@@ -281,13 +283,8 @@ class OrganizationServices:
             organization=organization_in_db.model_dump()
         )
 
-        # User key
-        key = f"user:{user_in_db.user_id}"
-        self.redis_manager.delete_value(key=key)
-
-        # organization key
-        key = f"users:{user_id}:organizations"
-        self.redis_manager.delete_value(key=key)
+        self.clear_user_cache(user_id=user_making_request)
+        self.clear_user_cache(user_id=user_id)
 
         return True
 
@@ -325,8 +322,8 @@ class OrganizationServices:
             organization=organization_in_db.model_dump()
         )
 
-        key = f"user:{user_in_db.user_id}"
-        self.redis_manager.delete_value(key=key)
+        self.clear_user_cache(user_id=user_making_request)
+        self.clear_user_cache(user_id=user_id)
 
         return True
 
@@ -357,7 +354,13 @@ class OrganizationServices:
                 organization=organization_in_db.model_dump()
             )
 
-        key = f"user:{user_in_db.user_id}"
-        self.redis_manager.delete_value(key=key)
+        self.clear_user_cache(user_id=user_id)
 
         return True
+
+    def clear_user_cache(self, user_id: str) -> bool:
+        if self.__cached_complete_users.get(user_id):
+            self.__cached_complete_users.pop(user_id)
+            return True
+
+        return False

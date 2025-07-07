@@ -1,3 +1,4 @@
+from asgi_correlation_id import CorrelationIdMiddleware
 import sentry_sdk
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -72,6 +73,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.add_middleware(CorrelationIdMiddleware)
 app.add_middleware(RateLimitMiddleware, limit=100, window=60)
 
 app.include_router(organization_router, prefix="/api")

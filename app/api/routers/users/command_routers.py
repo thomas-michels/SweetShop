@@ -3,7 +3,6 @@ from fastapi import APIRouter, Depends, Security
 from app.api.composers import user_composer
 from app.api.dependencies import build_response, decode_jwt
 from app.crud.users import (
-    ConfirmPassword,
     UpdateUser,
     User,
     UserInDB,
@@ -13,25 +12,24 @@ from app.crud.users import (
 router = APIRouter(tags=["Users"])
 
 
-@router.post("/users", responses={201: {"model": UserInDB}})
-async def create_user(
-    user: User,
-    confirm_password: ConfirmPassword,
-    user_services: UserServices = Depends(user_composer),
-):
-    user_in_db = await user_services.create(
-        user=user, confirm_password=confirm_password
-    )
+# @router.post("/users", responses={201: {"model": UserInDB}})
+# async def create_user(
+#     user: User,
+#     user_services: UserServices = Depends(user_composer),
+# ):
+#     user_in_db = await user_services.create(
+#         user=user
+#     )
 
-    if user_in_db:
-        return build_response(
-            status_code=201, message="User created with success", data=user_in_db
-        )
+#     if user_in_db:
+#         return build_response(
+#             status_code=201, message="User created with success", data=user_in_db
+#         )
 
-    else:
-        return build_response(
-            status_code=400, message="Some error happened on create a user", data=None
-        )
+#     else:
+#         return build_response(
+#             status_code=400, message="Some error happened on create a user", data=None
+#         )
 
 
 @router.put("/users/me", responses={200: {"model": UserInDB}})

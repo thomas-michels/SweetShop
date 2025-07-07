@@ -21,7 +21,7 @@ async def get_plan_feature(organization_id: str, feature_name: Feature) -> PlanF
         logger.info(f"Cached feature - {cache_key}")
         return PlanFeatureInDB(**json.loads(cached_value))
 
-    organization_plan_repository = OrganizationPlanRepository()
+    organization_plan_repository = OrganizationPlanRepository(cache_plans={})
     plan_feature_repository = PlanFeatureRepository()
 
     active_plan = await organization_plan_repository.select_active_plan(
@@ -36,6 +36,6 @@ async def get_plan_feature(organization_id: str, feature_name: Feature) -> PlanF
         plan_id=active_plan.plan_id
     )
 
-    redis_manager.set_value(cache_key, plan_feature.model_dump_json(), expiration=900)
+    redis_manager.set_value(cache_key, plan_feature.model_dump_json(), expiration=3600)
 
     return plan_feature

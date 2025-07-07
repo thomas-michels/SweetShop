@@ -1,5 +1,5 @@
 import traceback
-from typing import List
+from typing import Dict, List
 from fastapi.encoders import jsonable_encoder
 from pydantic_core import ValidationError
 from app.core.configs import get_logger, get_environment
@@ -13,15 +13,14 @@ _env = get_environment()
 
 
 class UserRepository:
-    def __init__(self, access_token: str, cached_users: dict) -> None:
-        self.cached_users = cached_users
-
+    def __init__(self, access_token: str, cache_users: Dict[str, UserInDB]) -> None:
         self.access_token = access_token
         self.headers = {
             "authorization": self.access_token,
             "Content-Type": "application/json",
         }
         self.http_client = HTTPClient(headers=self.headers)
+        self.__cache_users = cache_users
 
     async def create(self, user: User, password: str) -> UserInDB:
         _logger.info("Updating user by ID on Management API")
@@ -67,22 +66,22 @@ class UserRepository:
             raise UnprocessableEntity(message="Error on update user")
 
     async def select_by_id(self, id: str) -> UserInDB:
-        _logger.info("Getting user by ID on Management API")
         try:
-            if id in self.cached_users:
-                status_code, response = 200, self.cached_users[id]
+            if self.__cache_users.get(id):
+                _logger.info("Getting cached user by ID")
+                return self.__cache_users.get(id)
 
-            else:
-                status_code, response = self.http_client.get(
-                    url=f"{_env.AUTH0_DOMAIN}/api/v2/users/{id}"
-                )
-
-                if status_code == 200 and response:
-                    self.cached_users[response["user_id"]] = response
+            _logger.info("Getting user by ID on Management API")
+            status_code, response = self.http_client.get(
+                url=f"{_env.AUTH0_DOMAIN}/api/v2/users/{id}"
+            )
 
             if status_code == 200 and response:
-                _logger.info("User retrieved successfully.")
-                return self.__mount_user(response)
+                _logger.info("User retrieved successfully")
+                cached_user = self.__mount_user(response)
+                self.__cache_users[id] = cached_user
+
+                return cached_user
 
             else:
                 _logger.info(f"User {id} not found.")
