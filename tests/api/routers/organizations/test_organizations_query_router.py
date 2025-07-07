@@ -1,22 +1,22 @@
 import unittest
 from unittest.mock import AsyncMock, patch
 
+import mongomock
 from fastapi.testclient import TestClient
 from mongoengine import connect, disconnect
-import mongomock
 
-from app.application import app
+from app.api.composers import organization_composer
 from app.api.dependencies.auth import decode_jwt
 from app.api.dependencies.get_current_organization import check_current_organization
-from app.api.composers import organization_composer
 from app.api.routers.organizations import query_routers
+from app.application import app
+from app.core.utils.features import Feature
+from app.core.utils.utc_datetime import UTCDateTime
 from app.crud.organizations.models import OrganizationModel
 from app.crud.organizations.repositories import OrganizationRepository
 from app.crud.organizations.services import OrganizationServices
-from app.crud.shared_schemas.roles import RoleEnum
 from app.crud.plan_features.schemas import PlanFeatureInDB
-from app.core.utils.utc_datetime import UTCDateTime
-from app.core.utils.features import Feature
+from app.crud.shared_schemas.roles import RoleEnum
 from tests.payloads import USER_IN_DB
 
 
@@ -30,6 +30,7 @@ class TestOrganizationsQueryRouter(unittest.TestCase):
         def override_dependency(mock):
             def _dependency():
                 return mock
+
             return _dependency
 
         disconnect()
@@ -43,13 +44,17 @@ class TestOrganizationsQueryRouter(unittest.TestCase):
             organization_repository=self.repo,
             user_repository=self.user_repo,
             organization_plan_repository=self.plan_repo,
-            cached_users={}
+            cached_complete_users={},
         )
 
         self.test_client = TestClient(app)
         app.dependency_overrides[decode_jwt] = override_dependency(USER_IN_DB)
-        app.dependency_overrides[check_current_organization] = override_dependency("org_123")
-        app.dependency_overrides[organization_composer] = override_dependency(self.service)
+        app.dependency_overrides[check_current_organization] = override_dependency(
+            "org_123"
+        )
+        app.dependency_overrides[organization_composer] = override_dependency(
+            self.service
+        )
         app.user_middleware.clear()
 
     def tearDown(self):

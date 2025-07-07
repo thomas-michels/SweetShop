@@ -7,7 +7,7 @@ from app.core.utils.features import Feature
 from app.crud.files.repositories import FileRepository
 from app.crud.files.schemas import FilePurpose
 from app.crud.users.repositories import UserRepository
-from app.crud.users.schemas import UserInDB
+from app.crud.users.schemas import CompleteUserInDB, UserInDB
 
 from .schemas import CompleteOrganization, Organization, OrganizationInDB, RoleEnum, UpdateOrganization, UserOrganization
 from .repositories import OrganizationRepository
@@ -24,13 +24,13 @@ class OrganizationServices:
         organization_repository: OrganizationRepository,
         user_repository: UserRepository,
         organization_plan_repository: OrganizationPlanRepository,
-        cached_users: Dict[str, UserInDB]
+        cached_complete_users: Dict[str, CompleteUserInDB]
     ) -> None:
         self.__organization_repository = organization_repository
         self.__organization_plan_repository = organization_plan_repository
         self.__user_repository = user_repository
 
-        self.__cached_users = cached_users
+        self.__cached_complete_users = cached_complete_users
 
     async def create(self, organization: Organization, owner: UserInDB) -> OrganizationInDB:
         organization_in_db = await self.__organization_repository.create(organization=organization)
@@ -133,7 +133,7 @@ class OrganizationServices:
 
         organization_in_db = await self.__organization_repository.delete_by_id(id=id)
 
-        self.__cached_users.clear()
+        self.__cached_complete_users.clear()
 
         return organization_in_db
 
@@ -145,11 +145,11 @@ class OrganizationServices:
                 user_in_db = await self.__user_repository.select_by_id(id=user.user_id)
                 user.user = user_in_db
 
-        if "plan":
+        if "plan" in expand:
             organization_plan = await self.__organization_plan_repository.select_active_plan(organization_id=organization.id)
             complete_organization.plan = organization_plan
 
-        if "file":
+        if "file" in expand:
             file_repository = FileRepository(organization_id=organization.id)
             complete_organization.file = await file_repository.select_by_id(
                 id=complete_organization.file_id,
@@ -359,8 +359,8 @@ class OrganizationServices:
         return True
 
     def clear_user_cache(self, user_id: str) -> bool:
-        if self.__cached_users.get(user_id):
-            self.__cached_users.pop(user_id)
+        if self.__cached_complete_users.get(user_id):
+            self.__cached_complete_users.pop(user_id)
             return True
 
         return False

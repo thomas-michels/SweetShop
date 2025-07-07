@@ -1,11 +1,12 @@
 from typing import Dict
+
 from app.api.shared_schemas.terms_of_use import FilterTermOfUse
 from app.api.shared_schemas.token import TokenData
+from app.core.configs import get_logger
 from app.crud.organizations.repositories import OrganizationRepository
 from app.crud.terms_of_use.services import TermOfUseServices
-from app.crud.users.schemas import CompleteUserInDB, UserInDB
 from app.crud.users.repositories import UserRepository
-from app.core.configs import get_logger
+from app.crud.users.schemas import CompleteUserInDB, UserInDB
 
 logger = get_logger(__name__)
 
@@ -16,16 +17,16 @@ class AuthenticationServices:
             user_repository: UserRepository,
             organization_repository: OrganizationRepository,
             terms_of_use_services: TermOfUseServices,
-            cached_users: Dict[str, CompleteUserInDB]
+            cached_complete_users: Dict[str, CompleteUserInDB]
         ) -> None:
         self.__user_repository = user_repository
         self.__organization_repository = organization_repository
         self.__terms_of_use_services = terms_of_use_services
 
-        self.__cached_users = cached_users
+        self.__cached_complete_users = cached_complete_users
 
     async def get_current_user(self, token: TokenData) -> CompleteUserInDB:
-        cached_user = self.__cached_users.get(token.id)
+        cached_user = self.__cached_complete_users.get(token.id)
 
         if cached_user:
             logger.info(f"Getting cached user {token.id}")
@@ -35,7 +36,7 @@ class AuthenticationServices:
 
         complete_user_in_db = await self.__build_complete_user(user=user_in_db)
 
-        self.__cached_users[complete_user_in_db.user_id] = complete_user_in_db
+        self.__cached_complete_users[complete_user_in_db.user_id] = complete_user_in_db
         logger.info(f"Caching user {token.id}")
 
         return complete_user_in_db

@@ -1,7 +1,8 @@
 import unittest
 from unittest.mock import AsyncMock
-from mongoengine import connect, disconnect
+
 import mongomock
+from mongoengine import connect, disconnect
 
 from app.core.utils.utc_datetime import UTCDateTime
 from app.crud.organizations.repositories import OrganizationRepository
@@ -31,7 +32,7 @@ class TestOrganizationServices(unittest.IsolatedAsyncioTestCase):
             organization_repository=self.repo,
             user_repository=self.user_repo,
             organization_plan_repository=self.plan_repo,
-            cached_users={}
+            cached_complete_users={},
         )
 
     def tearDown(self):
@@ -63,9 +64,19 @@ class TestOrganizationServices(unittest.IsolatedAsyncioTestCase):
 
     async def test_delete_by_id_authorized(self):
         org = await self.repo.create(Organization(name="Del"))
-        await self.repo.update(org.id, {"users": [{"user_id": "owner", "role": RoleEnum.OWNER}]})
+        await self.repo.update(
+            org.id, {"users": [{"user_id": "owner", "role": RoleEnum.OWNER}]}
+        )
 
-        self.repo.delete_by_id = AsyncMock(return_value=OrganizationInDB(id=org.id, name=org.name, users=[], created_at=UTCDateTime.now(), updated_at=UTCDateTime.now()))
+        self.repo.delete_by_id = AsyncMock(
+            return_value=OrganizationInDB(
+                id=org.id,
+                name=org.name,
+                users=[],
+                created_at=UTCDateTime.now(),
+                updated_at=UTCDateTime.now(),
+            )
+        )
 
         result = await self.service.delete_by_id(id=org.id, user_making_request="owner")
 
@@ -74,14 +85,18 @@ class TestOrganizationServices(unittest.IsolatedAsyncioTestCase):
 
     async def test_delete_by_id_not_owner_raises(self):
         org = await self.repo.create(Organization(name="Del"))
-        await self.repo.update(org.id, {"users": [{"user_id": "admin", "role": RoleEnum.ADMIN}]})
+        await self.repo.update(
+            org.id, {"users": [{"user_id": "admin", "role": RoleEnum.ADMIN}]}
+        )
 
         with self.assertRaises(Exception):
             await self.service.delete_by_id(id=org.id, user_making_request="admin")
 
     async def test_add_user_success(self):
         org = await self.repo.create(Organization(name="Org"))
-        await self.repo.update(org.id, {"users": [{"user_id": "owner", "role": RoleEnum.OWNER}]})
+        await self.repo.update(
+            org.id, {"users": [{"user_id": "owner", "role": RoleEnum.OWNER}]}
+        )
 
         async def _select(*args, **kwargs):
             user_id = args[0] if args else kwargs.get("id")
@@ -102,17 +117,26 @@ class TestOrganizationServices(unittest.IsolatedAsyncioTestCase):
 
     async def test_update_user_role_success(self):
         org = await self.repo.create(Organization(name="Org"))
-        await self.repo.update(org.id, {"users": [
-            {"user_id": "owner", "role": RoleEnum.OWNER},
-            {"user_id": "admin", "role": RoleEnum.ADMIN},
-        ]})
+        await self.repo.update(
+            org.id,
+            {
+                "users": [
+                    {"user_id": "owner", "role": RoleEnum.OWNER},
+                    {"user_id": "admin", "role": RoleEnum.ADMIN},
+                ]
+            },
+        )
 
         orig_update = self.repo.update
 
         async def safe_update(*args, **kwargs):
-            org_dict = kwargs.get("organization") if "organization" in kwargs else args[1]
+            org_dict = (
+                kwargs.get("organization") if "organization" in kwargs else args[1]
+            )
             org_dict.pop("plan", None)
-            return await orig_update(*(args if args else [kwargs["organization_id"], org_dict]))
+            return await orig_update(
+                *(args if args else [kwargs["organization_id"], org_dict])
+            )
 
         self.repo.update = safe_update
 
@@ -138,17 +162,26 @@ class TestOrganizationServices(unittest.IsolatedAsyncioTestCase):
 
     async def test_remove_user_as_owner(self):
         org = await self.repo.create(Organization(name="Org"))
-        await self.repo.update(org.id, {"users": [
-            {"user_id": "owner", "role": RoleEnum.OWNER},
-            {"user_id": "member", "role": RoleEnum.MEMBER},
-        ]})
+        await self.repo.update(
+            org.id,
+            {
+                "users": [
+                    {"user_id": "owner", "role": RoleEnum.OWNER},
+                    {"user_id": "member", "role": RoleEnum.MEMBER},
+                ]
+            },
+        )
 
         orig_update = self.repo.update
 
         async def safe_update(*args, **kwargs):
-            org_dict = kwargs.get("organization") if "organization" in kwargs else args[1]
+            org_dict = (
+                kwargs.get("organization") if "organization" in kwargs else args[1]
+            )
             org_dict.pop("plan", None)
-            return await orig_update(*(args if args else [kwargs["organization_id"], org_dict]))
+            return await orig_update(
+                *(args if args else [kwargs["organization_id"], org_dict])
+            )
 
         self.repo.update = safe_update
 
@@ -170,17 +203,26 @@ class TestOrganizationServices(unittest.IsolatedAsyncioTestCase):
 
     async def test_transfer_ownership(self):
         org = await self.repo.create(Organization(name="Org"))
-        await self.repo.update(org.id, {"users": [
-            {"user_id": "owner", "role": RoleEnum.OWNER},
-            {"user_id": "admin", "role": RoleEnum.ADMIN},
-        ]})
+        await self.repo.update(
+            org.id,
+            {
+                "users": [
+                    {"user_id": "owner", "role": RoleEnum.OWNER},
+                    {"user_id": "admin", "role": RoleEnum.ADMIN},
+                ]
+            },
+        )
 
         orig_update = self.repo.update
 
         async def safe_update(*args, **kwargs):
-            org_dict = kwargs.get("organization") if "organization" in kwargs else args[1]
+            org_dict = (
+                kwargs.get("organization") if "organization" in kwargs else args[1]
+            )
             org_dict.pop("plan", None)
-            return await orig_update(*(args if args else [kwargs["organization_id"], org_dict]))
+            return await orig_update(
+                *(args if args else [kwargs["organization_id"], org_dict])
+            )
 
         self.repo.update = safe_update
 
@@ -203,17 +245,26 @@ class TestOrganizationServices(unittest.IsolatedAsyncioTestCase):
 
     async def test_leave_organization_removes_user(self):
         org = await self.repo.create(Organization(name="Org"))
-        await self.repo.update(org.id, {"users": [
-            {"user_id": "owner", "role": RoleEnum.OWNER},
-            {"user_id": "member", "role": RoleEnum.MEMBER},
-        ]})
+        await self.repo.update(
+            org.id,
+            {
+                "users": [
+                    {"user_id": "owner", "role": RoleEnum.OWNER},
+                    {"user_id": "member", "role": RoleEnum.MEMBER},
+                ]
+            },
+        )
 
         orig_update = self.repo.update
 
         async def safe_update(*args, **kwargs):
-            org_dict = kwargs.get("organization") if "organization" in kwargs else args[1]
+            org_dict = (
+                kwargs.get("organization") if "organization" in kwargs else args[1]
+            )
             org_dict.pop("plan", None)
-            return await orig_update(*(args if args else [kwargs["organization_id"], org_dict]))
+            return await orig_update(
+                *(args if args else [kwargs["organization_id"], org_dict])
+            )
 
         self.repo.update = safe_update
 
@@ -234,9 +285,14 @@ class TestOrganizationServices(unittest.IsolatedAsyncioTestCase):
 
     async def test_leave_organization_deletes_when_last_user(self):
         org = await self.repo.create(Organization(name="Solo"))
-        await self.repo.update(org.id, {"users": [
-            {"user_id": "owner", "role": RoleEnum.OWNER},
-        ]})
+        await self.repo.update(
+            org.id,
+            {
+                "users": [
+                    {"user_id": "owner", "role": RoleEnum.OWNER},
+                ]
+            },
+        )
 
         async def _select(*args, **kwargs):
             user_id = args[0] if args else kwargs.get("id")
@@ -251,4 +307,3 @@ class TestOrganizationServices(unittest.IsolatedAsyncioTestCase):
 
         self.assertIsInstance(result, OrganizationInDB)
         self.assertEqual(await self.repo.select_all(), [])
-

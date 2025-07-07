@@ -1,13 +1,18 @@
 from typing import Dict, List
-from .schemas import User, UpdateUser, UserInDB
+
 from .repositories import UserRepository
+from .schemas import UpdateUser, User, UserInDB
 
 
 class UserServices:
 
-    def __init__(self, user_repository: UserRepository, cached_users: Dict[str, UserInDB]) -> None:
+    def __init__(
+        self,
+        user_repository: UserRepository,
+        cached_complete_users: Dict[str, UserInDB],
+    ) -> None:
         self.__repository = user_repository
-        self.__cached_users = cached_users
+        self.__cached_complete_users = cached_complete_users
 
     # async def create(self, user: User) -> UserInDB:
     #     user_in_db = await self.__repository.create(user=user, password=password)
@@ -18,8 +23,7 @@ class UserServices:
 
         if user_in_db:
             user_in_db = await self.__repository.update(
-                user_id=user_in_db.user_id,
-                user=updated_user
+                user_id=user_in_db.user_id, user=updated_user
             )
 
         return user_in_db
@@ -33,8 +37,8 @@ class UserServices:
         return users
 
     async def delete_by_id(self, id: int) -> UserInDB:
-        if self.__cached_users.get(id):
-            self.__cached_users.pop(id)
+        if self.__cached_complete_users.get(id):
+            self.__cached_complete_users.pop(id)
 
         user_in_db = await self.__repository.delete_by_id(id=id)
         return user_in_db

@@ -1,4 +1,4 @@
-from typing import List
+from typing import Dict, List
 
 from mongoengine import Q
 
@@ -14,10 +14,16 @@ _logger = get_logger(__name__)
 
 
 class OrganizationPlanRepository(Repository):
+
+    def __init__(self, cache_plans: Dict[str, OrganizationPlanInDB]):
+        super().__init__()
+        self.__cache_plans = cache_plans
+
     async def create(
         self, organization_plan: OrganizationPlan, organization_id: str
     ) -> OrganizationPlanInDB:
         try:
+            self.clear_cache(organization_id=organization_id)
 
             organization_plan_model = OrganizationPlanModel(
                 organization_id=organization_id,
@@ -41,6 +47,8 @@ class OrganizationPlanRepository(Repository):
         self, organization_plan: OrganizationPlanInDB
     ) -> OrganizationPlanInDB:
         try:
+            self.clear_cache()
+
             organization_plan_model: OrganizationPlanModel = (
                 OrganizationPlanModel.objects(
                     id=organization_plan.id,
@@ -100,6 +108,8 @@ class OrganizationPlanRepository(Repository):
 
     async def delete_by_id(self, id: str, organization_id) -> OrganizationPlanInDB:
         try:
+            self.clear_cache(organization_id=organization_id)
+
             organization_plan_model: OrganizationPlanModel = (
                 OrganizationPlanModel.objects(
                     id=id, organization_id=organization_id, is_active=True
@@ -115,6 +125,9 @@ class OrganizationPlanRepository(Repository):
 
     async def select_active_plan(self, organization_id: str) -> OrganizationPlanInDB:
         try:
+            if self.__cache_plans.get(organization_id) and self.__cache_plans[organization_id].active_plan:
+                return self.__cache_plans[organization_id]
+
             pipeline = [
                 {"$match": {"is_active": True, "organization_id": organization_id}},
                 {
@@ -161,7 +174,9 @@ class OrganizationPlanRepository(Repository):
                 organization_plan_in_db = OrganizationPlanInDB.model_validate(
                     organization_plan
                 )
+
                 if organization_plan_in_db.active_plan:
+                    self.__cache_plans[organization_id] = organization_plan_in_db
                     return organization_plan_in_db
 
         except Exception as error:
@@ -185,3 +200,14 @@ class OrganizationPlanRepository(Repository):
                 )
 
             return organization_plans
+
+    def clear_cache(self, organization_id: str = None) -> bool:
+        if organization_id:
+            if self.__cache_plans.get(organization_id):
+                self.__cache_plans.pop(organization_id)
+                return True
+
+            return False
+
+        self.__cache_plans.clear()
+        return True

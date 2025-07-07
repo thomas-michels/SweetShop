@@ -1,18 +1,18 @@
 import unittest
 from unittest.mock import AsyncMock, patch
 
+import mongomock
 from fastapi.testclient import TestClient
 from mongoengine import connect, disconnect
-import mongomock
 
-from app.application import app
+from app.api.composers import organization_composer
 from app.api.dependencies.auth import decode_jwt
 from app.api.dependencies.get_current_organization import check_current_organization
-from app.api.composers import organization_composer
+from app.application import app
+from app.crud.organizations.models import OrganizationModel
 from app.crud.organizations.repositories import OrganizationRepository
 from app.crud.organizations.services import OrganizationServices
 from app.crud.shared_schemas.roles import RoleEnum
-from app.crud.organizations.models import OrganizationModel
 from tests.payloads import USER_IN_DB
 
 
@@ -26,6 +26,7 @@ class TestOrganizationsCommandRouter(unittest.TestCase):
         def override_dependency(mock):
             def _dependency():
                 return mock
+
             return _dependency
 
         disconnect()
@@ -35,7 +36,9 @@ class TestOrganizationsCommandRouter(unittest.TestCase):
         self.user_repo = AsyncMock()
         self.plan_repo = AsyncMock()
 
-        patcher_email = patch("app.crud.organizations.services.send_email", return_value="id")
+        patcher_email = patch(
+            "app.crud.organizations.services.send_email", return_value="id"
+        )
         patcher_email.start()
         self.addCleanup(patcher_email.stop)
 
@@ -43,13 +46,17 @@ class TestOrganizationsCommandRouter(unittest.TestCase):
             organization_repository=self.repo,
             user_repository=self.user_repo,
             organization_plan_repository=self.plan_repo,
-            cached_users={}
+            cached_complete_users={},
         )
 
         self.test_client = TestClient(app)
         app.dependency_overrides[decode_jwt] = override_dependency(USER_IN_DB)
-        app.dependency_overrides[check_current_organization] = override_dependency("org_123")
-        app.dependency_overrides[organization_composer] = override_dependency(self.service)
+        app.dependency_overrides[check_current_organization] = override_dependency(
+            "org_123"
+        )
+        app.dependency_overrides[organization_composer] = override_dependency(
+            self.service
+        )
         app.user_middleware.clear()
 
     def tearDown(self):
@@ -71,12 +78,16 @@ class TestOrganizationsCommandRouter(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 201)
-        self.assertEqual(response.json()["message"], "Organization created with success")
+        self.assertEqual(
+            response.json()["message"], "Organization created with success"
+        )
         self.assertIsNotNone(response.json()["data"]["id"])
 
     def test_put_organization_success(self):
         org_id = self.insert_org(name="Old")
-        OrganizationModel.objects(id=org_id).first().update(users=[{"user_id": USER_IN_DB.user_id, "role": RoleEnum.OWNER}])
+        OrganizationModel.objects(id=org_id).first().update(
+            users=[{"user_id": USER_IN_DB.user_id, "role": RoleEnum.OWNER}]
+        )
         self.user_repo.select_by_id.return_value = USER_IN_DB
 
         response = self.test_client.put(
@@ -86,11 +97,15 @@ class TestOrganizationsCommandRouter(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["message"], "Organization updated with success")
+        self.assertEqual(
+            response.json()["message"], "Organization updated with success"
+        )
 
     def test_delete_organization_success(self):
         org_id = self.insert_org(name="Del")
-        OrganizationModel.objects(id=org_id).first().update(users=[{"user_id": USER_IN_DB.user_id, "role": RoleEnum.OWNER}])
+        OrganizationModel.objects(id=org_id).first().update(
+            users=[{"user_id": USER_IN_DB.user_id, "role": RoleEnum.OWNER}]
+        )
 
         response = self.test_client.delete(
             f"/api/organizations/{org_id}",
@@ -98,7 +113,9 @@ class TestOrganizationsCommandRouter(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["message"], "Organization deleted with success")
+        self.assertEqual(
+            response.json()["message"], "Organization deleted with success"
+        )
 
     def test_delete_organization_not_found(self):
         response = self.test_client.delete(
@@ -116,4 +133,3 @@ class TestOrganizationsCommandRouter(unittest.TestCase):
             headers={"organization-id": "org_123"},
         )
         self.assertEqual(response.status_code, 422)
-
