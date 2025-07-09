@@ -51,5 +51,8 @@ class OrganizationPlanInDB(OrganizationPlan, DatabaseModel):
     @computed_field
     @property
     def active_plan(self) -> bool:
+        return self.calculate_active_plan()
+
+    def calculate_active_plan(self) -> bool:
         now = UTCDateTime.now()
         return self.start_date <= now <= self.end_date
