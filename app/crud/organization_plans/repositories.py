@@ -125,7 +125,7 @@ class OrganizationPlanRepository(Repository):
 
     async def select_active_plan(self, organization_id: str) -> OrganizationPlanInDB:
         try:
-            if self.__cache_plans.get(organization_id) and self.__cache_plans[organization_id].active_plan:
+            if self.__cache_plans.get(organization_id) and self.__cache_plans[organization_id].calculate_active_plan():
                 return self.__cache_plans[organization_id]
 
             pipeline = [
