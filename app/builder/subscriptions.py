@@ -1,5 +1,5 @@
 from datetime import timedelta
-from typing import List
+from typing import Dict, List
 from uuid import uuid4
 
 from app.api.dependencies.email_sender import send_email
@@ -16,7 +16,7 @@ from app.core.utils.utc_datetime import UTCDateTime
 from app.crud.coupons.services import CouponServices
 from app.crud.invoices.schemas import Invoice, InvoiceInDB, InvoiceStatus, UpdateInvoice
 from app.crud.invoices.services import InvoiceServices
-from app.crud.organization_plans.schemas import OrganizationPlan
+from app.crud.organization_plans.schemas import OrganizationPlan, OrganizationPlanInDB
 from app.crud.organization_plans.services import OrganizationPlanServices
 from app.crud.organizations.services import OrganizationServices
 from app.crud.plans.services import PlanServices
@@ -35,6 +35,7 @@ class SubscriptionBuilder:
         plan_service: PlanServices,
         organization_plan_service: OrganizationPlanServices,
         coupon_service: CouponServices,
+        cache_plans: Dict[str, OrganizationPlanInDB]
     ) -> None:
         self.__invoice_service = invoice_service
         self.__organization_service = organization_service
@@ -42,6 +43,7 @@ class SubscriptionBuilder:
         self.__organization_plan_service = organization_plan_service
         self.__coupon_service = coupon_service
         self.__mp_integration = MercadoPagoIntegration()
+        self.__cache_plans = cache_plans
 
     async def subscribe(
         self, subscription: RequestSubscription, user: UserInDB
@@ -118,6 +120,8 @@ class SubscriptionBuilder:
                 message = message.replace("$INIT_POINT$", init_point)
 
             send_email(email_to=[user.email], title=f"PedidoZ - Agora falta só mais um pouquinho!", message=message)
+
+        self.__clear_plan_cache(organization_id=organization_in_db.id)
 
         return ResponseSubscription(
             invoice_id=invoice_in_db.id,
@@ -227,6 +231,8 @@ class SubscriptionBuilder:
                 message = message.replace("$INIT_POINT$", init_point)
 
             send_email(email_to=[user.email], title=f"PedidoZ - Agora falta só mais um pouquinho!", message=message)
+
+        self.__clear_plan_cache(organization_id=organization_in_db.id)
 
         return ResponseSubscription(
             invoice_id=invoice_in_db.id,
@@ -435,6 +441,8 @@ class SubscriptionBuilder:
             id=invoice_in_db.id, updated_invoice=update_invoice
         )
 
+        self.__clear_plan_cache(organization_id=organization_plan.organization_id)
+
         return updated_invoice
 
     async def get_subscription(self, organization_id: str) -> MPPreferenceModel:
@@ -496,3 +504,12 @@ class SubscriptionBuilder:
         for user in organization_in_db.users:
             if user.role == RoleEnum.OWNER:
                 return user
+
+    def __clear_plan_cache(self, organization_id: str = None) -> bool:
+        if organization_id and self.__cache_plans.get(organization_id):
+            self.__cache_plans.pop(organization_id)
+            return True
+
+        else:
+            self.__cache_plans.clear()
+            return True
