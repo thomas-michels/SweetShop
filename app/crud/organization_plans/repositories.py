@@ -175,7 +175,7 @@ class OrganizationPlanRepository(Repository):
                     organization_plan
                 )
 
-                if organization_plan_in_db.active_plan:
+                if organization_plan_in_db.calculate_active_plan():
                     self.__cache_plans[organization_id] = organization_plan_in_db
                     return organization_plan_in_db
 
