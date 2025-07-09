@@ -111,6 +111,14 @@ class SubscriptionBuilder:
             )
         )
 
+        if init_point != "https://www.pedidoz.online/organizacoes":
+            with open("./templates/organization-plan-email.html", mode="r", encoding="UTF-8") as file:
+                message = file.read()
+                message = message.replace("$USER_NAME$", user.name.title())
+                message = message.replace("$INIT_POINT$", init_point)
+
+            send_email(email_to=[user.email], title=f"PedidoZ - Agora falta só mais um pouquinho!", message=message)
+
         return ResponseSubscription(
             invoice_id=invoice_in_db.id,
             integration_id=external_reference,
@@ -212,6 +220,14 @@ class SubscriptionBuilder:
             )
         )
 
+        if init_point != "https://www.pedidoz.online/organizacoes":
+            with open("./templates/organization-plan-email.html", mode="r", encoding="UTF-8") as file:
+                message = file.read()
+                message = message.replace("$USER_NAME$", user.name.title())
+                message = message.replace("$INIT_POINT$", init_point)
+
+            send_email(email_to=[user.email], title=f"PedidoZ - Agora falta só mais um pouquinho!", message=message)
+
         return ResponseSubscription(
             invoice_id=invoice_in_db.id,
             integration_id=external_reference,
@@ -240,9 +256,12 @@ class SubscriptionBuilder:
             )
             external_reference = mp_preference.external_reference
             init_point = mp_preference.init_point
+
         else:
             external_reference = str(uuid4())
             init_point = "https://www.pedidoz.online/organizacoes"
+
+        observation["init_point"] = init_point
 
         invoice = Invoice(
             organization_plan_id=organization_plan_id,
