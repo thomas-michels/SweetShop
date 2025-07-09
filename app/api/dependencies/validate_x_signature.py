@@ -45,7 +45,6 @@ def validate_signature(request: Request) -> bool:
         sha = hmac_obj.hexdigest()
 
         if sha == hash_value:
-            _logger.debug(f"Valid signature {data_id}")
             return True
 
         _logger.warning(f"Invalid signature {data_id}")
