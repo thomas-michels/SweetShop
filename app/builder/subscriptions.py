@@ -423,10 +423,10 @@ class SubscriptionBuilder:
                 "./templates/purchase-successed-email.html", mode="r", encoding="UTF-8"
             ) as file:
                 message = file.read()
-                message = message.replace("$USER_NAME$", user_in_db.name.title())
+                message = message.replace("$USER_NAME$", user_in_db.user.name.title())
 
             send_email(
-                email_to=[user_in_db.email],
+                email_to=[user_in_db.user.email],
                 title=f"Seu pagamento foi confirmado!",
                 message=message,
             )

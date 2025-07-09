@@ -91,7 +91,6 @@ class S3BucketManager:
         """
         expiration = expiration or _env.BUCKET_URL_EXPIRES_IN_SECONDS
         try:
-            _logger.info(f"Generating presigned URL for '{file_url}'...")
             parsed_url = urlparse(file_url)
             bucket_path = parsed_url.path.removeprefix(f"/{self.bucket_name}/")
 
@@ -103,7 +102,6 @@ class S3BucketManager:
                 Params={"Bucket": self.bucket_name, "Key": bucket_path},
                 ExpiresIn=expiration,
             )
-            _logger.info(f"Presigned URL generated successfully.")
             return url
 
         except Exception as error:
