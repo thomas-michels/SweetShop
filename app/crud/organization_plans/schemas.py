@@ -55,4 +55,4 @@ class OrganizationPlanInDB(OrganizationPlan, DatabaseModel):
 
     def calculate_active_plan(self) -> bool:
         now = UTCDateTime.now()
-        return self.start_date <= now <= self.end_date
+        return (self.start_date <= now <= self.end_date) and self.has_paid_invoice
