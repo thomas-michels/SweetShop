@@ -3,7 +3,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from cachetools import TTLCache
 import threading
 
-from app.api.exceptions.authentication_exceptions import TooManyRequestException
+from app.api.dependencies.response import build_response
 
 DEFAULT_LIMIT = 100  # máximo de requisições
 DEFAULT_WINDOW = 60  # janela em segundos
@@ -25,7 +25,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             self.cache[client_ip] = count
 
         if count > self.limit:
-            raise TooManyRequestException()
+            return build_response(
+                status_code=429,
+                message="Too many requests"
+            )
 
         response = await call_next(request)
         return response

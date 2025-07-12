@@ -50,7 +50,7 @@ class TestMenusQueryRouter(unittest.TestCase):
             headers={"organization-id": "org_123"}
         )
         self.assertEqual(response.status_code, 404)
-        self.assertEqual(response.json()["message"], "Menu 000000000000000000000000 not found")
+        self.assertEqual(response.json()["message"], "Menu #000000000000000000000000 not found")
 
     def test_get_menus_with_results(self):
         self.insert_mock_menu(name="A")

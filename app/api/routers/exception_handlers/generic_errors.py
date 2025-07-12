@@ -51,13 +51,12 @@ def generic_error_400(request: Request, exc: InvalidPassword):
 
 def generic_error_500(request: Request, exc: Exception):
     """Internal error"""
-    _logger.error(f"Internal error - {str(exc)} - URL: {request.url.path}")
-
     if hasattr(exc, "detail"):
         error = MessageResponse(message=exc.detail)
         status_code = exc.status_code
 
     else:
+        _logger.error(f"Internal error - {str(exc)} - URL: {request.url.path}")
         error = MessageResponse(message="An unexpected error happen")
         status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
 

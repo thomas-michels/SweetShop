@@ -126,19 +126,26 @@ class TestMenuRepository(unittest.IsolatedAsyncioTestCase):
     async def test_select_count_filter_is_visible(self):
         visible = await self.repo.create(await self._menu(name="Visible"))
         hidden = await self.repo.create(await self._menu(name="Hidden"))
-        MenuModel.objects(id=hidden.id).update(set__is_visible=False)
+
+        MenuModel.objects(id=visible.id).update(is_visible=True)
+
         count_visible = await self.repo.select_count(query=None, is_visible=True)
         count_hidden = await self.repo.select_count(query=None, is_visible=False)
+
         self.assertEqual(count_visible, 1)
         self.assertEqual(count_hidden, 1)
 
     async def test_select_all_filter_is_visible_and_query(self):
-        await self.repo.create(await self._menu(name="Apple"))
+        visible = await self.repo.create(await self._menu(name="Apple"))
         hidden = await self.repo.create(await self._menu(name="Banana"))
-        MenuModel.objects(id=hidden.id).update(set__is_visible=False)
+        MenuModel.objects(id=visible.id).update(is_visible=True)
+
         results = await self.repo.select_all(query="Ap", is_visible=True)
+
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].name, "Apple")
+
         hidden_results = await self.repo.select_all(query=None, is_visible=False)
+
         self.assertEqual(len(hidden_results), 1)
         self.assertEqual(hidden_results[0].name, "Banana")

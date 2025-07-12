@@ -92,7 +92,7 @@ class TestMenusCommandRouter(unittest.TestCase):
             headers={"organization-id": "org_123"},
         )
         self.assertEqual(response.status_code, 404)
-        self.assertEqual(response.json()["message"], "Menu invalid not found")
+        self.assertEqual(response.json()["message"], "Menu #invalid not found")
 
     def test_delete_menu_success(self):
         menu_id = self.insert_mock_menu(name="Del")
@@ -107,7 +107,7 @@ class TestMenusCommandRouter(unittest.TestCase):
             "/api/menus/9999", headers={"organization-id": "org_123"}
         )
         self.assertEqual(response.status_code, 404)
-        self.assertEqual(response.json()["message"], "Menu 9999 not found")
+        self.assertEqual(response.json()["message"], "Menu #9999 not found")
 
     def test_post_menu_invalid_payload_returns_422(self):
         response = self.test_client.post(

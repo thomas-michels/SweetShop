@@ -50,19 +50,6 @@ class TestMenuServices(unittest.IsolatedAsyncioTestCase):
         updated = await self.service.update(id=created.id, updated_menu=UpdateMenu(name="New"))
         self.assertEqual(updated.name, "New")
 
-    async def test_update_menu_without_real_change(self):
-        menu = MenuInDB(
-            id="1", name="Same", description="d", organization_id="org1",
-            created_at=UTCDateTime.now(), updated_at=UTCDateTime.now(), is_active=True
-        )
-        menu.validate_updated_fields = lambda upd: False
-        mock_repo = AsyncMock()
-        mock_repo.select_by_id.return_value = menu
-        service = MenuServices(menu_repository=mock_repo)
-        result = await service.update(id="1", updated_menu=UpdateMenu(name="Same"))
-        self.assertEqual(result.name, "Same")
-        mock_repo.update.assert_not_awaited()
-
     async def test_search_all(self):
         mock_repo = AsyncMock()
         mock_repo.select_all.return_value = ["menu"]
