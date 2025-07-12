@@ -441,7 +441,7 @@ class SubscriptionBuilder:
             id=invoice_in_db.id, updated_invoice=update_invoice
         )
 
-        self.__clear_plan_cache(organization_id=organization_plan.organization_id)
+        self.__clear_plan_cache()
 
         return updated_invoice
 
