@@ -29,6 +29,9 @@ class MenuServices:
     async def update(self, id: str, updated_menu: UpdateMenu) -> MenuInDB:
         menu_in_db = await self.search_by_id(id=id)
 
+        if not menu_in_db:
+            return
+
         is_updated = menu_in_db.validate_updated_fields(update_menu=updated_menu)
 
         if is_updated:
