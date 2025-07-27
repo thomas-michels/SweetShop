@@ -5,14 +5,12 @@ from mongoengine import connect, disconnect
 import mongomock
 
 from app.crud.products.repositories import ProductRepository
-from app.crud.products.schemas import Product, ProductInDB, UpdateProduct, ProductSection, Item
+from app.crud.products.schemas import Product, ProductInDB, UpdateProduct
 from app.crud.products.services import ProductServices
 from app.crud.tags.repositories import TagRepository
 from app.crud.files.repositories import FileRepository
-from app.crud.files.schemas import FilePurpose
 from app.core.utils.utc_datetime import UTCDateTime
 from app.api.exceptions.authentication_exceptions import UnauthorizedException, BadRequestException
-from app.core.exceptions.users import UnprocessableEntity
 
 
 class TestProductServices(unittest.IsolatedAsyncioTestCase):
@@ -42,7 +40,6 @@ class TestProductServices(unittest.IsolatedAsyncioTestCase):
             unit_price=10.0,
             unit_cost=5.0,
             tags=[],
-            sections=[],
         )
 
     @patch("app.crud.products.services.get_plan_feature", new_callable=AsyncMock)
@@ -126,21 +123,3 @@ class TestProductServices(unittest.IsolatedAsyncioTestCase):
         result = await service.delete_by_id(id="d")
         self.assertEqual(result, "deleted")
         mock_repo.delete_by_id.assert_awaited_with(id="d")
-
-    async def test_validade_additionals_invalid(self):
-        mock_repo = AsyncMock()
-        service = ProductServices(product_repository=mock_repo, tag_repository=AsyncMock(), file_repository=self.file_repo)
-        section = ProductSection(title="Sec", min_choices=0, max_choices=0, items=[Item(name="Item", unit_price=1.0, unit_cost=1.0)])
-        product = Product(name="A", description="d", unit_price=1.0, unit_cost=1.0, sections=[section])
-        with self.assertRaises(UnprocessableEntity):
-            await service.validade_additionals(product)
-
-    async def test_validade_additionals_file_not_found(self):
-        mock_repo = AsyncMock()
-        file_repo = AsyncMock()
-        file_repo.select_by_id.return_value = None
-        service = ProductServices(product_repository=mock_repo, tag_repository=AsyncMock(), file_repository=file_repo)
-        section = ProductSection(title="Sec", min_choices=1, max_choices=1, items=[Item(name="Item", unit_price=1.0, unit_cost=1.0, file_id="x")])
-        product = Product(name="A", description="d", unit_price=1.0, unit_cost=1.0, sections=[section])
-        with self.assertRaises(UnprocessableEntity):
-            await service.validade_additionals(product)

@@ -1,5 +1,4 @@
 from typing import List, Optional
-from uuid import uuid4
 
 from pydantic import Field, model_validator
 
@@ -9,57 +8,6 @@ from app.crud.files.schemas import FileInDB
 from app.crud.tags.schemas import TagInDB
 
 
-class Item(GenericModel):
-    id: str | None = Field(default=None)
-    name: str = Field(example="Bacon")
-    description: str | None = Field(default=None)
-    file_id: str | None = Field(default=None)
-    unit_price: float = Field(ge=0)
-    unit_cost: float = Field(ge=0)
-
-    @model_validator(mode="after")
-    def validate_item(self) -> "Item":
-        if not self.id:
-            self.id = uuid4().hex
-
-        return self
-
-
-class CompleteItem(Item):
-    file: FileInDB | None = Field(default=None)
-
-
-class ProductSection(GenericModel):
-    id: str | None = Field(default=None)
-    title: str = Field(example="test")
-    description: str | None = Field(default=None)
-    position: int | None = Field(default=1, ge=1)
-    min_choices: int = Field(ge=0)
-    max_choices: int = Field(ge=0)
-    is_required: bool = Field(default=False)
-    items: List[Item] = Field(default=[])
-
-    def get_item_by_id(self, item_id: str) -> "Item":
-        if self.items:
-            for item in self.items:
-                if item.id == item_id:
-                    return item
-
-    @model_validator(mode="after")
-    def validate_product_section(self) -> "ProductSection":
-        if not self.id:
-            self.id = uuid4().hex
-
-        if not self.items:
-            raise ValueError("Pelo menos 1 item deve ser adicionado a seção")
-
-        return self
-
-
-class CompleteProductSection(ProductSection):
-    items: List[CompleteItem] = Field(default=[])
-
-
 class Product(GenericModel):
     name: str = Field(example="Brigadeiro")
     description: str = Field(example="Brigadeiro de Leite Ninho")
@@ -67,13 +15,6 @@ class Product(GenericModel):
     unit_cost: float = Field(example=0.75)
     tags: List[str] = Field(default=[])
     file_id: str | None = Field(default=None, example="fil_123")
-    sections: List[ProductSection | CompleteProductSection] | None = Field(default=[])
-
-    def get_section_by_id(self, section_id: str) -> "ProductSection":
-        if self.sections:
-            for section in self.sections:
-                if section.id == section_id:
-                    return section
 
     @model_validator(mode="after")
     def validate_price_and_cost(self) -> "Product":
@@ -112,10 +53,6 @@ class Product(GenericModel):
             self.file_id = update_product.file_id
             is_updated = True
 
-        if update_product.sections is not None:
-            self.sections = update_product.sections
-            is_updated = True
-
         return is_updated
 
 
@@ -126,7 +63,6 @@ class UpdateProduct(GenericModel):
     unit_cost: Optional[float] = Field(default=None, example=0.75)
     tags: Optional[List[str]] = Field(default=None)
     file_id: Optional[str] = Field(default=None, example="fil_123")
-    sections: Optional[List[ProductSection]] = Field(default=None)
 
     @model_validator(mode="after")
     def validate_price_and_cost(self) -> "Product":
