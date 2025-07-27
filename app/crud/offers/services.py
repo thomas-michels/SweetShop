@@ -2,11 +2,7 @@ from typing import List
 
 from app.crud.files.repositories import FileRepository
 from app.crud.products.repositories import ProductRepository
-from app.crud.products.schemas import (
-    CompleteItem,
-    CompleteProductSection,
-    ProductInDB,
-)
+from app.crud.products.schemas import ProductInDB
 from app.crud.sections.repositories import SectionRepository
 
 from .repositories import OfferRepository
@@ -94,7 +90,6 @@ class OfferServices:
             complete_offer_products = []
 
             for product in offer.products:
-                file = None
                 offer_product = CompleteOfferProduct(**product.model_dump())
 
                 if "files" in expand:
@@ -104,31 +99,7 @@ class OfferServices:
                             raise_404=False
                         )
 
-                offer_product.file = file
-
-                if product.sections:
-                    complete_sections = []
-
-                    for section in offer_product.sections:
-                        complete_section = CompleteProductSection(**section.model_dump())
-                        complete_items = []
-
-                        for item in section.items:
-                            complete_item = CompleteItem(**item.model_dump())
-
-                            if item.file_id:
-                                file_item = await self.__file_repository.select_by_id(
-                                    id=item.file_id,
-                                    raise_404=False
-                                )
-                                complete_item.file = file_item
-
-                            complete_items.append(complete_item)
-
-                        complete_section.items = complete_items
-                        complete_sections.append(complete_section)
-
-                    offer_product.sections = complete_sections
+                        offer_product.file = file
 
                 complete_offer_products.append(offer_product)
 
@@ -157,7 +128,6 @@ class OfferServices:
                     offer_product.unit_cost = product.unit_cost
                     offer_product.unit_price = product.unit_price
                     offer_product.file_id = product.file_id
-                    offer_product.sections = product.sections
                     updated = True
 
             if updated:
@@ -180,7 +150,6 @@ class OfferServices:
                 unit_cost=product_in_db.unit_cost,
                 unit_price=product_in_db.unit_price,
                 file_id=product_in_db.file_id,
-                sections=product_in_db.sections
             )
 
             total_cost += offer_product.unit_cost

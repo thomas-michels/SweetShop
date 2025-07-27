@@ -4,7 +4,6 @@ from app.api.dependencies.get_plan_feature import get_plan_feature
 from app.api.exceptions.authentication_exceptions import UnauthorizedException
 from app.builder.order_calculator import OrderCalculator
 from app.core.configs import get_logger
-from app.core.exceptions import UnprocessableEntity
 from app.core.utils.features import Feature
 from app.core.utils.get_start_and_end_day_of_month import get_start_and_end_day_of_month
 from app.core.utils.utc_datetime import UTCDateTime
@@ -380,31 +379,6 @@ class OrderServices:
                 unit_cost=product_in_db.unit_cost,
                 unit_price=product_in_db.unit_price,
             )
-
-            if product.items:
-                for item in product.items:
-                    section_in_db = product_in_db.get_section_by_id(section_id=item.section_id)
-
-                    if not section_in_db:
-                        raise UnprocessableEntity(message=f"Seção {item.section_id} não encontrada para o produto {product_in_db.name}")
-
-                    item_in_db = section_in_db.get_item_by_id(item_id=item.item_id)
-
-                    if not item_in_db:
-                        raise UnprocessableEntity(message=f"Item {item.item_id} não encontrada na seção {section_in_db.title}")
-
-                    if section_in_db.min_choices > item.quantity:
-                        raise UnprocessableEntity(message=f"A quantidade minima para a seção {section_in_db.title} é {section_in_db.min_choices}")
-
-                    if section_in_db.max_choices < item.quantity:
-                        raise UnprocessableEntity(message=f"A quantidade máxima para a seção {section_in_db.title} é {section_in_db.max_choices}")
-
-                    item.name = item_in_db.name
-                    item.file_id = item_in_db.file_id
-                    item.unit_cost = item_in_db.unit_cost
-                    item.unit_price = item_in_db.unit_price
-
-                stored_product.items.append(item)
 
             products.append(stored_product)
 
