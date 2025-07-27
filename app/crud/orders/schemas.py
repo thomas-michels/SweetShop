@@ -27,20 +27,6 @@ class DeliveryType(str, Enum):
     DELIVERY = "DELIVERY"
 
 
-class SelectedItem(GenericModel):
-    item_id: str = Field(example="123")
-    section_id: str = Field(example="123")
-    name: str = Field(example="Bacon")
-    file_id: str | None = Field(default=None)
-    unit_price: float = Field(ge=0)
-    unit_cost: float = Field(ge=0)
-    quantity: int = Field(ge=1, example=1)
-
-
-class CompleteSelectedItem(SelectedItem):
-    file: FileInDB | None = Field(default=None)
-
-
 class PaymentInOrder(GenericModel, DatabaseModel):
     id: str = Field(example="123")
     order_id: str = Field(example="ord_123")
@@ -81,7 +67,6 @@ class Delivery(GenericModel):
 class RequestedProduct(GenericModel):
     product_id: str = Field()
     quantity: int = Field(gt=0, example=1)
-    items: List[SelectedItem] | None = Field(default=[])
 
 
 class StoredProduct(RequestedProduct):
@@ -90,7 +75,6 @@ class StoredProduct(RequestedProduct):
     unit_price: float = Field(example=1.5)
     unit_cost: float = Field(example=0.75)
     quantity: int = Field(gt=0, example=1)
-    items: List[SelectedItem | CompleteSelectedItem] | None = Field(default=[])
 
 
 class RequestOrder(GenericModel):

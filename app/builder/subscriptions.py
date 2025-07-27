@@ -383,10 +383,8 @@ class SubscriptionBuilder:
             update_invoice.paid_at = UTCDateTime.now()
             update_invoice.amount_paid = invoice_in_db.amount
 
-            current_organization_plan = (
-                await self.__organization_plan_service.search_by_id(
-                    id=invoice_in_db.organization_plan_id
-                )
+            current_organization_plan = await self.__organization_plan_service.search_by_id(
+                id=invoice_in_db.organization_plan_id
             )
 
             user_in_db = await self.__get_organization_owner(
@@ -422,7 +420,7 @@ class SubscriptionBuilder:
                         updated_organization_plan=organization_plan,
                     )
                     _logger.info(
-                        f"Plano atual finalizado em {organization_plan.end_date}"
+                        f"Old plan {organization_plan.id} has been finished in {organization_plan.end_date}"
                     )
 
             with open(
