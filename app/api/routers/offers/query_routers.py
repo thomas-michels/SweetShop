@@ -64,26 +64,3 @@ async def get_offer_by_id(
         return build_response(
             status_code=404, message=f"Oferta {offer_id} não encontrada", data=None
         )
-
-
-@router.get("/sections/{section_id}/offers", tags=["Sections"], responses={200: {"model": List[OfferInDB]}})
-async def get_offers(
-    section_id: str,
-    is_visible: bool = Query(default=None),
-    expand: List[str] = Query(default=[]),
-    current_user: UserInDB = Security(decode_jwt, scopes=[]),
-    offer_services: OfferServices = Depends(offer_composer),
-):
-    offers = await offer_services.search_all(
-        section_id=section_id,
-        is_visible=is_visible,
-        expand=expand
-    )
-
-    if offers:
-        return build_response(
-            status_code=200, message="Offers found with success", data=offers
-        )
-
-    else:
-        return Response(status_code=204)
