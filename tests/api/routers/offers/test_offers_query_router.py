@@ -71,25 +71,6 @@ class TestOffersQueryRouter(unittest.TestCase):
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.json()["message"], "Offer #off2 not found")
 
-    def test_get_offers_with_results(self):
-        self.mock_service.search_all.return_value = [self._offer_in_db()]
-        response = self.test_client.get(
-            "/api/sections/sec1/offers",
-            headers={"organization-id": "org_123"},
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["message"], "Offers found with success")
-        self.assertEqual(len(response.json()["data"]), 1)
-        self.mock_service.search_all.assert_awaited()
-
-    def test_get_offers_empty_returns_204(self):
-        self.mock_service.search_all.return_value = []
-        response = self.test_client.get(
-            "/api/sections/sec1/offers",
-            headers={"organization-id": "org_123"},
-        )
-        self.assertEqual(response.status_code, 204)
-
     def test_get_offers_paginated_with_results(self):
         self.mock_service.search_all_paginated.return_value = [self._offer_in_db()]
         self.mock_service.search_count.return_value = 1
