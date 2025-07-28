@@ -38,7 +38,7 @@ jobs:
           username: ${{ vars.DOCKER_USERNAME }}
           password: ${{ vars.DOCKER_TOKEN }}
 
-      - name: Build, tag API
+      - name: Build, PedidoZ API
         if: github.ref == 'refs/heads/dev'
         run: |
           docker build -t ${{ vars.DOCKER_USERNAME }}/${{ vars.MY_REPOSITORY_NAME }}:${{ github.sha }} .

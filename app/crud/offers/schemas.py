@@ -1,5 +1,5 @@
 from typing import List, Optional
-from pydantic import Field
+from pydantic import Field, model_validator
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
 from app.crud.files.schemas import FileInDB
@@ -14,35 +14,42 @@ class OfferProduct(GenericModel):
     file_id: str | None = Field(default=None, example="file_123")
 
 
+class Additional(GenericModel):
+    name: str = Field(example="Bacon")
+    file_id: str | None = Field(default=None)
+    unit_price: float = Field(ge=0)
+    unit_cost: float = Field(ge=0)
+    min_quantity: int = Field(default=1, ge=0)
+    max_quantity: int = Field(default=1, ge=1)
+
+    @model_validator(mode="after")
+    def validate_quantities(self) -> "Additional":
+        if self.max_quantity < self.min_quantity:
+            raise ValueError("max_quantity must be greater than or equal to min_quantity")
+        return self
+
+
 class CompleteOfferProduct(OfferProduct):
     file: FileInDB | None = Field(default=None)
 
 
 class RequestOffer(GenericModel):
-    section_id: str = Field(example="men_123")
-    position: int | None = Field(default=1, example=1)
     name: str = Field(example="Doces")
     description: str = Field(example="Bolos e tortas")
-    is_visible: bool = Field(default=False, example=True)
     products: List[str] = Field(default=[], min_length=1)
+    additionals: List[Additional] = Field(default=[])
 
 
 class Offer(GenericModel):
-    section_id: str = Field(example="men_123")
-    position: int | None = Field(default=1, example=1)
     name: str = Field(example="Doces")
     description: str = Field(example="Bolos e tortas")
-    is_visible: bool = Field(default=False, example=True)
     products: List[OfferProduct] = Field(default=[])
+    additionals: List[Additional] = Field(default=[])
     unit_cost: float = Field(example=10)
     unit_price: float = Field(example=12)
 
     def validate_updated_fields(self, update_offer: "UpdateOffer") -> bool:
         is_updated = False
-
-        if update_offer.position is not None:
-            self.position = update_offer.position
-            is_updated = True
 
         if update_offer.name is not None:
             self.name = update_offer.name
@@ -52,23 +59,22 @@ class Offer(GenericModel):
             self.description = update_offer.description
             is_updated = True
 
-        if update_offer.is_visible is not None:
-            self.is_visible = update_offer.is_visible
-            is_updated = True
-
         if update_offer.products is not None:
             self.products = update_offer.products
+            is_updated = True
+
+        if update_offer.additionals is not None:
+            self.additionals = update_offer.additionals
             is_updated = True
 
         return is_updated
 
 
 class UpdateOffer(GenericModel):
-    position: Optional[int] = Field(default=None, example=1)
     name: Optional[str] = Field(default=None, example="Doces")
     description: Optional[str] = Field(default=None, example="Bolos e tortas")
-    is_visible: Optional[bool] = Field(default=None, example=True)
     products: Optional[List[str]] = Field(default=None, min_length=1)
+    additionals: Optional[List[Additional]] = Field(default=None)
 
 
 class OfferInDB(Offer, DatabaseModel):
