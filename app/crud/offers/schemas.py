@@ -14,35 +14,33 @@ class OfferProduct(GenericModel):
     file_id: str | None = Field(default=None, example="file_123")
 
 
+class Additional(GenericModel):
+    name: str = Field(example="Bacon")
+    file_id: str | None = Field(default=None)
+    unit_price: float = Field(ge=0)
+    unit_cost: float = Field(ge=0)
+
+
 class CompleteOfferProduct(OfferProduct):
     file: FileInDB | None = Field(default=None)
 
 
 class RequestOffer(GenericModel):
-    section_id: str = Field(example="men_123")
-    position: int | None = Field(default=1, example=1)
     name: str = Field(example="Doces")
     description: str = Field(example="Bolos e tortas")
-    is_visible: bool = Field(default=False, example=True)
     products: List[str] = Field(default=[], min_length=1)
 
 
 class Offer(GenericModel):
-    section_id: str = Field(example="men_123")
-    position: int | None = Field(default=1, example=1)
     name: str = Field(example="Doces")
     description: str = Field(example="Bolos e tortas")
-    is_visible: bool = Field(default=False, example=True)
     products: List[OfferProduct] = Field(default=[])
+    additionals: List[Additional] = Field(default=[])
     unit_cost: float = Field(example=10)
     unit_price: float = Field(example=12)
 
     def validate_updated_fields(self, update_offer: "UpdateOffer") -> bool:
         is_updated = False
-
-        if update_offer.position is not None:
-            self.position = update_offer.position
-            is_updated = True
 
         if update_offer.name is not None:
             self.name = update_offer.name
@@ -50,10 +48,6 @@ class Offer(GenericModel):
 
         if update_offer.description is not None:
             self.description = update_offer.description
-            is_updated = True
-
-        if update_offer.is_visible is not None:
-            self.is_visible = update_offer.is_visible
             is_updated = True
 
         if update_offer.products is not None:
@@ -64,10 +58,8 @@ class Offer(GenericModel):
 
 
 class UpdateOffer(GenericModel):
-    position: Optional[int] = Field(default=None, example=1)
     name: Optional[str] = Field(default=None, example="Doces")
     description: Optional[str] = Field(default=None, example="Bolos e tortas")
-    is_visible: Optional[bool] = Field(default=None, example=True)
     products: Optional[List[str]] = Field(default=None, min_length=1)
 
 

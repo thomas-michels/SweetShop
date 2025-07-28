@@ -1,4 +1,4 @@
-from mongoengine import StringField, BooleanField, ListField, DictField, FloatField, IntField
+from mongoengine import StringField, ListField, DictField, FloatField
 
 from app.core.models.base_document import BaseDocument
 from app.core.utils.utc_datetime import UTCDateTime
@@ -6,14 +6,12 @@ from app.core.utils.utc_datetime import UTCDateTime
 
 class OfferModel(BaseDocument):
     organization_id = StringField(required=True)
-    section_id = StringField(required=True)
-    position = IntField(required=False)
     name = StringField(required=True)
     description = StringField(required=True)
-    is_visible = BooleanField(default=True, required=False)
     unit_cost = FloatField(required=True)
     unit_price = FloatField(required=True)
     products = ListField(DictField(), min_lenght=1)
+    additionals = ListField(DictField())
 
     meta = {
         "collection": "offers"

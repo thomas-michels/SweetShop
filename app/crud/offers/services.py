@@ -3,7 +3,6 @@ from typing import List
 from app.crud.files.repositories import FileRepository
 from app.crud.products.repositories import ProductRepository
 from app.crud.products.schemas import ProductInDB
-from app.crud.sections.repositories import SectionRepository
 
 from .repositories import OfferRepository
 from .schemas import CompleteOffer, CompleteOfferProduct, OfferProduct, RequestOffer, Offer, OfferInDB, UpdateOffer
@@ -14,27 +13,21 @@ class OfferServices:
     def __init__(
         self,
         offer_repository: OfferRepository,
-        section_repository: SectionRepository,
         product_repository: ProductRepository,
         file_repository: FileRepository
     ) -> None:
         self.__offer_repository = offer_repository
-        self.__section_repository = section_repository
         self.__product_repository = product_repository
         self.__file_repository = file_repository
 
     async def create(self, request_offer: RequestOffer) -> OfferInDB:
-        await self.__section_repository.select_by_id(id=request_offer.section_id)
-
         total_cost, total_price, products = await self.__create_offer_product(
             product_ids=request_offer.products
         )
 
         offer = Offer(
-            section_id=request_offer.section_id,
             name=request_offer.name,
             description=request_offer.description,
-            is_visible=request_offer.is_visible,
             unit_price=total_price,
             unit_cost=total_cost,
             products=products
