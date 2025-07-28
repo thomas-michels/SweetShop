@@ -1,5 +1,5 @@
 from typing import List, Optional
-from pydantic import Field
+from pydantic import Field, model_validator
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
 from app.crud.files.schemas import FileInDB
@@ -19,6 +19,14 @@ class Additional(GenericModel):
     file_id: str | None = Field(default=None)
     unit_price: float = Field(ge=0)
     unit_cost: float = Field(ge=0)
+    min_quantity: int = Field(default=1, ge=0)
+    max_quantity: int = Field(default=1, ge=1)
+
+    @model_validator(mode="after")
+    def validate_quantities(self) -> "Additional":
+        if self.max_quantity < self.min_quantity:
+            raise ValueError("max_quantity must be greater than or equal to min_quantity")
+        return self
 
 
 class CompleteOfferProduct(OfferProduct):
@@ -29,6 +37,7 @@ class RequestOffer(GenericModel):
     name: str = Field(example="Doces")
     description: str = Field(example="Bolos e tortas")
     products: List[str] = Field(default=[], min_length=1)
+    additionals: List[Additional] = Field(default=[])
 
 
 class Offer(GenericModel):
@@ -54,6 +63,10 @@ class Offer(GenericModel):
             self.products = update_offer.products
             is_updated = True
 
+        if update_offer.additionals is not None:
+            self.additionals = update_offer.additionals
+            is_updated = True
+
         return is_updated
 
 
@@ -61,6 +74,7 @@ class UpdateOffer(GenericModel):
     name: Optional[str] = Field(default=None, example="Doces")
     description: Optional[str] = Field(default=None, example="Bolos e tortas")
     products: Optional[List[str]] = Field(default=None, min_length=1)
+    additionals: Optional[List[Additional]] = Field(default=None)
 
 
 class OfferInDB(Offer, DatabaseModel):

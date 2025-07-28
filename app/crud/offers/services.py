@@ -30,7 +30,8 @@ class OfferServices:
             description=request_offer.description,
             unit_price=total_price,
             unit_cost=total_cost,
-            products=products
+            products=products,
+            additionals=request_offer.additionals
         )
 
         offer_in_db = await self.__offer_repository.create(offer=offer)
@@ -51,6 +52,9 @@ class OfferServices:
                 offer_in_db.unit_cost = total_cost
                 offer_in_db.unit_price = total_price
                 offer_in_db.products = products
+
+            if updated_offer.additionals is not None:
+                offer_in_db.additionals = updated_offer.additionals
 
             offer_in_db = await self.__offer_repository.update(offer=offer_in_db)
 
