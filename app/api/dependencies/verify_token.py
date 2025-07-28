@@ -1,5 +1,6 @@
 import jwt
 from threading import Lock
+from _thread import LockType
 from cachetools import TTLCache
 from fastapi.security import SecurityScopes
 from jwt import PyJWKClient, decode
@@ -15,7 +16,7 @@ class ValidateToken:
     def __init__(
         self,
         jwks_cache: TTLCache | None = None,
-        jwks_lock: Lock | None = None,
+        jwks_lock: LockType | None = None,
     ) -> None:
         jwks_url = f'{_env.AUTH0_DOMAIN}/.well-known/jwks.json'
         self.jwks_client = PyJWKClient(jwks_url)

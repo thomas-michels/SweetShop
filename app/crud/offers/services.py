@@ -25,10 +25,14 @@ class OfferServices:
             product_ids=request_offer.products
         )
 
+        if request_offer.file_id is not None:
+            await self.__file_repository.select_by_id(id=request_offer.file_id)
+
         offer = Offer(
             name=request_offer.name,
             description=request_offer.description,
-            unit_price=total_price,
+            file_id=request_offer.file_id,
+            unit_price=request_offer.unit_price if request_offer.unit_price is not None else total_price,
             unit_cost=total_cost,
             products=products,
             additionals=request_offer.additionals
@@ -50,11 +54,20 @@ class OfferServices:
                 )
 
                 offer_in_db.unit_cost = total_cost
-                offer_in_db.unit_price = total_price
+                offer_in_db.unit_price = (
+                    updated_offer.unit_price if updated_offer.unit_price is not None else total_price
+                )
                 offer_in_db.products = products
 
             if updated_offer.additionals is not None:
                 offer_in_db.additionals = updated_offer.additionals
+
+            if updated_offer.file_id is not None:
+                await self.__file_repository.select_by_id(id=updated_offer.file_id)
+                offer_in_db.file_id = updated_offer.file_id
+
+            if updated_offer.unit_price is not None and updated_offer.products is None:
+                offer_in_db.unit_price = updated_offer.unit_price
 
             offer_in_db = await self.__offer_repository.update(offer=offer_in_db)
 
@@ -80,6 +93,27 @@ class OfferServices:
 
         return await self.__build_complete_offer(offers=offers, expand=expand)
 
+    async def search_all_paginated(
+        self,
+        query: str = None,
+        expand: List[str] = [],
+        page: int = None,
+        page_size: int = None,
+    ) -> List[OfferInDB]:
+        offers = await self.__offer_repository.select_all_paginated(
+            query=query,
+            page=page,
+            page_size=page_size,
+        )
+
+        if not expand:
+            return offers
+
+        return await self.__build_complete_offer(offers=offers, expand=expand)
+
+    async def search_count(self, query: str = None) -> int:
+        return await self.__offer_repository.select_count(query=query)
+
     async def __build_complete_offer(self, offers: List[OfferInDB], expand: List[str]) -> List[CompleteOffer]:
         complete_offers = []
 
@@ -102,6 +136,11 @@ class OfferServices:
 
             complete_offer = CompleteOffer.model_validate(offer)
             complete_offer.products = complete_offer_products
+            if "file" in expand and offer.file_id:
+                complete_offer.file = await self.__file_repository.select_by_id(
+                    id=offer.file_id,
+                    raise_404=False,
+                )
             complete_offers.append(complete_offer)
 
         return complete_offers

@@ -96,6 +96,51 @@ class OfferRepository(Repository):
             _logger.error(f"Error on select_all: {error}")
             raise NotFoundError(message=f"Offers not found")
 
+    async def select_count(self, query: str = None) -> int:
+        try:
+            objects = OfferModel.objects(
+                is_active=True,
+                organization_id=self.organization_id,
+            )
+
+            if query:
+                objects = objects.filter(name__iregex=query)
+
+            return max(objects.count(), 0)
+
+        except Exception as error:
+            _logger.error(f"Error on select_count: {error}")
+            return 0
+
+    async def select_all_paginated(
+        self, query: str = None, page: int = None, page_size: int = None
+    ) -> List[OfferInDB]:
+        try:
+            offers = []
+
+            objects = OfferModel.objects(
+                is_active=True,
+                organization_id=self.organization_id,
+            )
+
+            if query:
+                objects = objects.filter(name__iregex=query)
+
+            if page is not None and page_size is not None:
+                skip = (page - 1) * page_size
+                objects = objects.order_by("name").skip(skip).limit(page_size)
+            else:
+                objects = objects.order_by("name")
+
+            for offer_model in objects:
+                offers.append(OfferInDB.model_validate(offer_model))
+
+            return offers
+
+        except Exception as error:
+            _logger.error(f"Error on select_all_paginated: {error}")
+            raise NotFoundError(message=f"Offers not found")
+
     async def select_all_by_product_id(self, product_id: str) -> List[OfferInDB]:
         try:
             offers = []
