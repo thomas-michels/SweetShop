@@ -3,7 +3,7 @@ from app.crud.offers.schemas import Offer, OfferProduct, Additional, UpdateOffer
 
 
 class TestOfferSchemas(unittest.TestCase):
-    def _offer(self):
+    def _offer(self, file_id=None):
         prod = OfferProduct(
             product_id="p1",
             name="P1",
@@ -24,6 +24,7 @@ class TestOfferSchemas(unittest.TestCase):
             description="desc",
             products=[prod],
             additionals=[add],
+            file_id=file_id,
             unit_cost=1.0,
             unit_price=2.0,
         )
@@ -54,4 +55,11 @@ class TestOfferSchemas(unittest.TestCase):
         changed = offer.validate_updated_fields(update)
         self.assertTrue(changed)
         self.assertEqual(offer.additionals[0].name, "Cheese")
+
+    def test_validate_updated_fields_file_id(self):
+        offer = self._offer()
+        update = UpdateOffer(file_id="file1")
+        changed = offer.validate_updated_fields(update)
+        self.assertTrue(changed)
+        self.assertEqual(offer.file_id, "file1")
 

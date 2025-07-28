@@ -51,7 +51,7 @@ class TestOfferServices(unittest.IsolatedAsyncioTestCase):
             is_active=True,
         )
 
-    async def _request_offer(self):
+    async def _request_offer(self, unit_price=None, file_id=None):
         return RequestOffer(
             name="Combo",
             description="desc",
@@ -65,6 +65,8 @@ class TestOfferServices(unittest.IsolatedAsyncioTestCase):
                     max_quantity=2,
                 )
             ],
+            file_id=file_id,
+            unit_price=unit_price,
         )
 
     async def test_create_offer_with_additionals(self):
@@ -94,4 +96,50 @@ class TestOfferServices(unittest.IsolatedAsyncioTestCase):
         updated = await self.service.update(id=created.id, updated_offer=update)
         self.assertEqual(updated.name, "New")
         self.assertEqual(updated.additionals[0].name, "Cheese")
+
+    async def test_create_offer_with_custom_unit_price(self):
+        self.product_repo.select_by_id.return_value = await self._product_in_db()
+        req = await self._request_offer(unit_price=5.0)
+        result = await self.service.create(req)
+        self.assertEqual(result.unit_price, 5.0)
+
+    async def test_create_offer_with_file(self):
+        self.product_repo.select_by_id.return_value = await self._product_in_db()
+        self.file_repo.select_by_id.return_value = "file"
+        req = await self._request_offer(file_id="file1")
+        result = await self.service.create(req)
+        self.file_repo.select_by_id.assert_awaited_with(id="file1")
+        self.assertEqual(result.file_id, "file1")
+
+    async def test_search_by_id_expand_file(self):
+        self.product_repo.select_by_id.return_value = await self._product_in_db()
+        offer = await self.service.create(await self._request_offer(file_id="file2"))
+        self.file_repo.select_by_id.return_value = "file"
+        result = await self.service.search_by_id(id=offer.id, expand=["file"])
+        self.file_repo.select_by_id.assert_awaited_with(id="file2", raise_404=False)
+        self.assertEqual(result.file, "file")
+
+    async def test_search_all_paginated(self):
+        mock_repo = AsyncMock()
+        mock_repo.select_all_paginated.return_value = ["offer"]
+        service = OfferServices(
+            offer_repository=mock_repo,
+            product_repository=AsyncMock(),
+            file_repository=AsyncMock(),
+        )
+        result = await service.search_all_paginated(query=None)
+        self.assertEqual(result, ["offer"])
+        mock_repo.select_all_paginated.assert_awaited()
+
+    async def test_search_count(self):
+        mock_repo = AsyncMock()
+        mock_repo.select_count.return_value = 3
+        service = OfferServices(
+            offer_repository=mock_repo,
+            product_repository=AsyncMock(),
+            file_repository=AsyncMock(),
+        )
+        count = await service.search_count(query="a")
+        self.assertEqual(count, 3)
+        mock_repo.select_count.assert_awaited_with(query="a")
 

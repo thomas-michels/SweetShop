@@ -28,7 +28,7 @@ class TestOffersQueryRouter(unittest.TestCase):
         disconnect()
         app.dependency_overrides = {}
 
-    def _offer_in_db(self, id="off1"):
+    def _offer_in_db(self, id="off1", file_id=None):
         prod = OfferProduct(
             product_id="p1",
             name="P1",
@@ -44,6 +44,7 @@ class TestOffersQueryRouter(unittest.TestCase):
             description="desc",
             unit_cost=1.0,
             unit_price=2.0,
+            file_id=file_id,
             products=[prod],
             additionals=[],
             created_at=UTCDateTime.now(),
@@ -85,6 +86,28 @@ class TestOffersQueryRouter(unittest.TestCase):
         self.mock_service.search_all.return_value = []
         response = self.test_client.get(
             "/api/sections/sec1/offers",
+            headers={"organization-id": "org_123"},
+        )
+        self.assertEqual(response.status_code, 204)
+
+    def test_get_offers_paginated_with_results(self):
+        self.mock_service.search_all_paginated.return_value = [self._offer_in_db()]
+        self.mock_service.search_count.return_value = 1
+        response = self.test_client.get(
+            "/api/offers",
+            headers={"organization-id": "org_123"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["message"], "Offers found with success")
+        self.assertEqual(len(response.json()["data"]), 1)
+        self.mock_service.search_all_paginated.assert_awaited()
+        self.mock_service.search_count.assert_awaited_with(query=None)
+
+    def test_get_offers_paginated_empty_returns_204(self):
+        self.mock_service.search_all_paginated.return_value = []
+        self.mock_service.search_count.return_value = 0
+        response = self.test_client.get(
+            "/api/offers",
             headers={"organization-id": "org_123"},
         )
         self.assertEqual(response.status_code, 204)

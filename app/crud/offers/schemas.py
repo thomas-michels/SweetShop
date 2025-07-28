@@ -38,6 +38,8 @@ class RequestOffer(GenericModel):
     description: str = Field(example="Bolos e tortas")
     products: List[str] = Field(default=[], min_length=1)
     additionals: List[Additional] = Field(default=[])
+    file_id: str | None = Field(default=None, example="file_123")
+    unit_price: float | None = Field(default=None, example=12)
 
 
 class Offer(GenericModel):
@@ -45,6 +47,7 @@ class Offer(GenericModel):
     description: str = Field(example="Bolos e tortas")
     products: List[OfferProduct] = Field(default=[])
     additionals: List[Additional] = Field(default=[])
+    file_id: str | None = Field(default=None)
     unit_cost: float = Field(example=10)
     unit_price: float = Field(example=12)
 
@@ -67,6 +70,14 @@ class Offer(GenericModel):
             self.additionals = update_offer.additionals
             is_updated = True
 
+        if update_offer.file_id is not None:
+            self.file_id = update_offer.file_id
+            is_updated = True
+
+        if update_offer.unit_price is not None:
+            self.unit_price = update_offer.unit_price
+            is_updated = True
+
         return is_updated
 
 
@@ -75,6 +86,8 @@ class UpdateOffer(GenericModel):
     description: Optional[str] = Field(default=None, example="Bolos e tortas")
     products: Optional[List[str]] = Field(default=None, min_length=1)
     additionals: Optional[List[Additional]] = Field(default=None)
+    file_id: Optional[str] = Field(default=None)
+    unit_price: Optional[float] = Field(default=None, example=12)
 
 
 class OfferInDB(Offer, DatabaseModel):
@@ -82,3 +95,4 @@ class OfferInDB(Offer, DatabaseModel):
 
 class CompleteOffer(Offer, DatabaseModel):
     products: List[CompleteOfferProduct | str] = Field(default=[])
+    file: FileInDB | None = Field(default=None)

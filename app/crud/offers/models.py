@@ -10,6 +10,7 @@ class OfferModel(BaseDocument):
     description = StringField(required=True)
     unit_cost = FloatField(required=True)
     unit_price = FloatField(required=True)
+    file_id = StringField(required=False, default=None)
     products = ListField(DictField(), min_lenght=1)
     additionals = ListField(DictField())
 

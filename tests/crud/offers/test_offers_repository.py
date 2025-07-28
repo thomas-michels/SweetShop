@@ -21,7 +21,7 @@ class TestOfferRepository(unittest.IsolatedAsyncioTestCase):
     def tearDown(self):
         disconnect()
 
-    async def _offer(self, name="Combo", additionals=None):
+    async def _offer(self, name="Combo", additionals=None, file_id=None):
         prod = OfferProduct(
             product_id="p1",
             name="P1",
@@ -35,6 +35,7 @@ class TestOfferRepository(unittest.IsolatedAsyncioTestCase):
             description="desc",
             products=[prod],
             additionals=additionals or [],
+            file_id=file_id,
             unit_cost=1.0,
             unit_price=2.0,
         )
@@ -60,6 +61,11 @@ class TestOfferRepository(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(updated.name, "New")
         self.assertEqual(len(updated.additionals), 1)
 
+    async def test_create_with_file_id(self):
+        offer = await self._offer(name="WithFile", file_id="file1")
+        result = await self.repo.create(offer)
+        self.assertEqual(result.file_id, "file1")
+
     async def test_select_by_id_not_found(self):
         with self.assertRaises(NotFoundError):
             await self.repo.select_by_id(id="missing")
@@ -69,4 +75,26 @@ class TestOfferRepository(unittest.IsolatedAsyncioTestCase):
         result = await self.repo.delete_by_id(id=created.id)
         self.assertEqual(result.id, created.id)
         self.assertEqual(OfferModel.objects(is_active=True).count(), 0)
+
+    async def test_select_count_with_query(self):
+        await self.repo.create(await self._offer(name="Apple"))
+        await self.repo.create(await self._offer(name="Banana"))
+        await self.repo.create(await self._offer(name="Apricot"))
+
+        count = await self.repo.select_count(query="Ap")
+
+        self.assertEqual(count, 2)
+
+    async def test_select_all_paginated(self):
+        await self.repo.create(await self._offer(name="A"))
+        await self.repo.create(await self._offer(name="B"))
+        await self.repo.create(await self._offer(name="C"))
+
+        results = await self.repo.select_all_paginated(query=None, page=1, page_size=2)
+        self.assertEqual(len(results), 2)
+
+        results_p2 = await self.repo.select_all_paginated(query=None, page=2, page_size=2)
+        self.assertEqual(len(results_p2), 1)
+        names = {r.name for r in results + results_p2}
+        self.assertEqual(names, {"A", "B", "C"})
 
