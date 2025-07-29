@@ -24,7 +24,6 @@ class OrderCalculator:
                 id=stored_product.product_id
             )
             total_product = product_in_db.unit_price
-
             total_amount += (total_product * stored_product.quantity)
 
         return round(total_amount, 2)
