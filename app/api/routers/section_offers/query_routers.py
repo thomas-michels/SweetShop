@@ -31,5 +31,6 @@ async def get_section_offers(
             message="Section offers found with success",
             data=section_offers,
         )
+
     else:
         return Response(status_code=204)

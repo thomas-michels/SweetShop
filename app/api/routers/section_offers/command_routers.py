@@ -53,6 +53,7 @@ async def update_section_offer(
             message="Section offer updated with success",
             data=section_offer_in_db,
         )
+
     else:
         return build_response(
             status_code=400,
@@ -75,6 +76,7 @@ async def delete_section_offer(
             message="Section offer deleted with success",
             data=section_offer_in_db,
         )
+
     else:
         return build_response(
             status_code=404,

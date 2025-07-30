@@ -26,8 +26,10 @@ class SectionOfferRepository(Repository):
                 organization_id=self.organization_id,
                 **section_offer.model_dump(),
             )
+
             model.save()
             return SectionOfferInDB.model_validate(model)
+
         except Exception as error:
             _logger.error(f"Error on create_section_offer: {error}")
             raise UnprocessableEntity(message="Error on create new section offer")
@@ -37,10 +39,14 @@ class SectionOfferRepository(Repository):
             model: SectionOfferModel = SectionOfferModel.objects(
                 id=section_offer.id, is_active=True, organization_id=self.organization_id
             ).first()
+
             model.update(**section_offer.model_dump())
+
             return await self.select_by_id(id=section_offer.id)
+
         except ValidationError:
             raise NotFoundError(message="Section offer not found")
+
         except Exception as error:
             _logger.error(f"Error on update_section_offer: {error}")
             raise UnprocessableEntity(message="Error on update section offer")
@@ -51,6 +57,7 @@ class SectionOfferRepository(Repository):
                 id=id, is_active=True, organization_id=self.organization_id
             ).first()
             return SectionOfferInDB.model_validate(model)
+
         except Exception as error:
             _logger.error(f"Error on select_by_id: {error}")
             if raise_404:
@@ -59,14 +66,19 @@ class SectionOfferRepository(Repository):
     async def select_all(self, section_id: str, is_visible: bool = None) -> List[SectionOfferInDB]:
         try:
             results = []
+
             objects = SectionOfferModel.objects(
                 is_active=True, organization_id=self.organization_id, section_id=section_id
             )
+
             if is_visible is not None:
                 objects = objects.filter(is_visible=is_visible)
+
             for model in objects.order_by("position"):
                 results.append(SectionOfferInDB.model_validate(model))
+
             return results
+
         except Exception as error:
             _logger.error(f"Error on select_all: {error}")
             raise NotFoundError(message="Section offers not found")
@@ -76,10 +88,13 @@ class SectionOfferRepository(Repository):
             model: SectionOfferModel = SectionOfferModel.objects(
                 id=id, is_active=True, organization_id=self.organization_id
             ).first()
+
             if model:
                 model.delete()
                 return SectionOfferInDB.model_validate(model)
+
             raise NotFoundError(message=f"SectionOffer #{id} not found")
+
         except Exception as error:
             _logger.error(f"Error on delete_by_id: {error}")
             raise NotFoundError(message=f"SectionOffer #{id} not found")

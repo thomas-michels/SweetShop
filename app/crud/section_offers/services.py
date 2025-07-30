@@ -21,13 +21,17 @@ class SectionOfferServices:
     async def create(self, section_offer: SectionOffer) -> SectionOfferInDB:
         await self.__section_repository.select_by_id(id=section_offer.section_id)
         await self.__offer_repository.select_by_id(id=section_offer.offer_id)
+
         return await self.__section_offer_repository.create(section_offer=section_offer)
 
     async def update(self, id: str, updated_section_offer: UpdateSectionOffer) -> SectionOfferInDB:
         section_offer_in_db = await self.search_by_id(id=id)
+
         is_updated = section_offer_in_db.validate_updated_fields(updated_section_offer)
+
         if is_updated:
             section_offer_in_db = await self.__section_offer_repository.update(section_offer=section_offer_in_db)
+
         return section_offer_in_db
 
     async def search_by_id(self, id: str) -> SectionOfferInDB:
