@@ -20,6 +20,7 @@ from .calendar import calendar_router
 from .terms_of_use import term_of_use_router
 from .files import file_router
 from .sections import section_router
+from .section_offers import section_offer_router
 from .menus import menu_router
 from .offers import offer_router
 from .home import home_router
