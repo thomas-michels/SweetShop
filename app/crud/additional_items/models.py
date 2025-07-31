@@ -1,22 +1,20 @@
-from mongoengine import StringField, FloatField, ListField, DictField
+from mongoengine import StringField, FloatField, IntField
+
 from app.core.models.base_document import BaseDocument
 from app.core.utils.utc_datetime import UTCDateTime
 
 
-class ProductModel(BaseDocument):
+class AdditionalItemModel(BaseDocument):
     organization_id = StringField(required=True)
-    name = StringField(required=True)
-    description = StringField(required=True)
-    unit_price = FloatField(min_value=0, required=True)
-    unit_cost = FloatField(min_value=0, required=True)
-    kind = StringField(default="REGULAR")
-    additionals = ListField(DictField(), required=False)
-    tags = ListField(StringField(), required=False)
-    file_id = StringField(required=False)
+    additional_id = StringField(required=True)
+    position = IntField(required=True)
+    product_id = StringField(required=False)
+    label = StringField(required=True)
+    unit_price = FloatField(required=True)
+    unit_cost = FloatField(required=True)
+    consumption_factor = FloatField(required=True)
 
-    meta = {
-        "collection": "products"
-    }
+    meta = {"collection": "additional_items"}
 
     def update(self, **kwargs):
         self.base_update()
@@ -27,6 +25,5 @@ class ProductModel(BaseDocument):
         if soft_delete:
             self.soft_delete()
             self.save()
-
         else:
             return super().delete(signal_kwargs, **write_concern)

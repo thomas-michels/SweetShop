@@ -6,6 +6,7 @@ import mongomock
 
 from app.crud.products.repositories import ProductRepository
 from app.crud.products.schemas import Product, ProductInDB, UpdateProduct
+from app.crud.product_additionals.schemas import ProductAdditional, ProductAdditionalInDB, OptionKind
 from app.crud.products.services import ProductServices
 from app.crud.tags.repositories import TagRepository
 from app.crud.files.repositories import FileRepository
@@ -24,10 +25,12 @@ class TestProductServices(unittest.IsolatedAsyncioTestCase):
         repo = ProductRepository(organization_id="org1")
         self.tag_repo = TagRepository(organization_id="org1")
         self.file_repo = FileRepository(organization_id="org1")
+        self.additional_repo = AsyncMock()
         self.service = ProductServices(
             product_repository=repo,
             tag_repository=self.tag_repo,
             file_repository=self.file_repo,
+            additional_services=self.additional_repo,
         )
 
     def tearDown(self):
@@ -40,6 +43,7 @@ class TestProductServices(unittest.IsolatedAsyncioTestCase):
             unit_price=10.0,
             unit_cost=5.0,
             tags=[],
+            additionals=[],
         )
 
     @patch("app.crud.products.services.get_plan_feature", new_callable=AsyncMock)
@@ -87,7 +91,7 @@ class TestProductServices(unittest.IsolatedAsyncioTestCase):
         prod.validate_updated_fields = lambda update_product: False
         mock_repo = AsyncMock()
         mock_repo.select_by_id.return_value = prod
-        service = ProductServices(product_repository=mock_repo, tag_repository=AsyncMock(), file_repository=AsyncMock())
+        service = ProductServices(product_repository=mock_repo, tag_repository=AsyncMock(), file_repository=AsyncMock(), additional_services=AsyncMock())
         result = await service.update(id="1", updated_product=UpdateProduct())
         self.assertEqual(result.name, "Same")
         mock_repo.update.assert_not_awaited()
@@ -95,7 +99,7 @@ class TestProductServices(unittest.IsolatedAsyncioTestCase):
     async def test_search_by_id_calls_repo(self):
         mock_repo = AsyncMock()
         mock_repo.select_by_id.return_value = "prod"
-        service = ProductServices(product_repository=mock_repo, tag_repository=AsyncMock(), file_repository=AsyncMock())
+        service = ProductServices(product_repository=mock_repo, tag_repository=AsyncMock(), file_repository=AsyncMock(), additional_services=AsyncMock())
         result = await service.search_by_id(id="x")
         self.assertEqual(result, "prod")
         mock_repo.select_by_id.assert_awaited_with(id="x")
@@ -103,7 +107,7 @@ class TestProductServices(unittest.IsolatedAsyncioTestCase):
     async def test_search_all(self):
         mock_repo = AsyncMock()
         mock_repo.select_all.return_value = ["prod"]
-        service = ProductServices(product_repository=mock_repo, tag_repository=AsyncMock(), file_repository=AsyncMock())
+        service = ProductServices(product_repository=mock_repo, tag_repository=AsyncMock(), file_repository=AsyncMock(), additional_services=AsyncMock())
         result = await service.search_all(query=None)
         self.assertEqual(result, ["prod"])
         mock_repo.select_all.assert_awaited()
@@ -111,7 +115,7 @@ class TestProductServices(unittest.IsolatedAsyncioTestCase):
     async def test_search_count(self):
         mock_repo = AsyncMock()
         mock_repo.select_count.return_value = 3
-        service = ProductServices(product_repository=mock_repo, tag_repository=AsyncMock(), file_repository=AsyncMock())
+        service = ProductServices(product_repository=mock_repo, tag_repository=AsyncMock(), file_repository=AsyncMock(), additional_services=AsyncMock())
         count = await service.search_count(query="a")
         self.assertEqual(count, 3)
         mock_repo.select_count.assert_awaited_with(query="a", tags=[])
@@ -119,7 +123,51 @@ class TestProductServices(unittest.IsolatedAsyncioTestCase):
     async def test_delete_by_id(self):
         mock_repo = AsyncMock()
         mock_repo.delete_by_id.return_value = "deleted"
-        service = ProductServices(product_repository=mock_repo, tag_repository=AsyncMock(), file_repository=AsyncMock())
+        service = ProductServices(product_repository=mock_repo, tag_repository=AsyncMock(), file_repository=AsyncMock(), additional_services=AsyncMock())
         result = await service.delete_by_id(id="d")
         self.assertEqual(result, "deleted")
         mock_repo.delete_by_id.assert_awaited_with(id="d")
+
+    @patch("app.crud.products.services.get_plan_feature", new_callable=AsyncMock)
+    async def test_create_product_validates_product_additionals(self, mock_plan):
+        mock_plan.return_value = SimpleNamespace(value="-")
+        og = ProductAdditionalInDB(
+            id="og1",
+            name="G",
+            selection_type=OptionKind.RADIO,
+            min_quantity=0,
+            max_quantity=1,
+            position=1,
+            items={},
+            organization_id="org1",
+            created_at=UTCDateTime.now(),
+            updated_at=UTCDateTime.now(),
+        )
+        self.additional_repo.search_by_id = AsyncMock(return_value="group")
+        prod = await self._product()
+        prod.additionals = [og]
+        result = await self.service.create(prod)
+        self.additional_repo.search_by_id.assert_awaited_with(id="og1")
+        self.assertEqual(result.name, "Cake")
+
+    @patch("app.crud.products.services.get_plan_feature", new_callable=AsyncMock)
+    async def test_update_product_validates_product_additionals(self, mock_plan):
+        mock_plan.return_value = SimpleNamespace(value="-")
+        created = await self.service.create(await self._product())
+        self.additional_repo.search_by_id = AsyncMock(return_value="group")
+        og = ProductAdditionalInDB(
+            id="og2",
+            name="G",
+            selection_type=OptionKind.RADIO,
+            min_quantity=0,
+            max_quantity=1,
+            position=1,
+            items={},
+            organization_id="org1",
+            created_at=UTCDateTime.now(),
+            updated_at=UTCDateTime.now(),
+        )
+        update = UpdateProduct(additionals=[og])
+        updated = await self.service.update(id=created.id, updated_product=update)
+        self.additional_repo.search_by_id.assert_awaited_with(id="og2")
+        self.assertEqual(updated.id, created.id)

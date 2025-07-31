@@ -26,3 +26,4 @@ from .offers import offer_router
 from .home import home_router
 from .pre_orders import pre_order_router
 from .messages import message_router
+from .additionals import additional_router

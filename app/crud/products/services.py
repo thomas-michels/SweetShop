@@ -5,6 +5,8 @@ from app.core.utils.features import Feature
 from app.crud.files.schemas import FilePurpose
 from app.crud.tags.repositories import TagRepository
 from app.crud.files.repositories import FileRepository
+from app.crud.product_additionals.services import ProductAdditionalServices
+from app.crud.product_additionals.schemas import ProductAdditionalInDB
 from .schemas import (
     CompleteProduct,
     Product,
@@ -21,10 +23,12 @@ class ProductServices:
             product_repository: ProductRepository,
             tag_repository: TagRepository,
             file_repository: FileRepository,
+            additional_services: ProductAdditionalServices,
         ) -> None:
         self.__product_repository = product_repository
         self.__tag_repository = tag_repository
         self.__file_repository = file_repository
+        self.__additional_services = additional_services
 
     async def create(self, product: Product) -> ProductInDB:
         plan_feature = await get_plan_feature(
@@ -46,6 +50,11 @@ class ProductServices:
         for tag in product.tags:
             await self.__tag_repository.select_by_id(id=tag)
 
+        for additional in product.additionals:
+            additional_id = getattr(additional, "id", None)
+            if additional_id:
+                await self.__additional_services.search_by_id(id=additional_id)
+
         product_in_db = await self.__product_repository.create(product=product)
         return product_in_db
 
@@ -64,6 +73,12 @@ class ProductServices:
             if updated_product.tags is not None:
                 for tag in updated_product.tags:
                     await self.__tag_repository.select_by_id(id=tag)
+
+            if updated_product.additionals is not None:
+                for additional in updated_product.additionals:
+                    additional_id = getattr(additional, "id", None)
+                    if additional_id:
+                        await self.__additional_services.search_by_id(id=additional_id)
 
             product_in_db = await self.__product_repository.update(product=product_in_db)
 
@@ -134,6 +149,18 @@ class ProductServices:
                             tags[tag_in_db.id] = tag_in_db
 
                     complete_product.tags.append(tag_in_db)
+
+            if "additionals" in expand:
+                complete_product.additionals = []
+                for additional in product.additionals:
+                    additional_id = getattr(additional, "id", None)
+                    if additional_id:
+                        group_in_db = await self.__additional_services.search_by_id(
+                            id=additional_id
+                        )
+                        complete_product.additionals.append(group_in_db)
+                    else:
+                        complete_product.additionals.append(additional)
 
             complete_products.append(complete_product)
 

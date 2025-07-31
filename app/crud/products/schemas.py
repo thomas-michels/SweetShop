@@ -1,5 +1,8 @@
 from typing import List, Optional
 
+from app.crud.product_additionals.schemas import ProductAdditional
+from enum import Enum
+
 from pydantic import Field, model_validator
 
 from app.core.models import DatabaseModel
@@ -8,11 +11,17 @@ from app.crud.files.schemas import FileInDB
 from app.crud.tags.schemas import TagInDB
 
 
+class ProductKind(str, Enum):
+    REGULAR = "REGULAR"
+    ADDON = "ADDON"
+
 class Product(GenericModel):
     name: str = Field(example="Brigadeiro")
     description: str = Field(example="Brigadeiro de Leite Ninho")
     unit_price: float = Field(example=1.5)
     unit_cost: float = Field(example=0.75)
+    kind: ProductKind = Field(default=ProductKind.REGULAR)
+    additionals: List[ProductAdditional] = Field(default=[])
     tags: List[str] = Field(default=[])
     file_id: str | None = Field(default=None, example="fil_123")
 
@@ -45,6 +54,14 @@ class Product(GenericModel):
             self.unit_price = update_product.unit_price
             is_updated = True
 
+        if update_product.kind is not None:
+            self.kind = update_product.kind
+            is_updated = True
+
+        if update_product.additionals is not None:
+            self.additionals = update_product.additionals
+            is_updated = True
+
         if update_product.tags is not None:
             self.tags = update_product.tags
             is_updated = True
@@ -61,6 +78,8 @@ class UpdateProduct(GenericModel):
     description: Optional[str] = Field(default=None, example="Brigadeiro de Leite Ninho")
     unit_price: Optional[float] = Field(default=None, example=1.5)
     unit_cost: Optional[float] = Field(default=None, example=0.75)
+    kind: Optional[ProductKind] = Field(default=None)
+    additionals: Optional[List[ProductAdditional]] = Field(default=None)
     tags: Optional[List[str]] = Field(default=None)
     file_id: Optional[str] = Field(default=None, example="fil_123")
 
