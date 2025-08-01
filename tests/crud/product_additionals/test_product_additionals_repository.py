@@ -58,3 +58,9 @@ class TestProductAdditionalRepository(unittest.IsolatedAsyncioTestCase):
         await self.repo.create(await self._group(name="G2"))
         results = await self.repo.select_all()
         self.assertEqual(len(results), 2)
+
+    async def test_select_by_ids(self):
+        g1 = await self.repo.create(await self._group(name="G1"))
+        g2 = await self.repo.create(await self._group(name="G2"))
+        results = await self.repo.select_by_ids([g1.id, g2.id])
+        self.assertEqual({r.id for r in results}, {g1.id, g2.id})

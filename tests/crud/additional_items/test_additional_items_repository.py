@@ -68,3 +68,15 @@ class TestAdditionalItemRepository(unittest.IsolatedAsyncioTestCase):
         await self.additional_repo.create(additional_id=gid, item=item2)
         items = await self.additional_repo.select_all(additional_id=gid)
         self.assertEqual(len(items), 2)
+
+    async def test_select_all_for_additionals(self):
+        gid1 = await self._group_id()
+        gid2 = await self._group_id()
+        item1 = AdditionalItem(position=1, product_id="p1", label="A", unit_price=0.0, unit_cost=0.0, consumption_factor=1.0)
+        item2 = AdditionalItem(position=1, product_id="p2", label="B", unit_price=0.0, unit_cost=0.0, consumption_factor=1.0)
+        await self.additional_repo.create(additional_id=gid1, item=item1)
+        await self.additional_repo.create(additional_id=gid2, item=item2)
+        mapping = await self.additional_repo.select_all_for_additionals([gid1, gid2])
+        self.assertEqual(len(mapping[gid1]), 1)
+        self.assertEqual(mapping[gid1][0].label, "A")
+        self.assertEqual(len(mapping), 2)

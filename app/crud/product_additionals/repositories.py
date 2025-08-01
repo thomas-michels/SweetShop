@@ -96,6 +96,21 @@ class ProductAdditionalRepository(Repository):
             _logger.error(f"Error on select_all: {error}")
             raise NotFoundError(message="Product additionals not found")
 
+    async def select_by_ids(self, ids: List[str]) -> List[ProductAdditionalInDB]:
+        try:
+            results = []
+            objects = ProductAdditionalModel.objects(
+                id__in=ids,
+                is_active=True,
+                organization_id=self.organization_id,
+            ).order_by("position")
+            for model in objects:
+                results.append(self._to_schema(model))
+            return results
+        except Exception as error:
+            _logger.error(f"Error on select_by_ids: {error}")
+            raise NotFoundError(message="Product additionals not found")
+
     async def delete_by_id(self, id: str) -> ProductAdditionalInDB:
         try:
             model: ProductAdditionalModel = ProductAdditionalModel.objects(

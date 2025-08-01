@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 
 from pydantic import ValidationError
 
@@ -78,6 +78,24 @@ class AdditionalItemRepository(Repository):
             return results
         except Exception as error:
             _logger.error(f"Error on select_all: {error}")
+            raise NotFoundError(message="Additional items not found")
+
+    async def select_all_for_additionals(
+        self, additional_ids: List[str]
+    ) -> Dict[str, List[AdditionalItemInDB]]:
+        try:
+            results: Dict[str, List[AdditionalItemInDB]] = {}
+            objects = AdditionalItemModel.objects(
+                is_active=True,
+                organization_id=self.organization_id,
+                additional_id__in=additional_ids,
+            ).order_by("position")
+            for model in objects:
+                item = self._to_schema(model)
+                results.setdefault(item.additional_id, []).append(item)
+            return results
+        except Exception as error:
+            _logger.error(f"Error on select_all_for_additionals: {error}")
             raise NotFoundError(message="Additional items not found")
 
     async def delete_by_id(self, id: str) -> AdditionalItemInDB:

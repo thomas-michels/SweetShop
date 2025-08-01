@@ -69,6 +69,32 @@ class ProductAdditionalServices:
             additional.items = {itm.position: itm for itm in items}
         return additionals
 
+    async def search_by_product_id(
+        self, product_id: str, additionals: List[ProductAdditional | dict] | None = None
+    ) -> List[ProductAdditionalInDB | ProductAdditional]:
+        if additionals is None:
+            product = await self.__product_repository.select_by_id(id=product_id)
+            additionals = product.additionals
+        ids = []
+        plain: List[ProductAdditional | dict] = []
+        for additional in additionals:
+            additional_id = getattr(additional, "id", None)
+            if additional_id is None and isinstance(additional, dict):
+                additional_id = additional.get("id")
+            if additional_id:
+                ids.append(additional_id)
+            else:
+                plain.append(additional)
+        result: List[ProductAdditionalInDB | ProductAdditional] = []
+        if ids:
+            additionals = await self.__repository.select_by_ids(ids=ids)
+            items_map = await self.__item_repository.select_all_for_additionals(additional_ids=ids)
+            for additional in additionals:
+                additional.items = {itm.position: itm for itm in items_map.get(additional.id, [])}
+            result.extend(additionals)
+        result.extend(plain)
+        return result
+
     async def delete_by_id(self, id: str) -> ProductAdditionalInDB:
         return await self.__repository.delete_by_id(id=id)
 

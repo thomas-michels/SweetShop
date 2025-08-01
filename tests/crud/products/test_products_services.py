@@ -171,3 +171,14 @@ class TestProductServices(unittest.IsolatedAsyncioTestCase):
         updated = await self.service.update(id=created.id, updated_product=update)
         self.additional_repo.search_by_id.assert_awaited_with(id="og2")
         self.assertEqual(updated.id, created.id)
+
+    @patch("app.crud.products.services.get_plan_feature", new_callable=AsyncMock)
+    async def test_expand_additionals_uses_service(self, mock_plan):
+        mock_plan.return_value = SimpleNamespace(value="-")
+        created = await self.service.create(await self._product())
+        self.additional_repo.search_by_product_id = AsyncMock(return_value=["grp"])
+        result = await self.service.search_by_id(id=created.id, expand=["additionals"])
+        self.additional_repo.search_by_product_id.assert_awaited_with(
+            product_id=created.id, additionals=[]
+        )
+        self.assertEqual(result.additionals, ["grp"])

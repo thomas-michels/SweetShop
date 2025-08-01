@@ -151,16 +151,10 @@ class ProductServices:
                     complete_product.tags.append(tag_in_db)
 
             if "additionals" in expand:
-                complete_product.additionals = []
-                for additional in product.additionals:
-                    additional_id = getattr(additional, "id", None)
-                    if additional_id:
-                        group_in_db = await self.__additional_services.search_by_id(
-                            id=additional_id
-                        )
-                        complete_product.additionals.append(group_in_db)
-                    else:
-                        complete_product.additionals.append(additional)
+                complete_product.additionals = await self.__additional_services.search_by_product_id(
+                    product_id=product.id,
+                    additionals=product.additionals,
+                )
 
             complete_products.append(complete_product)
 
