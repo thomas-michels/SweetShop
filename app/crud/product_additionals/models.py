@@ -1,20 +1,20 @@
-from mongoengine import StringField, FloatField, ListField
+from mongoengine import StringField, IntField
+
 from app.core.models.base_document import BaseDocument
 from app.core.utils.utc_datetime import UTCDateTime
 
 
-class ProductModel(BaseDocument):
+class ProductAdditionalModel(BaseDocument):
     organization_id = StringField(required=True)
+    product_id = StringField(required=True)
     name = StringField(required=True)
-    description = StringField(required=True)
-    unit_price = FloatField(min_value=0, required=True)
-    unit_cost = FloatField(min_value=0, required=True)
-    kind = StringField(default="REGULAR")
-    tags = ListField(StringField(), required=False)
-    file_id = StringField(required=False)
+    selection_type = StringField(required=True)
+    min_quantity = IntField(required=True)
+    max_quantity = IntField(required=True)
+    position = IntField(required=True)
 
     meta = {
-        "collection": "products"
+        "collection": "product_additionals"
     }
 
     def update(self, **kwargs):
@@ -26,6 +26,5 @@ class ProductModel(BaseDocument):
         if soft_delete:
             self.soft_delete()
             self.save()
-
         else:
             return super().delete(signal_kwargs, **write_concern)

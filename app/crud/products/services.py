@@ -5,6 +5,7 @@ from app.core.utils.features import Feature
 from app.crud.files.schemas import FilePurpose
 from app.crud.tags.repositories import TagRepository
 from app.crud.files.repositories import FileRepository
+from app.crud.product_additionals.services import ProductAdditionalServices
 from .schemas import (
     CompleteProduct,
     Product,
@@ -21,10 +22,12 @@ class ProductServices:
             product_repository: ProductRepository,
             tag_repository: TagRepository,
             file_repository: FileRepository,
+            additional_services: ProductAdditionalServices,
         ) -> None:
         self.__product_repository = product_repository
         self.__tag_repository = tag_repository
         self.__file_repository = file_repository
+        self.__additional_services = additional_services
 
     async def create(self, product: Product) -> ProductInDB:
         plan_feature = await get_plan_feature(
@@ -64,7 +67,6 @@ class ProductServices:
             if updated_product.tags is not None:
                 for tag in updated_product.tags:
                     await self.__tag_repository.select_by_id(id=tag)
-
             product_in_db = await self.__product_repository.update(product=product_in_db)
 
         return product_in_db
@@ -134,6 +136,11 @@ class ProductServices:
                             tags[tag_in_db.id] = tag_in_db
 
                     complete_product.tags.append(tag_in_db)
+
+            if "additionals" in expand:
+                complete_product.additionals = await self.__additional_services.search_by_product_id(
+                    product_id=product.id,
+                )
 
             complete_products.append(complete_product)
 
