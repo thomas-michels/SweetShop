@@ -23,13 +23,17 @@ class ProductAdditionalServices:
         self.__product_repository = product_repository
         self.__item_repository = item_repository
 
-    async def create(self, product_additional: ProductAdditional) -> ProductAdditionalInDB:
-        await self.__product_repository.select_by_id(id=product_additional.product_id)
+    async def create(self, product_additional: ProductAdditional, product_id: str) -> ProductAdditionalInDB:
+        await self.__product_repository.select_by_id(id=product_id)
+
         for item in product_additional.items:
             if item.product_id:
                 await self.__product_repository.select_by_id(id=item.product_id)
 
-        additional_in_db = await self.__repository.create(product_additional=product_additional)
+        additional_in_db = await self.__repository.create(
+            product_additional=product_additional,
+            product_id=product_id
+        )
 
         for item in product_additional.items:
             await self.__item_repository.create(additional_id=additional_in_db.id, item=item)
@@ -43,12 +47,11 @@ class ProductAdditionalServices:
         is_updated = additional_in_db.validate_updated_fields(update=updated_product_additional)
 
         if is_updated:
-            if updated_product_additional.product_id is not None:
-                await self.__product_repository.select_by_id(id=updated_product_additional.product_id)
             if updated_product_additional.items is not None:
                 for item in updated_product_additional.items:
                     if item.product_id:
                         await self.__product_repository.select_by_id(id=item.product_id)
+
             additional_in_db = await self.__repository.update(product_additional=additional_in_db)
 
         additional_in_db.items = await self.__item_repository.select_all(additional_id=id)
@@ -56,9 +59,11 @@ class ProductAdditionalServices:
 
     async def search_by_id(self, id: str) -> ProductAdditionalInDB:
         additional = await self.__repository.select_by_id(id=id)
+
         if additional:
             items = await self.__item_repository.select_all(additional_id=id)
             additional.items = items
+
         return additional
 
     async def search_all(self) -> List[ProductAdditionalInDB]:
@@ -66,13 +71,16 @@ class ProductAdditionalServices:
         for additional in additionals:
             items = await self.__item_repository.select_all(additional_id=additional.id)
             additional.items = items
+
         return additionals
 
     async def search_by_product_id(self, product_id: str) -> List[ProductAdditionalInDB]:
         additionals = await self.__repository.select_by_product_id(product_id=product_id)
+
         for additional in additionals:
             items = await self.__item_repository.select_all(additional_id=additional.id)
             additional.items = items
+
         return additionals
 
     async def delete_by_id(self, id: str) -> ProductAdditionalInDB:
@@ -81,7 +89,9 @@ class ProductAdditionalServices:
     async def add_item(self, additional_id: str, item: AdditionalItem) -> ProductAdditionalInDB:
         if item.product_id:
             await self.__product_repository.select_by_id(id=item.product_id)
+
         await self.__item_repository.create(additional_id=additional_id, item=item)
+
         return await self.search_by_id(id=additional_id)
 
     async def update_item(
@@ -89,13 +99,16 @@ class ProductAdditionalServices:
     ) -> ProductAdditionalInDB:
         if item.product_id:
             await self.__product_repository.select_by_id(id=item.product_id)
+
         existing = await self.__item_repository.select_by_id(id=item_id)
+
         existing.position = item.position
         existing.product_id = item.product_id
         existing.label = item.label
         existing.unit_price = item.unit_price
         existing.unit_cost = item.unit_cost
         existing.consumption_factor = item.consumption_factor
+
         await self.__item_repository.update(item=existing)
         return await self.search_by_id(id=additional_id)
 

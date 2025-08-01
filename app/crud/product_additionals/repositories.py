@@ -23,11 +23,10 @@ class ProductAdditionalRepository(Repository):
         data["id"] = str(model.id)
         data["created_at"] = model.created_at
         data["updated_at"] = model.updated_at
-        # items are stored in a separate collection
         data["items"] = []
         return ProductAdditionalInDB.model_validate(data)
 
-    async def create(self, product_additional: ProductAdditional) -> ProductAdditionalInDB:
+    async def create(self, product_additional: ProductAdditional, product_id: str) -> ProductAdditionalInDB:
         try:
             data = product_additional.model_dump()
             # items are handled by AdditionalItemRepository
@@ -36,11 +35,13 @@ class ProductAdditionalRepository(Repository):
             model = ProductAdditionalModel(
                 created_at=UTCDateTime.now(),
                 updated_at=UTCDateTime.now(),
+                product_id=product_id,
                 organization_id=self.organization_id,
                 **data,
             )
             model.save()
             return self._to_schema(model)
+
         except Exception as error:
             _logger.error(f"Error on create_product_additional: {error}")
             raise UnprocessableEntity(message="Error on create new product additional")
@@ -64,6 +65,7 @@ class ProductAdditionalRepository(Repository):
             return await self.select_by_id(id=product_additional.id)
         except ValidationError:
             raise NotFoundError(message="ProductAdditional not found")
+
         except Exception as error:
             _logger.error(f"Error on update_product_additional: {error}")
             raise UnprocessableEntity(message="Error on update product additional")
@@ -74,9 +76,11 @@ class ProductAdditionalRepository(Repository):
                 id=id, is_active=True, organization_id=self.organization_id
             ).first()
             return self._to_schema(model)
+
         except ValidationError:
             if raise_404:
                 raise NotFoundError(message=f"ProductAdditional #{id} not found")
+
         except Exception as error:
             _logger.error(f"Error on select_by_id: {error}")
             if raise_404:
@@ -89,9 +93,12 @@ class ProductAdditionalRepository(Repository):
                 is_active=True,
                 organization_id=self.organization_id,
             ).order_by("position")
+
             for model in objects:
                 results.append(self._to_schema(model))
+
             return results
+
         except Exception as error:
             _logger.error(f"Error on select_all: {error}")
             raise NotFoundError(message="Product additionals not found")
@@ -104,9 +111,12 @@ class ProductAdditionalRepository(Repository):
                 organization_id=self.organization_id,
                 product_id=product_id,
             ).order_by("position")
+
             for model in objects:
                 results.append(self._to_schema(model))
+
             return results
+
         except Exception as error:
             _logger.error(f"Error on select_by_product_id: {error}")
             raise NotFoundError(message="Product additionals not found")
@@ -119,9 +129,12 @@ class ProductAdditionalRepository(Repository):
                 is_active=True,
                 organization_id=self.organization_id,
             ).order_by("position")
+
             for model in objects:
                 results.append(self._to_schema(model))
+
             return results
+
         except Exception as error:
             _logger.error(f"Error on select_by_ids: {error}")
             raise NotFoundError(message="Product additionals not found")
@@ -131,10 +144,13 @@ class ProductAdditionalRepository(Repository):
             model: ProductAdditionalModel = ProductAdditionalModel.objects(
                 id=id, is_active=True, organization_id=self.organization_id
             ).first()
+
             if model:
                 model.delete()
                 return self._to_schema(model)
+
             raise NotFoundError(message=f"ProductAdditional #{id} not found")
+
         except Exception as error:
             _logger.error(f"Error on delete_by_id: {error}")
             raise NotFoundError(message=f"ProductAdditional #{id} not found")

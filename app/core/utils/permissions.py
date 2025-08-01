@@ -15,6 +15,7 @@ def get_role_permissions(role: RoleEnum) -> Set[str]:
         [
             "tag:get",
             "product:get",
+            "product_additional:get",
             "user:me",
             "payment:get",
             "order:create",
@@ -43,6 +44,8 @@ def get_role_permissions(role: RoleEnum) -> Set[str]:
                 "tag:delete",
                 "product:create",
                 "product:delete",
+                "product_additional:create",
+                "product_additional:delete",
                 "file:create",
                 "file:delete",
                 "payment:create",

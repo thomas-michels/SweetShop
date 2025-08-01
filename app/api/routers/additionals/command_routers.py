@@ -21,8 +21,10 @@ async def create_product_additional(
     current_user: UserInDB = Security(decode_jwt, scopes=["product_additional:create"]),
     product_additional_services: ProductAdditionalServices = Depends(product_additional_composer),
 ):
-    product_additional.product_id = product_id
-    additional_in_db = await product_additional_services.create(product_additional=product_additional)
+    additional_in_db = await product_additional_services.create(
+        product_additional=product_additional,
+        product_id=product_id
+    )
 
     if additional_in_db:
         return build_response(

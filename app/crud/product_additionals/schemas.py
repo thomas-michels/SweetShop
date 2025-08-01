@@ -13,10 +13,7 @@ class OptionKind(str, Enum):
     CHECKBOX = "CHECKBOX"
 
 
-
-
 class ProductAdditional(GenericModel):
-    product_id: str = Field(example="prod_123")
     name: str = Field(example="Toppings")
     selection_type: OptionKind = Field(example=OptionKind.RADIO)
     min_quantity: int = Field(example=0)
@@ -47,10 +44,6 @@ class ProductAdditional(GenericModel):
             self.position = update.position
             is_updated = True
 
-        if update.product_id is not None:
-            self.product_id = update.product_id
-            is_updated = True
-
         if update.items is not None:
             self.items = update.items
             is_updated = True
@@ -59,7 +52,6 @@ class ProductAdditional(GenericModel):
 
 
 class UpdateProductAdditional(GenericModel):
-    product_id: Optional[str] = Field(default=None, example="prod_123")
     name: Optional[str] = Field(default=None, example="Toppings")
     selection_type: Optional[OptionKind] = Field(default=None, example=OptionKind.RADIO)
     min_quantity: Optional[int] = Field(default=None, example=0)
@@ -70,3 +62,4 @@ class UpdateProductAdditional(GenericModel):
 
 class ProductAdditionalInDB(ProductAdditional, DatabaseModel):
     organization_id: str = Field(example="org_123")
+    product_id: str = Field(example="prod_123")
