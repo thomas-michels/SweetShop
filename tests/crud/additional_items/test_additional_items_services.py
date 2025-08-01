@@ -29,7 +29,6 @@ class TestAdditionalItemServices(unittest.IsolatedAsyncioTestCase):
 
     async def _group_id(self):
         group = ProductAdditional(
-            product_id="p0",
             name="G",
             selection_type=OptionKind.RADIO,
             min_quantity=0,
@@ -37,7 +36,7 @@ class TestAdditionalItemServices(unittest.IsolatedAsyncioTestCase):
             position=1,
             items=[],
         )
-        created = await self.group_repo.create(group)
+        created = await self.group_repo.create(group, product_id="p0",)
         return created.id
 
     async def test_create_item(self):
