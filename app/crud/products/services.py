@@ -6,7 +6,6 @@ from app.crud.files.schemas import FilePurpose
 from app.crud.tags.repositories import TagRepository
 from app.crud.files.repositories import FileRepository
 from app.crud.product_additionals.services import ProductAdditionalServices
-from app.crud.product_additionals.schemas import ProductAdditionalInDB
 from .schemas import (
     CompleteProduct,
     Product,
@@ -50,11 +49,6 @@ class ProductServices:
         for tag in product.tags:
             await self.__tag_repository.select_by_id(id=tag)
 
-        for additional in product.additionals:
-            additional_id = getattr(additional, "id", None)
-            if additional_id:
-                await self.__additional_services.search_by_id(id=additional_id)
-
         product_in_db = await self.__product_repository.create(product=product)
         return product_in_db
 
@@ -73,13 +67,6 @@ class ProductServices:
             if updated_product.tags is not None:
                 for tag in updated_product.tags:
                     await self.__tag_repository.select_by_id(id=tag)
-
-            if updated_product.additionals is not None:
-                for additional in updated_product.additionals:
-                    additional_id = getattr(additional, "id", None)
-                    if additional_id:
-                        await self.__additional_services.search_by_id(id=additional_id)
-
             product_in_db = await self.__product_repository.update(product=product_in_db)
 
         return product_in_db
@@ -153,7 +140,6 @@ class ProductServices:
             if "additionals" in expand:
                 complete_product.additionals = await self.__additional_services.search_by_product_id(
                     product_id=product.id,
-                    additionals=product.additionals,
                 )
 
             complete_products.append(complete_product)

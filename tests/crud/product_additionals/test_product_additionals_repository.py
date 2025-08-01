@@ -21,14 +21,15 @@ class TestProductAdditionalRepository(unittest.IsolatedAsyncioTestCase):
     def tearDown(self):
         disconnect()
 
-    async def _group(self, name="Toppings"):
+    async def _group(self, name="Toppings", product_id="prod1"):
         return ProductAdditional(
+            product_id=product_id,
             name=name,
             selection_type=OptionKind.RADIO,
             min_quantity=0,
             max_quantity=1,
             position=1,
-            items={},
+            items=[],
         )
 
     async def test_create_product_additional(self):
@@ -64,3 +65,10 @@ class TestProductAdditionalRepository(unittest.IsolatedAsyncioTestCase):
         g2 = await self.repo.create(await self._group(name="G2"))
         results = await self.repo.select_by_ids([g1.id, g2.id])
         self.assertEqual({r.id for r in results}, {g1.id, g2.id})
+
+    async def test_select_by_product_id(self):
+        g1 = await self.repo.create(await self._group(name="G1", product_id="p1"))
+        await self.repo.create(await self._group(name="G2", product_id="p2"))
+        results = await self.repo.select_by_product_id("p1")
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].id, g1.id)

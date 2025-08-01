@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Dict, Optional
+from typing import List, Optional
 
 from pydantic import Field
 
@@ -16,12 +16,13 @@ class OptionKind(str, Enum):
 
 
 class ProductAdditional(GenericModel):
+    product_id: str = Field(example="prod_123")
     name: str = Field(example="Toppings")
     selection_type: OptionKind = Field(example=OptionKind.RADIO)
     min_quantity: int = Field(example=0)
     max_quantity: int = Field(example=1)
     position: int = Field(example=1)
-    items: Dict[int, AdditionalItem] = Field(default={})
+    items: List[AdditionalItem] = Field(default=[])
 
     def validate_updated_fields(self, update: "UpdateProductAdditional") -> bool:
         is_updated = False
@@ -46,6 +47,10 @@ class ProductAdditional(GenericModel):
             self.position = update.position
             is_updated = True
 
+        if update.product_id is not None:
+            self.product_id = update.product_id
+            is_updated = True
+
         if update.items is not None:
             self.items = update.items
             is_updated = True
@@ -54,12 +59,13 @@ class ProductAdditional(GenericModel):
 
 
 class UpdateProductAdditional(GenericModel):
+    product_id: Optional[str] = Field(default=None, example="prod_123")
     name: Optional[str] = Field(default=None, example="Toppings")
     selection_type: Optional[OptionKind] = Field(default=None, example=OptionKind.RADIO)
     min_quantity: Optional[int] = Field(default=None, example=0)
     max_quantity: Optional[int] = Field(default=None, example=1)
     position: Optional[int] = Field(default=None, example=1)
-    items: Optional[Dict[int, AdditionalItem]] = Field(default=None)
+    items: Optional[List[AdditionalItem]] = Field(default=None)
 
 
 class ProductAdditionalInDB(ProductAdditional, DatabaseModel):

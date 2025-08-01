@@ -6,12 +6,13 @@ from app.crud.product_additionals.schemas import ProductAdditional, UpdateProduc
 class TestProductAdditionalSchemas(unittest.TestCase):
     def test_validate_updated_fields(self):
         group = ProductAdditional(
+            product_id="p1",
             name="Group",
             selection_type=OptionKind.RADIO,
             min_quantity=0,
             max_quantity=1,
             position=1,
-            items={},
+            items=[],
         )
         update = UpdateProductAdditional(name="New")
         changed = group.validate_updated_fields(update=update)

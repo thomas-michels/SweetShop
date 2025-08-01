@@ -6,7 +6,6 @@ import mongomock
 
 from app.crud.products.repositories import ProductRepository
 from app.crud.products.schemas import Product, ProductInDB, UpdateProduct
-from app.crud.product_additionals.schemas import ProductAdditional, ProductAdditionalInDB, OptionKind
 from app.crud.products.services import ProductServices
 from app.crud.tags.repositories import TagRepository
 from app.crud.files.repositories import FileRepository
@@ -43,7 +42,6 @@ class TestProductServices(unittest.IsolatedAsyncioTestCase):
             unit_price=10.0,
             unit_cost=5.0,
             tags=[],
-            additionals=[],
         )
 
     @patch("app.crud.products.services.get_plan_feature", new_callable=AsyncMock)
@@ -128,49 +126,6 @@ class TestProductServices(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result, "deleted")
         mock_repo.delete_by_id.assert_awaited_with(id="d")
 
-    @patch("app.crud.products.services.get_plan_feature", new_callable=AsyncMock)
-    async def test_create_product_validates_product_additionals(self, mock_plan):
-        mock_plan.return_value = SimpleNamespace(value="-")
-        og = ProductAdditionalInDB(
-            id="og1",
-            name="G",
-            selection_type=OptionKind.RADIO,
-            min_quantity=0,
-            max_quantity=1,
-            position=1,
-            items={},
-            organization_id="org1",
-            created_at=UTCDateTime.now(),
-            updated_at=UTCDateTime.now(),
-        )
-        self.additional_repo.search_by_id = AsyncMock(return_value="group")
-        prod = await self._product()
-        prod.additionals = [og]
-        result = await self.service.create(prod)
-        self.additional_repo.search_by_id.assert_awaited_with(id="og1")
-        self.assertEqual(result.name, "Cake")
-
-    @patch("app.crud.products.services.get_plan_feature", new_callable=AsyncMock)
-    async def test_update_product_validates_product_additionals(self, mock_plan):
-        mock_plan.return_value = SimpleNamespace(value="-")
-        created = await self.service.create(await self._product())
-        self.additional_repo.search_by_id = AsyncMock(return_value="group")
-        og = ProductAdditionalInDB(
-            id="og2",
-            name="G",
-            selection_type=OptionKind.RADIO,
-            min_quantity=0,
-            max_quantity=1,
-            position=1,
-            items={},
-            organization_id="org1",
-            created_at=UTCDateTime.now(),
-            updated_at=UTCDateTime.now(),
-        )
-        update = UpdateProduct(additionals=[og])
-        updated = await self.service.update(id=created.id, updated_product=update)
-        self.additional_repo.search_by_id.assert_awaited_with(id="og2")
-        self.assertEqual(updated.id, created.id)
 
     @patch("app.crud.products.services.get_plan_feature", new_callable=AsyncMock)
     async def test_expand_additionals_uses_service(self, mock_plan):
@@ -179,6 +134,6 @@ class TestProductServices(unittest.IsolatedAsyncioTestCase):
         self.additional_repo.search_by_product_id = AsyncMock(return_value=["grp"])
         result = await self.service.search_by_id(id=created.id, expand=["additionals"])
         self.additional_repo.search_by_product_id.assert_awaited_with(
-            product_id=created.id, additionals=[]
+            product_id=created.id
         )
         self.assertEqual(result.additionals, ["grp"])

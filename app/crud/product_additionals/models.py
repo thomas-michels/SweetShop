@@ -6,6 +6,7 @@ from app.core.utils.utc_datetime import UTCDateTime
 
 class ProductAdditionalModel(BaseDocument):
     organization_id = StringField(required=True)
+    product_id = StringField(required=True)
     name = StringField(required=True)
     selection_type = StringField(required=True)
     min_quantity = IntField(required=True)

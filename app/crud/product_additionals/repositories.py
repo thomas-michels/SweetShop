@@ -24,7 +24,7 @@ class ProductAdditionalRepository(Repository):
         data["created_at"] = model.created_at
         data["updated_at"] = model.updated_at
         # items are stored in a separate collection
-        data["items"] = {}
+        data["items"] = []
         return ProductAdditionalInDB.model_validate(data)
 
     async def create(self, product_additional: ProductAdditional) -> ProductAdditionalInDB:
@@ -94,6 +94,21 @@ class ProductAdditionalRepository(Repository):
             return results
         except Exception as error:
             _logger.error(f"Error on select_all: {error}")
+            raise NotFoundError(message="Product additionals not found")
+
+    async def select_by_product_id(self, product_id: str) -> List[ProductAdditionalInDB]:
+        try:
+            results = []
+            objects = ProductAdditionalModel.objects(
+                is_active=True,
+                organization_id=self.organization_id,
+                product_id=product_id,
+            ).order_by("position")
+            for model in objects:
+                results.append(self._to_schema(model))
+            return results
+        except Exception as error:
+            _logger.error(f"Error on select_by_product_id: {error}")
             raise NotFoundError(message="Product additionals not found")
 
     async def select_by_ids(self, ids: List[str]) -> List[ProductAdditionalInDB]:

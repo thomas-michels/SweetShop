@@ -33,7 +33,7 @@ async def get_product_additionals(
     current_user: UserInDB = Security(decode_jwt, scopes=["product_additional:get"]),
     product_additional_services: ProductAdditionalServices = Depends(product_additional_composer),
 ):
-    additionals = await product_additional_services.search_all()
+    additionals = await product_additional_services.search_by_product_id(product_id=product_id)
 
     if additionals:
         return build_list_response(status_code=200, message="ProductAdditionals found with success", data=additionals)
