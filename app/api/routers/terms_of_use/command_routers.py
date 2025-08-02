@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Form, Request, Security, UploadFile
 from app.api.composers import terms_of_use_composer
 from app.api.dependencies import build_response, decode_jwt
 from app.api.dependencies.auth import verify_super_user
+from app.api.dependencies.cache_users import get_cached_users
 from app.core.utils.utc_datetime import UTCDateTime
 from app.crud.terms_of_use import (
     TermOfUseAcceptance,
@@ -80,6 +81,7 @@ async def accepted_term_of_use(
     term_of_use_id: str,
     term_of_use_services: TermOfUseServices = Depends(terms_of_use_composer),
     current_user: CompleteUserInDB = Security(decode_jwt, scopes=[]),
+    cached_users: dict = Depends(get_cached_users),
 ):
     now = UTCDateTime.now().timestamp()
 
@@ -99,6 +101,9 @@ async def accepted_term_of_use(
     )
 
     if term_of_use_in_db:
+        if cached_users.get(current_user.user_id):
+            cached_users.pop(current_user.user_id)
+
         return build_response(
             status_code=200,
             message="Term Of Use accepted with success",

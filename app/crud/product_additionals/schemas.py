@@ -11,6 +11,7 @@ from app.crud.additional_items import AdditionalItem
 class OptionKind(str, Enum):
     RADIO = "RADIO"
     CHECKBOX = "CHECKBOX"
+    NUMBER = "NUMBER"
 
 
 class ProductAdditional(GenericModel):
@@ -19,7 +20,16 @@ class ProductAdditional(GenericModel):
     min_quantity: int = Field(example=0)
     max_quantity: int = Field(example=1)
     position: int = Field(example=1)
-    items: List[AdditionalItem] = Field(default=[])
+    items: List[AdditionalItem] = Field(default=[], example=[
+        {
+            "position": 1,
+            "product_id": "prod_123",
+            "label": "Extra",
+            "unit_price": 10,
+            "unit_cost": 5,
+            "consumption_factor": 1
+        }
+    ])
 
     def validate_updated_fields(self, update: "UpdateProductAdditional") -> bool:
         is_updated = False

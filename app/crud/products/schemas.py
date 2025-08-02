@@ -14,6 +14,7 @@ class ProductKind(str, Enum):
     REGULAR = "REGULAR"
     ADDON = "ADDON"
 
+
 class Product(GenericModel):
     name: str = Field(example="Brigadeiro")
     description: str = Field(example="Brigadeiro de Leite Ninho")
