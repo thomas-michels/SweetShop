@@ -1,7 +1,82 @@
+import sys
 import unittest
+from types import ModuleType
+from enum import Enum
+from pydantic import BaseModel
 
 from mongoengine import connect, disconnect
 import mongomock
+
+# Stub the application module to avoid importing heavy dependencies
+# Stub application and API dependency modules to bypass external packages
+sys.modules.setdefault("app.application", ModuleType("app.application")).app = None
+
+deps_pkg = ModuleType("app.api.dependencies")
+deps_pkg.__path__ = []  # mark as package
+sys.modules.setdefault("app.api.dependencies", deps_pkg)
+sys.modules.setdefault(
+    "app.api.dependencies.response", ModuleType("app.api.dependencies.response")
+).build_response = lambda *args, **kwargs: None
+bucket = ModuleType("app.api.dependencies.bucket")
+bucket.S3BucketManager = type("S3BucketManager", (), {})
+sys.modules.setdefault("app.api.dependencies.bucket", bucket)
+
+sys.modules.setdefault(
+    "app.crud.fast_orders.services", ModuleType("app.crud.fast_orders.services")
+).FastOrderServices = object
+
+configs = ModuleType("app.core.configs")
+configs.get_logger = lambda name: type(
+    "Logger", (), {"error": lambda *args, **kwargs: None}
+)
+sys.modules.setdefault("app.core.configs", configs)
+
+orders_schemas = ModuleType("app.crud.orders.schemas")
+
+class DeliveryType(str, Enum):
+    FAST_ORDER = "FAST_ORDER"
+
+
+class OrderStatus(str, Enum):
+    DONE = "DONE"
+
+
+class PaymentStatus(str, Enum):
+    PENDING = "PENDING"
+
+
+class _Delivery:
+    def __init__(self, delivery_type):
+        self.delivery_type = delivery_type
+
+    def model_dump(self):
+        return {"delivery_type": self.delivery_type}
+
+orders_schemas.DeliveryType = DeliveryType
+orders_schemas.OrderStatus = OrderStatus
+orders_schemas.PaymentStatus = PaymentStatus
+orders_schemas.Delivery = _Delivery
+
+
+class OrderInDB(BaseModel):
+    pass
+
+
+class PaymentInOrder(BaseModel):
+    pass
+
+
+orders_schemas.OrderInDB = OrderInDB
+orders_schemas.PaymentInOrder = PaymentInOrder
+orders_schemas.RequestOrder = type("RequestOrder", (BaseModel,), {})
+orders_schemas.Order = type("Order", (BaseModel,), {})
+orders_schemas.UpdateOrder = type("UpdateOrder", (BaseModel,), {})
+orders_schemas.CompleteOrder = type("CompleteOrder", (BaseModel,), {})
+
+sys.modules.setdefault("app.crud.orders.schemas", orders_schemas)
+sys.modules.setdefault(
+    "app.crud.orders.services", ModuleType("app.crud.orders.services")
+).OrderServices = object
 
 from app.crud.fast_orders.repositories import FastOrderRepository
 from app.crud.fast_orders.schemas import FastOrder, StoredProduct
@@ -20,6 +95,12 @@ class TestFastOrderRepository(unittest.IsolatedAsyncioTestCase):
             alias="default",
         )
         self.repo = FastOrderRepository(organization_id="org1")
+        OrderModel.get_payments = staticmethod(
+            lambda: [
+                {"$set": {"id": "$_id", "payments": []}},
+                {"$project": {"_id": 0}},
+            ]
+        )
 
     def tearDown(self):
         disconnect()
