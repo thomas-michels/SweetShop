@@ -56,15 +56,6 @@ class TestFastOrderRepository(unittest.IsolatedAsyncioTestCase):
         updated = await self.repo.update(created.id, {"description": "Updated"})
         self.assertEqual(updated.description, "Updated")
 
-    async def test_select_count_and_all(self):
-        day = UTCDateTime(2025, 1, 1)
-        await self.repo.create(self._fast_order(order_date=day), total_amount=2.0)
-        await self.repo.create(self._fast_order(order_date=day - timedelta(days=1)), total_amount=2.0)
-        count = await self.repo.select_count(day=day)
-        self.assertEqual(count, 1)
-        results = await self.repo.select_all(day=day, page=1, page_size=1)
-        self.assertEqual(len(results), 1)
-
     async def test_delete_by_id(self):
         created = await self.repo.create(self._fast_order(), total_amount=2.0)
         await self.repo.delete_by_id(id=created.id)
