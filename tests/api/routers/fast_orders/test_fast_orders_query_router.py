@@ -1,6 +1,7 @@
 import sys
 import types
 import unittest
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
@@ -46,17 +47,46 @@ class TestFastOrdersQueryRouter(unittest.TestCase):
 
         self.original_dependencies = sys.modules.get("app.api.dependencies")
         self.original_composers = sys.modules.get("app.api.composers")
+        self.original_app = sys.modules.get("app")
 
         async def decode_jwt(*args, **kwargs):
             return {}
 
         fake_dep = types.ModuleType("app.api.dependencies")
+        fake_dep.__path__ = []
         fake_dep.build_response = build_response
         fake_dep.build_list_response = build_list_response
         fake_dep.decode_jwt = decode_jwt
         fake_dep.pagination_parameters = pagination_parameters
         fake_dep.Paginator = Paginator
         sys.modules["app.api.dependencies"] = fake_dep
+        bucket = types.ModuleType("app.api.dependencies.bucket")
+        bucket.S3BucketManager = type("S3BucketManager", (), {})
+        sys.modules["app.api.dependencies.bucket"] = bucket
+        response_module = types.ModuleType("app.api.dependencies.response")
+        response_module.build_response = build_response
+        response_module.build_list_response = build_list_response
+        sys.modules["app.api.dependencies.response"] = response_module
+        email_sender = types.ModuleType("app.api.dependencies.email_sender")
+        email_sender.send_email = lambda *args, **kwargs: None
+        sys.modules["app.api.dependencies.email_sender"] = email_sender
+        plan_feature = types.ModuleType("app.api.dependencies.get_plan_feature")
+        plan_feature.get_plan_feature = lambda *args, **kwargs: None
+        sys.modules["app.api.dependencies.get_plan_feature"] = plan_feature
+        pagination_module = types.ModuleType("app.api.dependencies.pagination_parameters")
+        pagination_module.pagination_parameters = pagination_parameters
+        sys.modules["app.api.dependencies.pagination_parameters"] = pagination_module
+        paginator_module = types.ModuleType("app.api.dependencies.paginator")
+        paginator_module.Paginator = Paginator
+        sys.modules["app.api.dependencies.paginator"] = paginator_module
+
+        fake_image_validator = types.ModuleType("app.core.utils.image_validator")
+        fake_image_validator.validate_image_file = lambda *args, **kwargs: None
+        sys.modules["app.core.utils.image_validator"] = fake_image_validator
+
+        fake_resize_image = types.ModuleType("app.core.utils.resize_image")
+        fake_resize_image.resize_image = lambda *args, **kwargs: None
+        sys.modules["app.core.utils.resize_image"] = fake_resize_image
 
         async def fast_order_composer():
             return None
@@ -64,6 +94,10 @@ class TestFastOrdersQueryRouter(unittest.TestCase):
         fake_composers = types.ModuleType("app.api.composers")
         fake_composers.fast_order_composer = fast_order_composer
         sys.modules["app.api.composers"] = fake_composers
+
+        fake_app = types.ModuleType("app")
+        fake_app.__path__ = [str(Path("app").resolve())]
+        sys.modules["app"] = fake_app
 
         import importlib.util
 
@@ -129,11 +163,32 @@ class TestFastOrdersQueryRouter(unittest.TestCase):
             sys.modules["app.api.dependencies"] = self.original_dependencies
         else:
             del sys.modules["app.api.dependencies"]
+        if "app.api.dependencies.bucket" in sys.modules:
+            del sys.modules["app.api.dependencies.bucket"]
+        if "app.api.dependencies.email_sender" in sys.modules:
+            del sys.modules["app.api.dependencies.email_sender"]
+        if "app.api.dependencies.get_plan_feature" in sys.modules:
+            del sys.modules["app.api.dependencies.get_plan_feature"]
+        if "app.api.dependencies.pagination_parameters" in sys.modules:
+            del sys.modules["app.api.dependencies.pagination_parameters"]
+        if "app.api.dependencies.paginator" in sys.modules:
+            del sys.modules["app.api.dependencies.paginator"]
+        if "app.api.dependencies.response" in sys.modules:
+            del sys.modules["app.api.dependencies.response"]
+        if "app.core.utils.image_validator" in sys.modules:
+            del sys.modules["app.core.utils.image_validator"]
+        if "app.core.utils.resize_image" in sys.modules:
+            del sys.modules["app.core.utils.resize_image"]
 
         if self.original_composers is not None:
             sys.modules["app.api.composers"] = self.original_composers
         else:
             del sys.modules["app.api.composers"]
+
+        if self.original_app is not None:
+            sys.modules["app"] = self.original_app
+        else:
+            del sys.modules["app"]
 
     def test_get_fast_orders_with_results(self):
         response = self.test_client.get(
