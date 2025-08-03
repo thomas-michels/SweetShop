@@ -6,6 +6,7 @@ from pydantic import Field
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
 from app.crud.additional_items import AdditionalItem
+from app.crud.additional_items.schemas import AdditionalItemInDB
 
 
 class OptionKind(str, Enum):
@@ -73,3 +74,13 @@ class UpdateProductAdditional(GenericModel):
 class ProductAdditionalInDB(ProductAdditional, DatabaseModel):
     organization_id: str = Field(example="org_123")
     product_id: str = Field(example="prod_123")
+    items: List[AdditionalItemInDB] = Field(default=[], example=[
+        {
+            "position": 1,
+            "product_id": "prod_123",
+            "label": "Extra",
+            "unit_price": 10,
+            "unit_cost": 5,
+            "consumption_factor": 1
+        }
+    ])

@@ -54,4 +54,3 @@ class UpdateAdditionalItem(GenericModel):
 class AdditionalItemInDB(AdditionalItem, DatabaseModel):
     organization_id: str = Field(example="org_123")
     additional_id: str = Field(example="add_123")
-

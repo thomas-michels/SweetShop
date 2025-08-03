@@ -19,11 +19,7 @@ class AdditionalItemRepository(Repository):
         self.organization_id = organization_id
 
     def _to_schema(self, model: AdditionalItemModel) -> AdditionalItemInDB:
-        data = model.to_mongo().to_dict()
-        data["id"] = str(model.id)
-        data["created_at"] = model.created_at
-        data["updated_at"] = model.updated_at
-        return AdditionalItemInDB.model_validate(data)
+        return AdditionalItemInDB.model_validate(model)
 
     async def create(self, additional_id: str, item: AdditionalItem) -> AdditionalItemInDB:
         try:
@@ -62,6 +58,7 @@ class AdditionalItemRepository(Repository):
                 id=id, is_active=True, organization_id=self.organization_id
             ).first()
             return self._to_schema(model)
+
         except Exception as error:
             _logger.error(f"Error on select_by_id: {error}")
             if raise_404:
@@ -73,9 +70,12 @@ class AdditionalItemRepository(Repository):
             objects = AdditionalItemModel.objects(
                 is_active=True, organization_id=self.organization_id, additional_id=additional_id
             ).order_by("position")
+
             for model in objects:
                 results.append(self._to_schema(model))
+
             return results
+
         except Exception as error:
             _logger.error(f"Error on select_all: {error}")
             raise NotFoundError(message="Additional items not found")

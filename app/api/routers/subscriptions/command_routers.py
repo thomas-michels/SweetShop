@@ -54,7 +54,7 @@ async def update_subscription(
 
 
 @router.delete("/organizations/{organization_id}/subscriptions", responses={200: {"model": RequestSubscription}})
-async def delete_product(
+async def delete_subscription(
     organization_id: str,
     current_user: UserInDB = Security(decode_jwt, scopes=["subscription:delete"]),
     subscription_builder: SubscriptionBuilder = Depends(subscription_composer),

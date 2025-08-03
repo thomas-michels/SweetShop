@@ -7,7 +7,7 @@ from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
 from app.crud.files.schemas import FileInDB
 from app.crud.tags.schemas import TagInDB
-from app.crud.product_additionals.schemas import ProductAdditional
+from app.crud.product_additionals.schemas import ProductAdditionalInDB
 
 
 class ProductKind(str, Enum):
@@ -95,6 +95,6 @@ class ProductInDB(Product, DatabaseModel):
 
 
 class CompleteProduct(ProductInDB):
-    additionals: List[ProductAdditional] = Field(default=[])
+    additionals: List[ProductAdditionalInDB] = Field(default=[])
     tags: List[str | TagInDB] = Field(default=[])
     file: str | FileInDB | None = Field(default=None)

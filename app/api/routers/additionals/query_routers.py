@@ -4,7 +4,6 @@ from fastapi import APIRouter, Depends, Security, Response
 
 from app.api.composers import product_additional_composer
 from app.api.dependencies import build_response, decode_jwt
-from app.api.dependencies.response import build_list_response
 from app.crud.users import UserInDB
 from app.crud.product_additionals import ProductAdditionalInDB
 from app.crud.product_additionals.services import ProductAdditionalServices
@@ -23,6 +22,7 @@ async def get_product_additional_by_id(
 
     if additional_in_db:
         return build_response(status_code=200, message="ProductAdditional found with success", data=additional_in_db)
+
     else:
         return build_response(status_code=404, message=f"ProductAdditional {additional_id} not found", data=None)
 
@@ -36,6 +36,6 @@ async def get_product_additionals(
     additionals = await product_additional_services.search_by_product_id(product_id=product_id)
 
     if additionals:
-        return build_list_response(status_code=200, message="ProductAdditionals found with success", data=additionals)
+        return build_response(status_code=200, message="ProductAdditionals found with success", data=additionals)
     else:
         return Response(status_code=204)

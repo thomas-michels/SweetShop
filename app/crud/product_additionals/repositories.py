@@ -19,12 +19,9 @@ class ProductAdditionalRepository(Repository):
         self.organization_id = organization_id
 
     def _to_schema(self, model: ProductAdditionalModel) -> ProductAdditionalInDB:
-        data = model.to_mongo().to_dict()
-        data["id"] = str(model.id)
-        data["created_at"] = model.created_at
-        data["updated_at"] = model.updated_at
-        data["items"] = []
-        return ProductAdditionalInDB.model_validate(data)
+        product_additional = ProductAdditionalInDB.model_validate(model)
+        product_additional.items = []
+        return product_additional
 
     async def create(self, product_additional: ProductAdditional, product_id: str) -> ProductAdditionalInDB:
         try:
