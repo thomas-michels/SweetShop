@@ -12,6 +12,7 @@ from app.crud.organizations.repositories import OrganizationRepository
 from app.crud.products.repositories import ProductRepository
 from app.crud.shared_schemas.payment import PaymentStatus
 from app.crud.tags.repositories import TagRepository
+from app.crud.additional_items.repositories import AdditionalItemRepository
 
 from .repositories import OrderRepository
 from .schemas import (
@@ -23,6 +24,7 @@ from .schemas import (
     RequestedProduct,
     RequestOrder,
     StoredProduct,
+    StoredAdditionalItem,
     UpdateOrder,
 )
 
@@ -38,12 +40,14 @@ class OrderServices:
         tag_repository: TagRepository,
         customer_repository: CustomerRepository,
         organization_repository: OrganizationRepository,
+        additional_item_repository: AdditionalItemRepository,
     ) -> None:
         self.__order_repository = order_repository
         self.__product_repository = product_repository
         self.__tag_repository = tag_repository
         self.__customer_repository = customer_repository
         self.__organization_repository = organization_repository
+        self.__additional_item_repository = additional_item_repository
 
         self.organization_id = self.__order_repository.organization_id
 
@@ -379,6 +383,22 @@ class OrderServices:
                 unit_cost=product_in_db.unit_cost,
                 unit_price=product_in_db.unit_price,
             )
+
+            for additional in product.additionals:
+                item_in_db = await self.__additional_item_repository.select_by_id(
+                    id=additional.item_id
+                )
+
+                stored_product.additionals.append(
+                    StoredAdditionalItem(
+                        item_id=additional.item_id,
+                        quantity=additional.quantity,
+                        label=item_in_db.label,
+                        unit_price=item_in_db.unit_price,
+                        unit_cost=item_in_db.unit_cost,
+                        consumption_factor=item_in_db.consumption_factor,
+                    )
+                )
 
             products.append(stored_product)
 

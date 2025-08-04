@@ -24,6 +24,10 @@ class OrderCalculator:
                 id=stored_product.product_id
             )
             total_product = product_in_db.unit_price
+
+            for additional in stored_product.additionals:
+                total_product += additional.unit_price * additional.quantity
+
             total_amount += (total_product * stored_product.quantity)
 
         return round(total_amount, 2)
@@ -47,6 +51,10 @@ class OrderCalculator:
 
             cost = product_in_db.unit_cost
             price = product_in_db.unit_price
+
+            for additional in stored_product.additionals:
+                cost += additional.unit_cost * additional.quantity
+                price += additional.unit_price * additional.quantity
 
             product["quantity"] += stored_product.quantity
             product["total_cost"] += (cost * stored_product.quantity)

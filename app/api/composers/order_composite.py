@@ -6,6 +6,7 @@ from app.crud.orders.services import OrderServices
 from app.crud.organizations.repositories import OrganizationRepository
 from app.crud.products.repositories import ProductRepository
 from app.crud.tags.repositories import TagRepository
+from app.crud.additional_items.repositories import AdditionalItemRepository
 
 
 async def order_composer(
@@ -16,12 +17,14 @@ async def order_composer(
     tag_repository = TagRepository(organization_id=organization_id)
     customer_repository = CustomerRepository(organization_id=organization_id)
     organization_repository = OrganizationRepository()
+    additional_item_repository = AdditionalItemRepository(organization_id=organization_id)
 
     order_services = OrderServices(
         order_repository=order_repository,
         product_repository=product_repository,
         tag_repository=tag_repository,
         customer_repository=customer_repository,
-        organization_repository=organization_repository
+        organization_repository=organization_repository,
+        additional_item_repository=additional_item_repository
     )
     return order_services
