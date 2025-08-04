@@ -121,10 +121,12 @@ class TestProductServices(unittest.IsolatedAsyncioTestCase):
     async def test_delete_by_id(self):
         mock_repo = AsyncMock()
         mock_repo.delete_by_id.return_value = "deleted"
-        service = ProductServices(product_repository=mock_repo, tag_repository=AsyncMock(), file_repository=AsyncMock(), additional_services=AsyncMock())
+        additional = AsyncMock()
+        service = ProductServices(product_repository=mock_repo, tag_repository=AsyncMock(), file_repository=AsyncMock(), additional_services=additional)
         result = await service.delete_by_id(id="d")
         self.assertEqual(result, "deleted")
         mock_repo.delete_by_id.assert_awaited_with(id="d")
+        additional.delete_by_product_id.assert_awaited_with(product_id="d")
 
 
     @patch("app.crud.products.services.get_plan_feature", new_callable=AsyncMock)

@@ -110,3 +110,13 @@ class AdditionalItemRepository(Repository):
         except Exception as error:
             _logger.error(f"Error on delete_by_id: {error}")
             raise NotFoundError(message=f"AdditionalItem #{id} not found")
+
+    async def delete_by_additional_id(self, additional_id: str) -> None:
+        try:
+            AdditionalItemModel.objects(
+                additional_id=additional_id,
+                is_active=True,
+                organization_id=self.organization_id,
+            ).delete()
+        except Exception as error:
+            _logger.error(f"Error on delete_by_additional_id: {error}")
