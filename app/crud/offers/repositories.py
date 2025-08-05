@@ -1,5 +1,7 @@
 from typing import List
 from pydantic import ValidationError
+from mongoengine.queryset.visitor import Q
+
 from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.core.repositories.base_repository import Repository
@@ -96,15 +98,24 @@ class OfferRepository(Repository):
             _logger.error(f"Error on select_all: {error}")
             raise NotFoundError(message=f"Offers not found")
 
-    async def select_count(self, query: str = None) -> int:
+    async def select_count(self, query: str = None, is_visible: bool = None) -> int:
         try:
             objects = OfferModel.objects(
                 is_active=True,
                 organization_id=self.organization_id,
             )
 
+            now = UTCDateTime.now()
+            objects = objects.filter(
+                (Q(starts_at__lte=now) | Q(starts_at=None))
+                & (Q(ends_at__gte=now) | Q(ends_at=None))
+            )
+
             if query:
                 objects = objects.filter(name__iregex=query)
+
+            if is_visible is not None:
+                objects = objects.filter(is_visible=is_visible)
 
             return max(objects.count(), 0)
 
@@ -113,7 +124,11 @@ class OfferRepository(Repository):
             return 0
 
     async def select_all_paginated(
-        self, query: str = None, page: int = None, page_size: int = None
+        self,
+        query: str = None,
+        page: int = None,
+        page_size: int = None,
+        is_visible: bool = None,
     ) -> List[OfferInDB]:
         try:
             offers = []
@@ -123,8 +138,17 @@ class OfferRepository(Repository):
                 organization_id=self.organization_id,
             )
 
+            now = UTCDateTime.now()
+            objects = objects.filter(
+                (Q(starts_at__lte=now) | Q(starts_at=None))
+                & (Q(ends_at__gte=now) | Q(ends_at=None))
+            )
+
             if query:
                 objects = objects.filter(name__iregex=query)
+
+            if is_visible is not None:
+                objects = objects.filter(is_visible=is_visible)
 
             if page is not None and page_size is not None:
                 skip = (page - 1) * page_size

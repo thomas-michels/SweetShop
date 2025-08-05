@@ -112,11 +112,13 @@ class OfferServices:
         expand: List[str] = [],
         page: int = None,
         page_size: int = None,
+        is_visible: bool = None,
     ) -> List[OfferInDB]:
         offers = await self.__offer_repository.select_all_paginated(
             query=query,
             page=page,
             page_size=page_size,
+            is_visible=is_visible,
         )
 
         if not expand:
@@ -124,8 +126,8 @@ class OfferServices:
 
         return await self.__build_complete_offer(offers=offers, expand=expand)
 
-    async def search_count(self, query: str = None) -> int:
-        return await self.__offer_repository.select_count(query=query)
+    async def search_count(self, query: str = None, is_visible: bool = None) -> int:
+        return await self.__offer_repository.select_count(query=query, is_visible=is_visible)
 
     async def __build_complete_offer(self, offers: List[OfferInDB], expand: List[str]) -> List[CompleteOffer]:
         complete_offers = []

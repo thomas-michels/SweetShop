@@ -18,18 +18,20 @@ async def get_offers_paginated(
     request: Request,
     query: str = Query(default=None),
     expand: List[str] = Query(default=[]),
+    is_visible: bool = Query(default=None),
     pagination: dict = Depends(pagination_parameters),
     current_user: UserInDB = Security(decode_jwt, scopes=[]),
     offer_services: OfferServices = Depends(offer_composer),
 ):
     paginator = Paginator(request=request, pagination=pagination)
 
-    total = await offer_services.search_count(query=query)
+    total = await offer_services.search_count(query=query, is_visible=is_visible)
     offers = await offer_services.search_all_paginated(
         query=query,
         expand=expand,
         page=pagination["page"],
         page_size=pagination["page_size"],
+        is_visible=is_visible,
     )
 
     paginator.set_total(total=total)

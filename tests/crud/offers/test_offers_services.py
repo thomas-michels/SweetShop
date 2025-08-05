@@ -141,5 +141,5 @@ class TestOfferServices(unittest.IsolatedAsyncioTestCase):
         )
         count = await service.search_count(query="a")
         self.assertEqual(count, 3)
-        mock_repo.select_count.assert_awaited_with(query="a")
+        mock_repo.select_count.assert_awaited_with(query="a", is_visible=None)
 

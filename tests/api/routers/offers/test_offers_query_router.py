@@ -83,8 +83,14 @@ class TestOffersQueryRouter(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["message"], "Offers found with success")
         self.assertEqual(len(response.json()["data"]), 1)
-        self.mock_service.search_all_paginated.assert_awaited()
-        self.mock_service.search_count.assert_awaited_with(query=None)
+        self.mock_service.search_all_paginated.assert_awaited_with(
+            query=None,
+            expand=[],
+            page=1,
+            page_size=15,
+            is_visible=None,
+        )
+        self.mock_service.search_count.assert_awaited_with(query=None, is_visible=None)
 
     def test_get_offers_paginated_empty_returns_204(self):
         self.mock_service.search_all_paginated.return_value = []
@@ -94,3 +100,20 @@ class TestOffersQueryRouter(unittest.TestCase):
             headers={"organization-id": "org_123"},
         )
         self.assertEqual(response.status_code, 204)
+
+    def test_get_offers_paginated_filter_visibility(self):
+        self.mock_service.search_all_paginated.return_value = [self._offer_in_db()]
+        self.mock_service.search_count.return_value = 1
+        response = self.test_client.get(
+            "/api/offers?is_visible=true",
+            headers={"organization-id": "org_123"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.mock_service.search_all_paginated.assert_awaited_with(
+            query=None,
+            expand=[],
+            page=1,
+            page_size=15,
+            is_visible=True,
+        )
+        self.mock_service.search_count.assert_awaited_with(query=None, is_visible=True)

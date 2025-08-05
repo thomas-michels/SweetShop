@@ -1,4 +1,5 @@
 import unittest
+from datetime import timedelta
 from mongoengine import connect, disconnect
 import mongomock
 
@@ -114,4 +115,38 @@ class TestOfferRepository(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(results_p2), 1)
         names = {r.name for r in results + results_p2}
         self.assertEqual(names, {"A", "B", "C"})
+
+    async def test_select_all_paginated_filters_visibility_and_dates(self):
+        now = UTCDateTime.now()
+        past = now - timedelta(seconds=1000)
+        future = now + timedelta(seconds=1000)
+
+        # visible and active
+        await self.repo.create(
+            await self._offer(name="Active", starts_at=past, ends_at=future, is_visible=True)
+        )
+        # not visible
+        await self.repo.create(
+            await self._offer(name="Hidden", starts_at=past, ends_at=future, is_visible=False)
+        )
+        # starts in future
+        await self.repo.create(
+            await self._offer(name="Future", starts_at=future, ends_at=future, is_visible=True)
+        )
+        # already ended
+        await self.repo.create(
+            await self._offer(name="Expired", starts_at=past, ends_at=past, is_visible=True)
+        )
+
+        results = await self.repo.select_all_paginated()
+        names = {r.name for r in results}
+        self.assertEqual(names, {"Active", "Hidden"})
+
+        visible_only = await self.repo.select_all_paginated(is_visible=True)
+        self.assertEqual(len(visible_only), 1)
+        self.assertEqual(visible_only[0].name, "Active")
+
+        hidden_only = await self.repo.select_all_paginated(is_visible=False)
+        self.assertEqual(len(hidden_only), 1)
+        self.assertEqual(hidden_only[0].name, "Hidden")
 
