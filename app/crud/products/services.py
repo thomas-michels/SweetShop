@@ -105,6 +105,7 @@ class ProductServices:
 
     async def delete_by_id(self, id: str) -> ProductInDB:
         product_in_db = await self.__product_repository.delete_by_id(id=id)
+        await self.__additional_services.delete_by_product_id(product_id=id)
         return product_in_db
 
     async def __build_complete_product(self, products: List[ProductInDB], expand: List[str]) -> List[CompleteProduct]:

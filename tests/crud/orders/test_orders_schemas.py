@@ -7,6 +7,7 @@ from app.crud.orders.schemas import (
     RequestOrder,
     RequestedProduct,
     UpdateOrder,
+    RequestedAdditionalItem,
 )
 from app.crud.shared_schemas.address import Address
 
@@ -35,3 +36,7 @@ class TestOrderSchemas(unittest.TestCase):
     def test_update_order_negative_additional(self):
         with self.assertRaises(ValueError):
             UpdateOrder(additional=-1)
+
+    def test_requested_additional_item_quantity_positive(self):
+        with self.assertRaises(ValueError):
+            RequestedAdditionalItem(item_id="a1", quantity=0)

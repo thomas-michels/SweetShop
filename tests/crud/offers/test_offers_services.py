@@ -74,6 +74,8 @@ class TestOfferServices(unittest.IsolatedAsyncioTestCase):
         result = await self.service.create(await self._request_offer())
         self.assertEqual(result.name, "Combo")
         self.assertEqual(len(result.additionals), 1)
+        self.assertEqual(result.unit_cost, 1.3)
+        self.assertEqual(result.unit_price, 2.5)
         self.product_repo.select_by_id.assert_awaited()
 
     async def test_update_offer_additionals(self):
@@ -96,6 +98,8 @@ class TestOfferServices(unittest.IsolatedAsyncioTestCase):
         updated = await self.service.update(id=created.id, updated_offer=update)
         self.assertEqual(updated.name, "New")
         self.assertEqual(updated.additionals[0].name, "Cheese")
+        self.assertEqual(updated.unit_cost, 1.5)
+        self.assertEqual(updated.unit_price, 3.0)
 
     async def test_create_offer_with_custom_unit_price(self):
         self.product_repo.select_by_id.return_value = await self._product_in_db()

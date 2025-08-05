@@ -13,6 +13,7 @@ from app.crud.orders.schemas import (
     Delivery,
     DeliveryType,
     OrderStatus,
+    StoredAdditionalItem,
 )
 from app.crud.orders.models import OrderModel
 
@@ -112,3 +113,37 @@ class TestOrderRepository(unittest.IsolatedAsyncioTestCase):
     async def test_select_by_id_not_found(self):
         with self.assertRaises(NotFoundError):
             await self.repo.select_by_id(id="missing")
+
+    async def test_create_order_with_additionals(self):
+        additional = StoredAdditionalItem(
+            item_id="a1",
+            quantity=1,
+            label="Extra",
+            unit_price=1.0,
+            unit_cost=0.5,
+            consumption_factor=1.0,
+        )
+        prod = StoredProduct(
+            product_id="p1",
+            name="Prod1",
+            unit_price=3.0,
+            unit_cost=1.5,
+            quantity=1,
+            additionals=[additional],
+        )
+        delivery = Delivery(delivery_type=DeliveryType.WITHDRAWAL)
+        now = UTCDateTime.now()
+        order = Order(
+            customer_id=None,
+            status=OrderStatus.PENDING,
+            products=[prod],
+            tags=["tag1"],
+            delivery=delivery,
+            preparation_date=now,
+            order_date=now,
+            description="desc",
+            additional=0,
+            discount=0,
+        )
+        created = await self.repo.create(order=order, total_amount=3.0)
+        self.assertEqual(created.products[0].additionals[0].label, "Extra")

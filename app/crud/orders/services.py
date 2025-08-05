@@ -1,7 +1,7 @@
 from typing import List
 
 from app.api.dependencies.get_plan_feature import get_plan_feature
-from app.api.exceptions.authentication_exceptions import UnauthorizedException
+from app.api.exceptions.authentication_exceptions import UnauthorizedException, BadRequestException
 from app.builder.order_calculator import OrderCalculator
 from app.core.configs import get_logger
 from app.core.utils.features import Feature
@@ -12,6 +12,8 @@ from app.crud.organizations.repositories import OrganizationRepository
 from app.crud.products.repositories import ProductRepository
 from app.crud.shared_schemas.payment import PaymentStatus
 from app.crud.tags.repositories import TagRepository
+from app.crud.additional_items.repositories import AdditionalItemRepository
+from app.crud.product_additionals.repositories import ProductAdditionalRepository
 
 from .repositories import OrderRepository
 from .schemas import (
@@ -23,6 +25,7 @@ from .schemas import (
     RequestedProduct,
     RequestOrder,
     StoredProduct,
+    StoredAdditionalItem,
     UpdateOrder,
 )
 
@@ -38,12 +41,16 @@ class OrderServices:
         tag_repository: TagRepository,
         customer_repository: CustomerRepository,
         organization_repository: OrganizationRepository,
+        additional_item_repository: AdditionalItemRepository,
+        product_additional_repository: ProductAdditionalRepository,
     ) -> None:
         self.__order_repository = order_repository
         self.__product_repository = product_repository
         self.__tag_repository = tag_repository
         self.__customer_repository = customer_repository
         self.__organization_repository = organization_repository
+        self.__additional_item_repository = additional_item_repository
+        self.__product_additional_repository = product_additional_repository
 
         self.organization_id = self.__order_repository.organization_id
 
@@ -148,23 +155,25 @@ class OrderServices:
         if updated_order.delivery and updated_order.delivery.delivery_value is not None:
             delivery_value = updated_order.delivery.delivery_value
 
+        new_products = (
+            updated_fields["products"]
+            if updated_fields.get("products") is not None
+            else order_in_db.products
+        )
+        if updated_order.additional is not None:
+            additional_value = updated_order.additional
+        else:
+            additional_value = order_in_db.additional
+
         total_amount = await self.__order_calculator.calculate(
-            products=(
-                updated_fields["products"]
-                if updated_fields.get("products") is not None
-                else order_in_db.products
-            ),
-            additional=(
-                updated_order.additional
-                if updated_order.additional is not None
-                else order_in_db.additional
-            ),
+            products=new_products,
+            additional=additional_value,
             discount=(
                 updated_order.discount
                 if updated_order.discount is not None
                 else order_in_db.discount
             ),
-            delivery_value=delivery_value
+            delivery_value=delivery_value,
         )
 
         is_updated = order_in_db.validate_updated_fields(update_order=updated_order)
@@ -186,7 +195,7 @@ class OrderServices:
                 total_amount += total_tax
                 updated_fields["tax"] = total_tax
 
-            updated_fields["total_amount"] = total_amount
+            updated_fields["total_amount"] = round(total_amount, 2)
 
             order_in_db = await self.__order_repository.update(
                 order_id=order_in_db.id, order=updated_fields
@@ -379,6 +388,44 @@ class OrderServices:
                 unit_cost=product_in_db.unit_cost,
                 unit_price=product_in_db.unit_price,
             )
+
+            additionals_group = await self.__product_additional_repository.select_by_product_id(
+                product_id=product.product_id
+            )
+            group_map = {grp.id: grp for grp in additionals_group}
+            group_counts = {grp.id: 0 for grp in additionals_group}
+
+            for additional in product.additionals:
+                item_in_db = await self.__additional_item_repository.select_by_id(
+                    id=additional.item_id
+                )
+
+                if item_in_db.additional_id not in group_map:
+                    raise BadRequestException(
+                        detail="Additional item not allowed for this product"
+                    )
+
+                group_counts[item_in_db.additional_id] += additional.quantity
+                stored_product.unit_price += item_in_db.unit_price * additional.quantity
+                stored_product.unit_cost += item_in_db.unit_cost * additional.quantity
+
+                stored_product.additionals.append(
+                    StoredAdditionalItem(
+                        item_id=additional.item_id,
+                        quantity=additional.quantity,
+                        label=item_in_db.label,
+                        unit_price=item_in_db.unit_price,
+                        unit_cost=item_in_db.unit_cost,
+                        consumption_factor=item_in_db.consumption_factor,
+                    )
+                )
+
+            for grp_id, grp in group_map.items():
+                count = group_counts.get(grp_id, 0)
+                if product.additionals and (count < grp.min_quantity or count > grp.max_quantity):
+                    raise BadRequestException(
+                        detail=f"Invalid quantity for additional group {grp.name}"
+                    )
 
             products.append(stored_product)
 

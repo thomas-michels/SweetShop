@@ -67,6 +67,7 @@ class Delivery(GenericModel):
 class RequestedProduct(GenericModel):
     product_id: str = Field()
     quantity: int = Field(gt=0, example=1)
+    additionals: List["RequestedAdditionalItem"] = Field(default=[])
 
 
 class StoredProduct(RequestedProduct):
@@ -75,6 +76,19 @@ class StoredProduct(RequestedProduct):
     unit_price: float = Field(example=1.5)
     unit_cost: float = Field(example=0.75)
     quantity: int = Field(gt=0, example=1)
+    additionals: List["StoredAdditionalItem"] = Field(default=[])
+
+
+class RequestedAdditionalItem(GenericModel):
+    item_id: str = Field(example="add_123")
+    quantity: int = Field(default=1, gt=0, example=1)
+
+
+class StoredAdditionalItem(RequestedAdditionalItem):
+    label: str = Field(example="Extra")
+    unit_price: float = Field(example=1.0)
+    unit_cost: float = Field(example=0.5)
+    consumption_factor: float = Field(default=1.0, ge=0, le=1, example=1.0)
 
 
 class RequestOrder(GenericModel):

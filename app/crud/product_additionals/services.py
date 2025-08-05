@@ -115,3 +115,9 @@ class ProductAdditionalServices:
     async def delete_item(self, additional_id: str, item_id: str) -> ProductAdditionalInDB:
         await self.__item_repository.delete_by_id(id=item_id)
         return await self.search_by_id(id=additional_id)
+
+    async def delete_by_product_id(self, product_id: str) -> None:
+        additionals = await self.__repository.select_by_product_id(product_id=product_id)
+        for additional in additionals:
+            await self.__item_repository.delete_by_additional_id(additional_id=additional.id)
+            await self.__repository.delete_by_id(id=additional.id)

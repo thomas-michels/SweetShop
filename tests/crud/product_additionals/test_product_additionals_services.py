@@ -126,3 +126,10 @@ class TestProductAdditionalServices(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].items[0].label, "x")
 
+    async def test_delete_by_product_id(self):
+        self.product_repo.select_by_id.return_value = "prod"
+        created = await self.service.create(await self._group(with_item=True), product_id="prod1")
+        await self.service.delete_by_product_id(product_id="prod1")
+        self.assertEqual(await self.repo.select_by_product_id(product_id="prod1"), [])
+        self.assertEqual(await self.item_repo.select_all(additional_id=created.id), [])
+
