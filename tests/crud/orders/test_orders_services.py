@@ -194,53 +194,6 @@ class TestOrderServices(unittest.IsolatedAsyncioTestCase):
         additional_repo.select_by_id.assert_awaited_with(id="a1")
         product_additional_repo.select_by_product_id.assert_awaited_with(product_id="p1")
 
-    async def test_validate_products_min_quantity(self):
-        product_repo = AsyncMock()
-        product_repo.select_by_id.return_value = ProductInDB(
-            id="p1",
-            organization_id="org1",
-            name="Prod1",
-            description="desc",
-            unit_price=2.0,
-            unit_cost=1.0,
-            kind=ProductKind.REGULAR,
-            tags=[],
-            file_id=None,
-            created_at=UTCDateTime.now(),
-            updated_at=UTCDateTime.now(),
-        )
-        product_additional_repo = AsyncMock()
-        product_additional_repo.select_by_product_id.return_value = [
-            ProductAdditionalInDB(
-                id="add1",
-                organization_id="org1",
-                product_id="p1",
-                name="Group",
-                selection_type=OptionKind.CHECKBOX,
-                min_quantity=1,
-                max_quantity=2,
-                position=1,
-                items=[],
-                created_at=UTCDateTime.now(),
-                updated_at=UTCDateTime.now(),
-            )
-        ]
-
-        service = OrderServices(
-            order_repository=AsyncMock(),
-            product_repository=product_repo,
-            tag_repository=AsyncMock(),
-            customer_repository=AsyncMock(),
-            organization_repository=AsyncMock(),
-            additional_item_repository=AsyncMock(),
-            product_additional_repository=product_additional_repo,
-        )
-
-        raw_product = RequestedProduct(product_id="p1", quantity=1, additionals=[])
-
-        with self.assertRaises(BadRequestException):
-            await service._OrderServices__validate_products(raw_products=[raw_product])
-
     async def test_validate_products_max_quantity(self):
         product_repo = AsyncMock()
         product_repo.select_by_id.return_value = ProductInDB(

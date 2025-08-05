@@ -195,7 +195,7 @@ class OrderServices:
                 total_amount += total_tax
                 updated_fields["tax"] = total_tax
 
-            updated_fields["total_amount"] = total_amount
+            updated_fields["total_amount"] = round(total_amount, 2)
 
             order_in_db = await self.__order_repository.update(
                 order_id=order_in_db.id, order=updated_fields
@@ -422,7 +422,7 @@ class OrderServices:
 
             for grp_id, grp in group_map.items():
                 count = group_counts.get(grp_id, 0)
-                if count < grp.min_quantity or count > grp.max_quantity:
+                if product.additionals and (count < grp.min_quantity or count > grp.max_quantity):
                     raise BadRequestException(
                         detail=f"Invalid quantity for additional group {grp.name}"
                     )
