@@ -3,10 +3,12 @@ from typing import Optional
 from pydantic import Field
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
+from app.crud.files.schemas import FileInDB
 
 class AdditionalItem(GenericModel):
     position: int = Field(example=1)
     product_id: str | None = Field(default=None, example="prod_123")
+    file_id: str | None = Field(default=None, example="file_123")
     label: str = Field(example="Extra")
     unit_price: float = Field(example=0.0)
     unit_cost: float = Field(example=0.0)
@@ -21,6 +23,10 @@ class AdditionalItem(GenericModel):
 
         if update.product_id is not None:
             self.product_id = update.product_id
+            is_updated = True
+
+        if update.file_id is not None:
+            self.file_id = update.file_id
             is_updated = True
 
         if update.label is not None:
@@ -45,6 +51,7 @@ class AdditionalItem(GenericModel):
 class UpdateAdditionalItem(GenericModel):
     position: Optional[int] = Field(default=None, example=1)
     product_id: Optional[str] = Field(default=None, example="prod_123")
+    file_id: Optional[str] = Field(default=None, example="file_123")
     label: Optional[str] = Field(default=None, example="Extra")
     unit_price: Optional[float] = Field(default=None, example=0.0)
     unit_cost: Optional[float] = Field(default=None, example=0.0)
@@ -54,3 +61,7 @@ class UpdateAdditionalItem(GenericModel):
 class AdditionalItemInDB(AdditionalItem, DatabaseModel):
     organization_id: str = Field(example="org_123")
     additional_id: str = Field(example="add_123")
+
+
+class CompleteAdditionalItem(AdditionalItemInDB):
+    file: FileInDB | None = Field(default=None)
