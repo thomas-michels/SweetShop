@@ -1,11 +1,20 @@
-from typing import List
+from typing import List, Tuple
 
 from app.crud.files.repositories import FileRepository
 from app.crud.products.repositories import ProductRepository
 from app.crud.products.schemas import ProductInDB
 
 from .repositories import OfferRepository
-from .schemas import CompleteOffer, CompleteOfferProduct, OfferProduct, RequestOffer, Offer, OfferInDB, UpdateOffer
+from .schemas import (
+    CompleteOffer,
+    CompleteOfferProduct,
+    OfferProduct,
+    RequestOffer,
+    Offer,
+    OfferInDB,
+    UpdateOffer,
+    Additional,
+)
 
 
 class OfferServices:
@@ -24,6 +33,7 @@ class OfferServices:
         total_cost, total_price, products = await self.__create_offer_product(
             product_ids=request_offer.products
         )
+        add_cost, add_price = self.__calculate_additional_totals(request_offer.additionals)
 
         if request_offer.file_id is not None:
             await self.__file_repository.select_by_id(id=request_offer.file_id)
@@ -32,10 +42,14 @@ class OfferServices:
             name=request_offer.name,
             description=request_offer.description,
             file_id=request_offer.file_id,
-            unit_price=request_offer.unit_price if request_offer.unit_price is not None else total_price,
-            unit_cost=total_cost,
+            unit_price=(
+                request_offer.unit_price
+                if request_offer.unit_price is not None
+                else total_price + add_price
+            ),
+            unit_cost=total_cost + add_cost,
             products=products,
-            additionals=request_offer.additionals
+            additionals=request_offer.additionals,
         )
 
         offer_in_db = await self.__offer_repository.create(offer=offer)
@@ -49,25 +63,28 @@ class OfferServices:
 
         if is_updated:
             if updated_offer.products is not None:
-                total_cost, total_price, products = await self.__create_offer_product(
+                product_cost, product_price, products = await self.__create_offer_product(
                     product_ids=updated_offer.products
                 )
-
-                offer_in_db.unit_cost = total_cost
-                offer_in_db.unit_price = (
-                    updated_offer.unit_price if updated_offer.unit_price is not None else total_price
-                )
                 offer_in_db.products = products
+            else:
+                product_cost = sum(p.unit_cost for p in offer_in_db.products)
+                product_price = sum(p.unit_price for p in offer_in_db.products)
 
             if updated_offer.additionals is not None:
                 offer_in_db.additionals = updated_offer.additionals
 
+            add_cost, add_price = self.__calculate_additional_totals(offer_in_db.additionals)
+            offer_in_db.unit_cost = product_cost + add_cost
+
+            if updated_offer.unit_price is not None:
+                offer_in_db.unit_price = updated_offer.unit_price
+            else:
+                offer_in_db.unit_price = product_price + add_price
+
             if updated_offer.file_id is not None:
                 await self.__file_repository.select_by_id(id=updated_offer.file_id)
                 offer_in_db.file_id = updated_offer.file_id
-
-            if updated_offer.unit_price is not None and updated_offer.products is None:
-                offer_in_db.unit_price = updated_offer.unit_price
 
             offer_in_db = await self.__offer_repository.update(offer=offer_in_db)
 
@@ -167,8 +184,11 @@ class OfferServices:
                     updated = True
 
             if updated:
-                offer.unit_cost = sum(p.unit_cost for p in offer.products)
-                offer.unit_price = sum(p.unit_price for p in offer.products)
+                product_cost = sum(p.unit_cost for p in offer.products)
+                product_price = sum(p.unit_price for p in offer.products)
+                add_cost, add_price = self.__calculate_additional_totals(offer.additionals)
+                offer.unit_cost = product_cost + add_cost
+                offer.unit_price = product_price + add_price
                 await self.__offer_repository.update(offer=offer)
 
     async def __create_offer_product(self, product_ids: List[str]) -> tuple[float, float, List[OfferProduct]]:
@@ -194,3 +214,13 @@ class OfferServices:
             products.append(offer_product)
 
         return total_cost, total_price, products
+
+    def __calculate_additional_totals(self, additionals: List[Additional]) -> Tuple[float, float]:
+        total_cost = 0
+        total_price = 0
+
+        for add in additionals:
+            total_cost += add.unit_cost * add.min_quantity
+            total_price += add.unit_price * add.min_quantity
+
+        return total_cost, total_price
