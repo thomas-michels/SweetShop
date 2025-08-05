@@ -1,11 +1,13 @@
 import unittest
+from datetime import timedelta
 from mongoengine import connect, disconnect
 import mongomock
 
 from app.crud.offers.models import OfferModel
 from app.crud.offers.repositories import OfferRepository
-from app.crud.offers.schemas import Offer, OfferProduct, Additional
+from app.crud.offers.schemas import Offer, OfferProduct
 from app.core.exceptions import NotFoundError
+from app.core.utils.utc_datetime import UTCDateTime
 
 
 class TestOfferRepository(unittest.IsolatedAsyncioTestCase):
@@ -21,7 +23,14 @@ class TestOfferRepository(unittest.IsolatedAsyncioTestCase):
     def tearDown(self):
         disconnect()
 
-    async def _offer(self, name="Combo", additionals=None, file_id=None):
+    async def _offer(
+        self,
+        name="Combo",
+        file_id=None,
+        starts_at=None,
+        ends_at=None,
+        is_visible=True,
+    ):
         prod = OfferProduct(
             product_id="p1",
             name="P1",
@@ -34,10 +43,12 @@ class TestOfferRepository(unittest.IsolatedAsyncioTestCase):
             name=name,
             description="desc",
             products=[prod],
-            additionals=additionals or [],
             file_id=file_id,
             unit_cost=1.0,
             unit_price=2.0,
+            starts_at=starts_at,
+            ends_at=ends_at,
+            is_visible=is_visible,
         )
 
     async def test_create_offer(self):
@@ -54,17 +65,24 @@ class TestOfferRepository(unittest.IsolatedAsyncioTestCase):
     async def test_update_offer(self):
         created = await self.repo.create(await self._offer(name="Old"))
         created.name = "New"
-        created.additionals = [
-            Additional(name="Cheese", unit_price=1.0, unit_cost=0.5, min_quantity=0, max_quantity=1)
-        ]
+        created.is_visible = False
         updated = await self.repo.update(created)
         self.assertEqual(updated.name, "New")
-        self.assertEqual(len(updated.additionals), 1)
+        self.assertFalse(updated.is_visible)
 
     async def test_create_with_file_id(self):
         offer = await self._offer(name="WithFile", file_id="file1")
         result = await self.repo.create(offer)
         self.assertEqual(result.file_id, "file1")
+
+    async def test_create_offer_with_dates_and_visibility(self):
+        start = UTCDateTime.now()
+        end = UTCDateTime.now()
+        offer = await self._offer(starts_at=start, ends_at=end, is_visible=False)
+        result = await self.repo.create(offer)
+        self.assertEqual(result.starts_at, start)
+        self.assertEqual(result.ends_at, end)
+        self.assertFalse(result.is_visible)
 
     async def test_select_by_id_not_found(self):
         with self.assertRaises(NotFoundError):
@@ -97,4 +115,30 @@ class TestOfferRepository(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(results_p2), 1)
         names = {r.name for r in results + results_p2}
         self.assertEqual(names, {"A", "B", "C"})
+
+    async def test_select_all_paginated_filters_visibility_and_dates(self):
+        now = UTCDateTime.now()
+        past = now - timedelta(seconds=1000)
+        future = now + timedelta(seconds=1000)
+
+        # visible and active
+        await self.repo.create(
+            await self._offer(name="Active", starts_at=past, ends_at=future, is_visible=True)
+        )
+        # not visible
+        await self.repo.create(
+            await self._offer(name="Hidden", starts_at=past, ends_at=future, is_visible=False)
+        )
+
+        results = await self.repo.select_all_paginated()
+        names = {r.name for r in results}
+        self.assertEqual(names, {"Active", "Hidden"})
+
+        visible_only = await self.repo.select_all_paginated(is_visible=True)
+        self.assertEqual(len(visible_only), 1)
+        self.assertEqual(visible_only[0].name, "Active")
+
+        hidden_only = await self.repo.select_all_paginated(is_visible=False)
+        self.assertEqual(len(hidden_only), 1)
+        self.assertEqual(hidden_only[0].name, "Hidden")
 

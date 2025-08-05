@@ -1,4 +1,11 @@
-from mongoengine import StringField, ListField, DictField, FloatField
+from mongoengine import (
+    StringField,
+    ListField,
+    DictField,
+    FloatField,
+    BooleanField,
+    DateTimeField,
+)
 
 from app.core.models.base_document import BaseDocument
 from app.core.utils.utc_datetime import UTCDateTime
@@ -12,7 +19,9 @@ class OfferModel(BaseDocument):
     unit_price = FloatField(required=True)
     file_id = StringField(required=False, default=None)
     products = ListField(DictField(), min_lenght=1)
-    additionals = ListField(DictField())
+    starts_at = DateTimeField(default=None)
+    ends_at = DateTimeField(default=None)
+    is_visible = BooleanField(default=True)
 
     meta = {
         "collection": "offers"

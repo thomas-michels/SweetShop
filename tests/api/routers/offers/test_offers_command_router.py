@@ -49,15 +49,6 @@ class TestOffersCommandRouter(unittest.TestCase):
                 "name": name,
                 "description": "desc",
                 "products": [prod_id],
-                "additionals": [
-                    {
-                        "name": "Bacon",
-                        "unitPrice": 0.5,
-                        "unitCost": 0.3,
-                        "minQuantity": 1,
-                        "maxQuantity": 2,
-                    }
-                ],
             },
             headers={"organization-id": "org_123"},
         )
@@ -71,15 +62,6 @@ class TestOffersCommandRouter(unittest.TestCase):
                 "name": "Combo",
                 "description": "desc",
                 "products": [prod_id],
-                "additionals": [
-                    {
-                        "name": "Bacon",
-                        "unitPrice": 0.5,
-                        "unitCost": 0.3,
-                        "minQuantity": 1,
-                        "maxQuantity": 2,
-                    }
-                ],
             },
             headers={"organization-id": "org_123"},
         )

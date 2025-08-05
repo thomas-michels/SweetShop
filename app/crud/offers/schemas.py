@@ -1,7 +1,8 @@
 from typing import List, Optional
-from pydantic import Field, model_validator
+from pydantic import Field
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
+from app.core.utils.utc_datetime import UTCDateTime, UTCDateTimeType
 from app.crud.files.schemas import FileInDB
 
 
@@ -14,21 +15,6 @@ class OfferProduct(GenericModel):
     file_id: str | None = Field(default=None, example="file_123")
 
 
-class Additional(GenericModel):
-    name: str = Field(example="Bacon")
-    file_id: str | None = Field(default=None)
-    unit_price: float = Field(ge=0)
-    unit_cost: float = Field(ge=0)
-    min_quantity: int = Field(default=1, ge=0)
-    max_quantity: int = Field(default=1, ge=1)
-
-    @model_validator(mode="after")
-    def validate_quantities(self) -> "Additional":
-        if self.max_quantity < self.min_quantity:
-            raise ValueError("max_quantity must be greater than or equal to min_quantity")
-        return self
-
-
 class CompleteOfferProduct(OfferProduct):
     file: FileInDB | None = Field(default=None)
 
@@ -37,19 +23,23 @@ class RequestOffer(GenericModel):
     name: str = Field(example="Doces")
     description: str = Field(example="Bolos e tortas")
     products: List[str] = Field(default=[], min_length=1)
-    additionals: List[Additional] = Field(default=[])
     file_id: str | None = Field(default=None, example="file_123")
     unit_price: float | None = Field(default=None, example=12)
+    starts_at: UTCDateTimeType | None = Field(default=None, example=str(UTCDateTime.now()))
+    ends_at: UTCDateTimeType | None = Field(default=None, example=str(UTCDateTime.now()))
+    is_visible: bool = Field(default=True)
 
 
 class Offer(GenericModel):
     name: str = Field(example="Doces")
     description: str = Field(example="Bolos e tortas")
     products: List[OfferProduct] = Field(default=[])
-    additionals: List[Additional] = Field(default=[])
     file_id: str | None = Field(default=None)
     unit_cost: float = Field(example=10)
     unit_price: float = Field(example=12)
+    starts_at: UTCDateTimeType | None = Field(default=None, example=str(UTCDateTime.now()))
+    ends_at: UTCDateTimeType | None = Field(default=None, example=str(UTCDateTime.now()))
+    is_visible: bool = Field(default=True)
 
     def validate_updated_fields(self, update_offer: "UpdateOffer") -> bool:
         is_updated = False
@@ -66,16 +56,24 @@ class Offer(GenericModel):
             self.products = update_offer.products
             is_updated = True
 
-        if update_offer.additionals is not None:
-            self.additionals = update_offer.additionals
-            is_updated = True
-
         if update_offer.file_id is not None:
             self.file_id = update_offer.file_id
             is_updated = True
 
         if update_offer.unit_price is not None:
             self.unit_price = update_offer.unit_price
+            is_updated = True
+
+        if update_offer.starts_at is not None:
+            self.starts_at = update_offer.starts_at
+            is_updated = True
+
+        if update_offer.ends_at is not None:
+            self.ends_at = update_offer.ends_at
+            is_updated = True
+
+        if update_offer.is_visible is not None:
+            self.is_visible = update_offer.is_visible
             is_updated = True
 
         return is_updated
@@ -85,9 +83,11 @@ class UpdateOffer(GenericModel):
     name: Optional[str] = Field(default=None, example="Doces")
     description: Optional[str] = Field(default=None, example="Bolos e tortas")
     products: Optional[List[str]] = Field(default=None, min_length=1)
-    additionals: Optional[List[Additional]] = Field(default=None)
     file_id: Optional[str] = Field(default=None)
     unit_price: Optional[float] = Field(default=None, example=12)
+    starts_at: Optional[UTCDateTimeType] = Field(default=None, example=str(UTCDateTime.now()))
+    ends_at: Optional[UTCDateTimeType] = Field(default=None, example=str(UTCDateTime.now()))
+    is_visible: Optional[bool] = Field(default=None)
 
 
 class OfferInDB(Offer, DatabaseModel):
