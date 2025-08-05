@@ -129,14 +129,6 @@ class TestOfferRepository(unittest.IsolatedAsyncioTestCase):
         await self.repo.create(
             await self._offer(name="Hidden", starts_at=past, ends_at=future, is_visible=False)
         )
-        # starts in future
-        await self.repo.create(
-            await self._offer(name="Future", starts_at=future, ends_at=future, is_visible=True)
-        )
-        # already ended
-        await self.repo.create(
-            await self._offer(name="Expired", starts_at=past, ends_at=past, is_visible=True)
-        )
 
         results = await self.repo.select_all_paginated()
         names = {r.name for r in results}

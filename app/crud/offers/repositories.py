@@ -138,12 +138,6 @@ class OfferRepository(Repository):
                 organization_id=self.organization_id,
             )
 
-            now = UTCDateTime.now()
-            objects = objects.filter(
-                (Q(starts_at__lte=now) | Q(starts_at=None))
-                & (Q(ends_at__gte=now) | Q(ends_at=None))
-            )
-
             if query:
                 objects = objects.filter(name__iregex=query)
 
@@ -153,6 +147,7 @@ class OfferRepository(Repository):
             if page is not None and page_size is not None:
                 skip = (page - 1) * page_size
                 objects = objects.order_by("name").skip(skip).limit(page_size)
+
             else:
                 objects = objects.order_by("name")
 
