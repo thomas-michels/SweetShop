@@ -189,6 +189,8 @@ class TestOrderServices(unittest.IsolatedAsyncioTestCase):
         products = await service._OrderServices__validate_products(raw_products=[raw_product])
 
         self.assertEqual(products[0].additionals[0].label, "Extra")
+        self.assertEqual(products[0].unit_price, 3.0)
+        self.assertEqual(products[0].unit_cost, 1.5)
         additional_repo.select_by_id.assert_awaited_with(id="a1")
         product_additional_repo.select_by_product_id.assert_awaited_with(product_id="p1")
 
@@ -306,20 +308,6 @@ class TestOrderServices(unittest.IsolatedAsyncioTestCase):
 
     async def test_order_calculator_with_additionals(self):
         product_repo = AsyncMock()
-        product_repo.select_by_id.return_value = ProductInDB(
-            id="p1",
-            organization_id="org1",
-            name="Prod1",
-            description="desc",
-            unit_price=2.0,
-            unit_cost=1.0,
-            kind=ProductKind.REGULAR,
-            tags=[],
-            file_id=None,
-            created_at=UTCDateTime.now(),
-            updated_at=UTCDateTime.now(),
-        )
-
         calc = OrderCalculator(product_repository=product_repo)
         additional = StoredAdditionalItem(
             item_id="a1",
@@ -332,8 +320,8 @@ class TestOrderServices(unittest.IsolatedAsyncioTestCase):
         prod = StoredProduct(
             product_id="p1",
             name="Prod1",
-            unit_price=2.0,
-            unit_cost=1.0,
+            unit_price=3.0,
+            unit_cost=1.5,
             quantity=2,
             additionals=[additional],
         )
@@ -343,7 +331,7 @@ class TestOrderServices(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(total, 6.0)
 
-    async def test_create_sets_order_additional_with_product_additionals(self):
+    async def test_create_includes_additionals_in_product_value(self):
         product_repo = AsyncMock()
         product_repo.select_by_id.return_value = ProductInDB(
             id="p1",
@@ -403,8 +391,8 @@ class TestOrderServices(unittest.IsolatedAsyncioTestCase):
         stored_product = StoredProduct(
             product_id="p1",
             name="Prod1",
-            unit_price=2.0,
-            unit_cost=1.0,
+            unit_price=3.0,
+            unit_cost=1.5,
             quantity=1,
             additionals=[stored_additional],
         )
@@ -421,7 +409,7 @@ class TestOrderServices(unittest.IsolatedAsyncioTestCase):
             preparation_date=now,
             order_date=now,
             description=None,
-            additional=1.0,
+            additional=0,
             discount=0,
             total_amount=3.0,
             tax=0,
@@ -465,4 +453,5 @@ class TestOrderServices(unittest.IsolatedAsyncioTestCase):
             await service.create(req_order)
 
         created_order = order_repo.create.await_args.kwargs["order"]
-        self.assertEqual(created_order.additional, 1.0)
+        self.assertEqual(created_order.additional, 0)
+        self.assertEqual(created_order.products[0].unit_price, 3.0)

@@ -126,8 +126,8 @@ class TestOrderRepository(unittest.IsolatedAsyncioTestCase):
         prod = StoredProduct(
             product_id="p1",
             name="Prod1",
-            unit_price=2.0,
-            unit_cost=1.0,
+            unit_price=3.0,
+            unit_cost=1.5,
             quantity=1,
             additionals=[additional],
         )
