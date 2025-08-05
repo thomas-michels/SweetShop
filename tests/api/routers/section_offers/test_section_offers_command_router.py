@@ -52,7 +52,7 @@ class TestSectionOffersCommandRouter(unittest.TestCase):
             unit_cost=1.0,
             unit_price=2.0,
             products=[],
-            additionals=[],
+            is_visible=True,
         )
         offer.save()
         return str(offer.id)
