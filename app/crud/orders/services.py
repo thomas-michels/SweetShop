@@ -88,12 +88,15 @@ class OrderServices:
 
         products = await self.__validate_products(raw_products=order.products)
 
+        additionals_total = self.__get_additionals_total(products)
+        base_additional = order.additional
+
         organization = await self.__organization_repository.select_by_id(
             id=self.__order_repository.organization_id
         )
 
         total_amount = await self.__order_calculator.calculate(
-            additional=order.additional,
+            additional=base_additional,
             delivery_value=order.delivery.delivery_value if order.delivery.delivery_value is not None else 0,
             discount=order.discount,
             products=products
@@ -106,6 +109,7 @@ class OrderServices:
             total_amount += total_tax
 
         order.products = []
+        order.additional = round(base_additional + additionals_total, 2)
         order = Order.model_validate(order)
         order.products = products
         order.tax = total_tax
@@ -155,24 +159,33 @@ class OrderServices:
         if updated_order.delivery and updated_order.delivery.delivery_value is not None:
             delivery_value = updated_order.delivery.delivery_value
 
+        current_additionals_total = self.__get_additionals_total(order_in_db.products)
+
+        new_products = (
+            updated_fields["products"]
+            if updated_fields.get("products") is not None
+            else order_in_db.products
+        )
+
+        additionals_total = self.__get_additionals_total(new_products)
+
+        if updated_order.additional is not None:
+            base_additional = updated_order.additional
+        else:
+            base_additional = order_in_db.additional - current_additionals_total
+
         total_amount = await self.__order_calculator.calculate(
-            products=(
-                updated_fields["products"]
-                if updated_fields.get("products") is not None
-                else order_in_db.products
-            ),
-            additional=(
-                updated_order.additional
-                if updated_order.additional is not None
-                else order_in_db.additional
-            ),
+            products=new_products,
+            additional=base_additional,
             discount=(
                 updated_order.discount
                 if updated_order.discount is not None
                 else order_in_db.discount
             ),
-            delivery_value=delivery_value
+            delivery_value=delivery_value,
         )
+
+        final_additional = round(base_additional + additionals_total, 2)
 
         is_updated = order_in_db.validate_updated_fields(update_order=updated_order)
 
@@ -183,6 +196,7 @@ class OrderServices:
                 ]
 
             updated_fields.update(updated_order.model_dump(exclude_none=True))
+            updated_fields["additional"] = final_additional
 
             organization = await self.__organization_repository.select_by_id(
                 id=self.__order_repository.organization_id
@@ -370,6 +384,13 @@ class OrderServices:
                     complete_order.tags.append(tag_in_db)
 
         return complete_order
+
+    def __get_additionals_total(self, products: List[StoredProduct]) -> float:
+        total = 0.0
+        for stored_product in products:
+            for additional in stored_product.additionals:
+                total += additional.unit_price * additional.quantity * stored_product.quantity
+        return round(total, 2)
 
     async def __validate_products(self, raw_products: List[RequestedProduct]) -> List[StoredProduct]:
         products = []

@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 
 from app.crud.orders.schemas import (
     OrderInDB,
@@ -10,6 +10,7 @@ from app.crud.orders.schemas import (
     RequestedProduct,
     RequestedAdditionalItem,
     StoredAdditionalItem,
+    RequestOrder,
 )
 from app.crud.orders.services import OrderServices
 from app.core.utils.utc_datetime import UTCDateTime
@@ -341,3 +342,127 @@ class TestOrderServices(unittest.IsolatedAsyncioTestCase):
         )
 
         self.assertEqual(total, 6.0)
+
+    async def test_create_sets_order_additional_with_product_additionals(self):
+        product_repo = AsyncMock()
+        product_repo.select_by_id.return_value = ProductInDB(
+            id="p1",
+            organization_id="org1",
+            name="Prod1",
+            description="desc",
+            unit_price=2.0,
+            unit_cost=1.0,
+            kind=ProductKind.REGULAR,
+            tags=[],
+            file_id=None,
+            created_at=UTCDateTime.now(),
+            updated_at=UTCDateTime.now(),
+        )
+
+        additional_repo = AsyncMock()
+        additional_repo.select_by_id.return_value = AdditionalItemInDB(
+            id="a1",
+            organization_id="org1",
+            additional_id="add1",
+            position=1,
+            product_id="p1",
+            label="Extra",
+            unit_price=1.0,
+            unit_cost=0.5,
+            consumption_factor=1.0,
+            created_at=UTCDateTime.now(),
+            updated_at=UTCDateTime.now(),
+        )
+
+        product_additional_repo = AsyncMock()
+        product_additional_repo.select_by_product_id.return_value = [
+            ProductAdditionalInDB(
+                id="add1",
+                organization_id="org1",
+                product_id="p1",
+                name="Group",
+                selection_type=OptionKind.CHECKBOX,
+                min_quantity=0,
+                max_quantity=2,
+                position=1,
+                items=[],
+                created_at=UTCDateTime.now(),
+                updated_at=UTCDateTime.now(),
+            )
+        ]
+
+        order_repo = AsyncMock()
+        stored_additional = StoredAdditionalItem(
+            item_id="a1",
+            quantity=1,
+            label="Extra",
+            unit_price=1.0,
+            unit_cost=0.5,
+            consumption_factor=1.0,
+        )
+        stored_product = StoredProduct(
+            product_id="p1",
+            name="Prod1",
+            unit_price=2.0,
+            unit_cost=1.0,
+            quantity=1,
+            additionals=[stored_additional],
+        )
+        now = UTCDateTime.now()
+        order_repo.create.return_value = OrderInDB(
+            id="ord1",
+            organization_id="org1",
+            customer_id=None,
+            status=OrderStatus.PENDING,
+            payment_status=PaymentStatus.PENDING,
+            products=[stored_product],
+            tags=[],
+            delivery=Delivery(delivery_type=DeliveryType.WITHDRAWAL),
+            preparation_date=now,
+            order_date=now,
+            description=None,
+            additional=1.0,
+            discount=0,
+            total_amount=3.0,
+            tax=0,
+            payments=[],
+            is_active=True,
+            created_at=now,
+            updated_at=now,
+        )
+
+        organization_repo = AsyncMock()
+        organization_repo.select_by_id.return_value = type("Org", (), {"tax": 0})()
+
+        service = OrderServices(
+            order_repository=order_repo,
+            product_repository=product_repo,
+            tag_repository=AsyncMock(),
+            customer_repository=AsyncMock(),
+            organization_repository=organization_repo,
+            additional_item_repository=additional_repo,
+            product_additional_repository=product_additional_repo,
+        )
+
+        req_order = RequestOrder(
+            customer_id=None,
+            status=OrderStatus.PENDING,
+            products=[RequestedProduct(product_id="p1", quantity=1, additionals=[RequestedAdditionalItem(item_id="a1", quantity=1)])],
+            tags=[],
+            delivery=Delivery(delivery_type=DeliveryType.WITHDRAWAL),
+            preparation_date=now,
+            order_date=now,
+            description=None,
+            additional=0,
+            discount=0,
+            reason_id=None,
+        )
+
+        with patch(
+            "app.crud.orders.services.get_plan_feature",
+            AsyncMock(return_value=type("PF", (), {"value": "-"})()),
+        ):
+            await service.create(req_order)
+
+        created_order = order_repo.create.await_args.kwargs["order"]
+        self.assertEqual(created_order.additional, 1.0)
