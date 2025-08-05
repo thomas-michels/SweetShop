@@ -26,10 +26,12 @@ class TestProductAdditionalServices(unittest.IsolatedAsyncioTestCase):
         self.repo = ProductAdditionalRepository(organization_id="org1")
         self.product_repo = AsyncMock()
         self.item_repo = AdditionalItemRepository(organization_id="org1")
+        self.file_repo = AsyncMock()
         self.service = ProductAdditionalServices(
             additional_repository=self.repo,
             product_repository=self.product_repo,
             item_repository=self.item_repo,
+            file_repository=self.file_repo,
         )
 
     def tearDown(self):
@@ -42,6 +44,7 @@ class TestProductAdditionalServices(unittest.IsolatedAsyncioTestCase):
                 AdditionalItem(
                     position=1,
                     product_id="p1",
+                    file_id="f1" if with_item else None,
                     label="x",
                     unit_price=0.0,
                     unit_cost=0.0,
@@ -125,6 +128,14 @@ class TestProductAdditionalServices(unittest.IsolatedAsyncioTestCase):
         result = await self.service.search_by_product_id("prod1")
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].items[0].label, "x")
+
+    async def test_search_by_product_id_includes_file(self):
+        self.product_repo.select_by_id.return_value = "prod"
+        await self.service.create(await self._group(with_item=True), product_id="prod1")
+        self.file_repo.select_by_id.return_value = "file"
+        result = await self.service.search_by_product_id("prod1")
+        self.file_repo.select_by_id.assert_awaited_with(id="f1", raise_404=False)
+        self.assertEqual(result[0].items[0].file, "file")
 
     async def test_delete_by_product_id(self):
         self.product_repo.select_by_id.return_value = "prod"

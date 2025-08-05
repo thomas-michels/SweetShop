@@ -9,6 +9,7 @@ class AdditionalItemModel(BaseDocument):
     additional_id = StringField(required=True)
     position = IntField(required=True)
     product_id = StringField(required=False)
+    file_id = StringField(required=False, default=None)
     label = StringField(required=True)
     unit_price = FloatField(required=True)
     unit_cost = FloatField(required=True)

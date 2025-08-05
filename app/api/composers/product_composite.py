@@ -20,6 +20,7 @@ async def product_composer(
         additional_repository=product_additional_repository,
         product_repository=product_repository,
         item_repository=AdditionalItemRepository(organization_id=organization_id),
+        file_repository=file_repository,
     )
     product_services = ProductServices(
         product_repository=product_repository,
