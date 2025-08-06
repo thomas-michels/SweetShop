@@ -35,6 +35,7 @@ class TestOffersQueryRouter(unittest.TestCase):
             description="d",
             unit_cost=1.0,
             unit_price=2.0,
+            quantity=1,
             file_id=None,
         )
         return OfferInDB(

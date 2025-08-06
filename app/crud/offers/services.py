@@ -9,6 +9,7 @@ from .schemas import (
     CompleteOffer,
     CompleteOfferProduct,
     OfferProduct,
+    OfferProductRequest,
     RequestOffer,
     Offer,
     OfferInDB,
@@ -30,7 +31,7 @@ class OfferServices:
 
     async def create(self, request_offer: RequestOffer) -> OfferInDB:
         total_cost, total_price, products = await self.__create_offer_product(
-            product_ids=request_offer.products
+            product_items=request_offer.products
         )
 
         if request_offer.file_id is not None:
@@ -64,12 +65,12 @@ class OfferServices:
         if is_updated:
             if updated_offer.products is not None:
                 product_cost, product_price, products = await self.__create_offer_product(
-                    product_ids=updated_offer.products
+                    product_items=updated_offer.products
                 )
                 offer_in_db.products = products
             else:
-                product_cost = sum(p.unit_cost for p in offer_in_db.products)
-                product_price = sum(p.unit_price for p in offer_in_db.products)
+                product_cost = sum(p.unit_cost * p.quantity for p in offer_in_db.products)
+                product_price = sum(p.unit_price * p.quantity for p in offer_in_db.products)
 
             offer_in_db.unit_cost = product_cost
 
@@ -182,19 +183,19 @@ class OfferServices:
                     updated = True
 
             if updated:
-                product_cost = sum(p.unit_cost for p in offer.products)
-                product_price = sum(p.unit_price for p in offer.products)
+                product_cost = sum(p.unit_cost * p.quantity for p in offer.products)
+                product_price = sum(p.unit_price * p.quantity for p in offer.products)
                 offer.unit_cost = product_cost
                 offer.unit_price = product_price
                 await self.__offer_repository.update(offer=offer)
 
-    async def __create_offer_product(self, product_ids: List[str]) -> tuple[float, float, List[OfferProduct]]:
+    async def __create_offer_product(self, product_items: List[OfferProductRequest]) -> tuple[float, float, List[OfferProduct]]:
         total_cost = 0
         total_price = 0
         products = []
 
-        for product_id in product_ids:
-            product_in_db = await self.__product_repository.select_by_id(id=product_id)
+        for product_item in product_items:
+            product_in_db = await self.__product_repository.select_by_id(id=product_item.product_id)
 
             offer_product = OfferProduct(
                 product_id=product_in_db.id,
@@ -202,11 +203,12 @@ class OfferServices:
                 description=product_in_db.description,
                 unit_cost=product_in_db.unit_cost,
                 unit_price=product_in_db.unit_price,
+                quantity=product_item.quantity,
                 file_id=product_in_db.file_id,
             )
 
-            total_cost += offer_product.unit_cost
-            total_price += offer_product.unit_price
+            total_cost += offer_product.unit_cost * offer_product.quantity
+            total_price += offer_product.unit_price * offer_product.quantity
 
             products.append(offer_product)
 
