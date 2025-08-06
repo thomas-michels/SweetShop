@@ -142,11 +142,16 @@ class OrganizationServices:
 
         if "users" in expand:
             for user in complete_organization.users:
-                user_in_db = await self.__user_repository.select_by_id(id=user.user_id)
+                user_in_db = await self.__user_repository.select_by_id(
+                    id=user.user_id,
+                    raise_404=False
+                )
                 user.user = user_in_db
 
         if "plan" in expand:
-            organization_plan = await self.__organization_plan_repository.select_active_plan(organization_id=organization.id)
+            organization_plan = await self.__organization_plan_repository.select_active_plan(
+                organization_id=organization.id
+            )
             complete_organization.plan = organization_plan
 
         if "file" in expand:
