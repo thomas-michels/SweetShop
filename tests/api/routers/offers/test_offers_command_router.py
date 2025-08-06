@@ -48,7 +48,7 @@ class TestOffersCommandRouter(unittest.TestCase):
             json={
                 "name": name,
                 "description": "desc",
-                "products": [prod_id],
+                "products": [{"productId": prod_id, "quantity": 1}],
             },
             headers={"organization-id": "org_123"},
         )
@@ -61,7 +61,7 @@ class TestOffersCommandRouter(unittest.TestCase):
             json={
                 "name": "Combo",
                 "description": "desc",
-                "products": [prod_id],
+                "products": [{"productId": prod_id, "quantity": 1}],
             },
             headers={"organization-id": "org_123"},
         )

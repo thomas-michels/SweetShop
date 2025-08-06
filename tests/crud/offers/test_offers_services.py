@@ -6,10 +6,9 @@ import mongomock
 from app.core.utils.utc_datetime import UTCDateTime
 from app.crud.offers.repositories import OfferRepository
 from app.crud.offers.schemas import (
-    OfferProduct,
     RequestOffer,
     UpdateOffer,
-    OfferInDB,
+    OfferProductRequest,
 )
 from app.crud.offers.services import OfferServices
 from app.crud.products.schemas import ProductInDB
@@ -61,7 +60,7 @@ class TestOfferServices(unittest.IsolatedAsyncioTestCase):
         return RequestOffer(
             name="Combo",
             description="desc",
-            products=["p1"],
+            products=[OfferProductRequest(product_id="p1", quantity=1)],
             file_id=file_id,
             unit_price=unit_price,
             starts_at=starts_at,
@@ -92,7 +91,11 @@ class TestOfferServices(unittest.IsolatedAsyncioTestCase):
         self.product_repo.select_by_id.return_value = await self._product_in_db()
         created = await self.service.create(await self._request_offer())
         self.product_repo.select_by_id.return_value = await self._product_in_db()
-        update = UpdateOffer(name="New", products=["p1"], is_visible=False)
+        update = UpdateOffer(
+            name="New",
+            products=[OfferProductRequest(product_id="p1", quantity=1)],
+            is_visible=False,
+        )
         updated = await self.service.update(id=created.id, updated_offer=update)
         self.assertEqual(updated.name, "New")
         self.assertFalse(updated.is_visible)
