@@ -65,7 +65,7 @@ class UserRepository:
             _logger.error(traceback.format_exc())
             raise UnprocessableEntity(message="Error on update user")
 
-    async def select_by_id(self, id: str) -> UserInDB:
+    async def select_by_id(self, id: str, raise_404: bool = True) -> UserInDB:
         try:
             if self.__cache_users.get(id):
                 _logger.info("Getting cached user by ID")
@@ -84,15 +84,18 @@ class UserRepository:
                 return cached_user
 
             else:
-                _logger.info(f"User {id} not found.")
-                raise NotFoundError(message=f"User #{id} not found")
+                _logger.info(f"User {id} not found")
+
+                if raise_404:
+                    raise NotFoundError(message=f"User #{id} not found")
 
         except ValidationError:
             raise NotFoundError(message=f"User #{id} not found")
 
         except Exception as error:
             _logger.error(f"Error on select_by_id: {str(error)}")
-            raise NotFoundError(message=f"User #{id} not found")
+            if raise_404:
+                raise NotFoundError(message=f"User #{id} not found")
 
     async def select_by_email(self, email: str, raise_404: bool = True) -> UserInDB:
         try:

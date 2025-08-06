@@ -43,7 +43,7 @@ async def decode_jwt(
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-        if not organization_id:
+        if not organization_id or not security_scopes.scopes:
             return current_user
 
         if organization_id not in current_user.organizations_roles:
