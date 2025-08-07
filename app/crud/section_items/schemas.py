@@ -1,13 +1,7 @@
 from enum import Enum
-from typing import Optional, TYPE_CHECKING, Any
-
-if TYPE_CHECKING:
-    from app.crud.offers.schemas import CompleteOffer
-    from app.crud.products.schemas import CompleteProduct
-else:
-    CompleteOffer = Any
-    CompleteProduct = Any
-
+from typing import Optional
+from app.crud.offers.schemas import CompleteOffer
+from app.crud.products.schemas import CompleteProduct
 from pydantic import Field
 
 from app.core.models import DatabaseModel
@@ -15,8 +9,8 @@ from app.core.models.base_schema import GenericModel
 
 
 class ItemType(str, Enum):
-    OFFER = "offer"
-    PRODUCT = "product"
+    OFFER = "OFFER"
+    PRODUCT = "PRODUCT"
 
 
 class SectionItem(GenericModel):
