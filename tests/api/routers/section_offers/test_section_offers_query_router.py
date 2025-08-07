@@ -28,12 +28,13 @@ class TestSectionOffersQueryRouter(unittest.TestCase):
         disconnect()
         app.dependency_overrides = {}
 
-    def _section_offer_in_db(self, id="rel1"):
+    def _section_offer_in_db(self, id="rel1", product=False):
         return SectionOfferInDB(
             id=id,
             organization_id="org_123",
             section_id="sec1",
-            offer_id="off1",
+            offer_id=None if product else "off1",
+            product_id="prod1" if product else None,
             position=1,
             is_visible=True,
             created_at=UTCDateTime.now(),
@@ -71,5 +72,18 @@ class TestSectionOffersQueryRouter(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.mock_service.search_all.assert_awaited_with(
             section_id="sec1", is_visible=None, expand=["offer"]
+        )
+
+    def test_get_section_offers_expand_product(self):
+        so = self._section_offer_in_db(product=True)
+        setattr(so, "product", {"id": "prod1"})
+        self.mock_service.search_all.return_value = [so]
+        response = self.test_client.get(
+            "/api/sections/sec1/offers?expand=product",
+            headers={"organization-id": "org_123"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.mock_service.search_all.assert_awaited_with(
+            section_id="sec1", is_visible=None, expand=["product"]
         )
 

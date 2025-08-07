@@ -1,6 +1,7 @@
 from typing import Optional
 
 from app.crud.offers.schemas import OfferInDB
+from app.crud.products.schemas import ProductInDB
 
 from pydantic import Field
 
@@ -10,7 +11,8 @@ from app.core.models.base_schema import GenericModel
 
 class SectionOffer(GenericModel):
     section_id: str = Field(example="sec_123")
-    offer_id: str = Field(example="off_123")
+    offer_id: Optional[str] = Field(default=None, example="off_123")
+    product_id: Optional[str] = Field(default=None, example="prod_123")
     position: int = Field(example=1)
     is_visible: bool = Field(default=True, example=True)
 
@@ -39,3 +41,4 @@ class SectionOfferInDB(SectionOffer, DatabaseModel):
 
 class CompleteSectionOffer(SectionOfferInDB):
     offer: OfferInDB | None = Field(default=None)
+    product: ProductInDB | None = Field(default=None)
