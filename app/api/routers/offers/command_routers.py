@@ -3,7 +3,8 @@ from fastapi import APIRouter, Depends, Security
 from app.api.composers import offer_composer
 from app.api.dependencies import build_response, decode_jwt
 from app.crud.users import UserInDB
-from app.crud.offers import RequestOffer, OfferInDB, UpdateOffer, OfferServices
+from app.crud.offers import RequestOffer, OfferInDB, UpdateOffer
+from app.crud.offers.services import OfferServices
 
 router = APIRouter(tags=["Offers"])
 

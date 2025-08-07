@@ -4,17 +4,15 @@ from app.core.models.base_document import BaseDocument
 from app.core.utils.utc_datetime import UTCDateTime
 
 
-class SectionOfferModel(BaseDocument):
+class SectionItemModel(BaseDocument):
     organization_id = StringField(required=True)
     section_id = StringField(required=True)
-    offer_id = StringField(required=False)
-    product_id = StringField(required=False)
+    item_id = StringField(required=True)
+    item_type = StringField(required=True, choices=("offer", "product"))
     position = IntField(required=True)
     is_visible = BooleanField(default=True)
 
-    meta = {
-        "collection": "section_offers"
-    }
+    meta = {"collection": "section_items"}
 
     def update(self, **kwargs):
         self.base_update()

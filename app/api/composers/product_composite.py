@@ -7,6 +7,7 @@ from app.crud.products.services import ProductServices
 from app.crud.product_additionals.services import ProductAdditionalServices
 from app.crud.product_additionals.repositories import ProductAdditionalRepository
 from app.crud.additional_items.repositories import AdditionalItemRepository
+from app.crud.section_items.repositories import SectionItemRepository
 
 
 async def product_composer(
@@ -16,6 +17,7 @@ async def product_composer(
     product_repository = ProductRepository(organization_id=organization_id)
     file_repository = FileRepository(organization_id=organization_id)
     product_additional_repository = ProductAdditionalRepository(organization_id=organization_id)
+    section_item_repository = SectionItemRepository(organization_id=organization_id)
     product_additional_services = ProductAdditionalServices(
         additional_repository=product_additional_repository,
         product_repository=product_repository,
@@ -27,5 +29,6 @@ async def product_composer(
         tag_repository=tag_repository,
         file_repository=file_repository,
         additional_services=product_additional_services,
+        section_item_repository=section_item_repository,
     )
     return product_services
