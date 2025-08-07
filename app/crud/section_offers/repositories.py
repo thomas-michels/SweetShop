@@ -98,3 +98,17 @@ class SectionOfferRepository(Repository):
         except Exception as error:
             _logger.error(f"Error on delete_by_id: {error}")
             raise NotFoundError(message=f"SectionOffer #{id} not found")
+
+    async def delete_by_offer_id(self, offer_id: str) -> None:
+        try:
+            objects = SectionOfferModel.objects(
+                offer_id=offer_id,
+                is_active=True,
+                organization_id=self.organization_id,
+            )
+
+            for model in objects:
+                model.delete()
+
+        except Exception as error:
+            _logger.error(f"Error on delete_by_offer_id: {error}")
