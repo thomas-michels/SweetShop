@@ -7,6 +7,7 @@ from app.api.dependencies.auth import decode_jwt
 from app.api.dependencies.get_current_organization import check_current_organization
 from app.application import app
 from app.crud.offers.models import OfferModel
+from app.crud.products.models import ProductModel
 from app.crud.sections.models import SectionModel
 from app.crud.menus.models import MenuModel
 from tests.payloads import USER_IN_DB
@@ -57,6 +58,19 @@ class TestSectionOffersCommandRouter(unittest.TestCase):
         offer.save()
         return str(offer.id)
 
+    def insert_mock_product(self, name="Product"):
+        product = ProductModel(
+            name=name,
+            description="d",
+            organization_id="org_123",
+            unit_cost=1.0,
+            unit_price=2.0,
+            tags=[],
+            kind="REGULAR",
+        )
+        product.save()
+        return str(product.id)
+
     def create_section_offer(self):
         section_id = self.insert_mock_section()
         offer_id = self.insert_mock_offer()
@@ -80,6 +94,24 @@ class TestSectionOffersCommandRouter(unittest.TestCase):
             json={
                 "sectionId": section_id,
                 "offerId": offer_id,
+                "position": 1,
+                "isVisible": True,
+            },
+            headers={"organization-id": "org_123"},
+        )
+        json = response.json()
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(json["message"], "Section offer created with success")
+        self.assertIsNotNone(json["data"]["id"])
+
+    def test_post_section_offer_with_product_success(self):
+        section_id = self.insert_mock_section()
+        product_id = self.insert_mock_product()
+        response = self.test_client.post(
+            "/api/section_offers",
+            json={
+                "sectionId": section_id,
+                "productId": product_id,
                 "position": 1,
                 "isVisible": True,
             },

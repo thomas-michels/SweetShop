@@ -2,6 +2,8 @@ from typing import List
 
 from app.crud.sections.repositories import SectionRepository
 from app.crud.offers.repositories import OfferRepository
+from app.crud.products.repositories import ProductRepository
+from app.core.exceptions import UnprocessableEntity
 
 from .repositories import SectionOfferRepository
 from .schemas import SectionOffer, SectionOfferInDB, UpdateSectionOffer, CompleteSectionOffer
@@ -13,14 +15,25 @@ class SectionOfferServices:
         section_offer_repository: SectionOfferRepository,
         section_repository: SectionRepository,
         offer_repository: OfferRepository,
+        product_repository: ProductRepository,
     ) -> None:
         self.__section_offer_repository = section_offer_repository
         self.__section_repository = section_repository
         self.__offer_repository = offer_repository
+        self.__product_repository = product_repository
 
     async def create(self, section_offer: SectionOffer) -> SectionOfferInDB:
         await self.__section_repository.select_by_id(id=section_offer.section_id)
-        await self.__offer_repository.select_by_id(id=section_offer.offer_id)
+
+        if section_offer.offer_id and section_offer.product_id:
+            raise UnprocessableEntity(message="Provide only offerId or productId")
+
+        if section_offer.offer_id:
+            await self.__offer_repository.select_by_id(id=section_offer.offer_id)
+        elif section_offer.product_id:
+            await self.__product_repository.select_by_id(id=section_offer.product_id)
+        else:
+            raise UnprocessableEntity(message="offerId or productId is required")
 
         return await self.__section_offer_repository.create(section_offer=section_offer)
 
@@ -55,11 +68,17 @@ class SectionOfferServices:
         for section_offer in section_offers:
             complete = CompleteSectionOffer.model_validate(section_offer)
 
-            if "offer" in expand:
+            if "offer" in expand and section_offer.offer_id:
                 offer_in_db = await self.__offer_repository.select_by_id(
                     id=section_offer.offer_id, raise_404=False
                 )
                 complete.offer = offer_in_db
+
+            if "product" in expand and section_offer.product_id:
+                product_in_db = await self.__product_repository.select_by_id(
+                    id=section_offer.product_id, raise_404=False
+                )
+                complete.product = product_in_db
 
             complete_section_offers.append(complete)
 

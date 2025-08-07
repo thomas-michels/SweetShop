@@ -7,7 +7,8 @@ from app.core.utils.utc_datetime import UTCDateTime
 class SectionOfferModel(BaseDocument):
     organization_id = StringField(required=True)
     section_id = StringField(required=True)
-    offer_id = StringField(required=True)
+    offer_id = StringField(required=False)
+    product_id = StringField(required=False)
     position = IntField(required=True)
     is_visible = BooleanField(default=True)
 

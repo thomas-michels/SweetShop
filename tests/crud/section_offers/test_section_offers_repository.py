@@ -21,13 +21,21 @@ class TestSectionOfferRepository(unittest.IsolatedAsyncioTestCase):
     def tearDown(self):
         disconnect()
 
-    async def _section_offer(self, position=1, is_visible=True):
+    async def _section_offer(self, position=1, is_visible=True, product=False):
+        if product:
+            return SectionOffer(section_id="sec1", product_id="prod1", position=position, is_visible=is_visible)
         return SectionOffer(section_id="sec1", offer_id="off1", position=position, is_visible=is_visible)
 
     async def test_create_section_offer(self):
         so = await self._section_offer()
         result = await self.repo.create(so)
         self.assertEqual(result.position, 1)
+        self.assertEqual(SectionOfferModel.objects.count(), 1)
+
+    async def test_create_section_offer_with_product(self):
+        so = await self._section_offer(product=True)
+        result = await self.repo.create(so)
+        self.assertEqual(result.product_id, "prod1")
         self.assertEqual(SectionOfferModel.objects.count(), 1)
 
     async def test_update_section_offer(self):

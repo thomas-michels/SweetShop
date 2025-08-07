@@ -20,10 +20,12 @@ class TestSectionOfferServices(unittest.IsolatedAsyncioTestCase):
         repo = SectionOfferRepository(organization_id="org1")
         self.section_repo = AsyncMock()
         self.offer_repo = AsyncMock()
+        self.product_repo = AsyncMock()
         self.service = SectionOfferServices(
             section_offer_repository=repo,
             section_repository=self.section_repo,
             offer_repository=self.offer_repo,
+            product_repository=self.product_repo,
         )
 
     def tearDown(self):
@@ -40,6 +42,14 @@ class TestSectionOfferServices(unittest.IsolatedAsyncioTestCase):
         self.section_repo.select_by_id.assert_awaited_with(id="sec1")
         self.offer_repo.select_by_id.assert_awaited_with(id="off1")
 
+    async def test_create_section_offer_with_product(self):
+        self.section_repo.select_by_id.return_value = None
+        self.product_repo.select_by_id.return_value = None
+        so = SectionOffer(section_id="sec1", product_id="prod1", position=1, is_visible=True)
+        result = await self.service.create(so)
+        self.assertIsInstance(result, SectionOfferInDB)
+        self.product_repo.select_by_id.assert_awaited_with(id="prod1")
+
     async def test_update_section_offer(self):
         self.section_repo.select_by_id.return_value = None
         self.offer_repo.select_by_id.return_value = None
@@ -54,6 +64,7 @@ class TestSectionOfferServices(unittest.IsolatedAsyncioTestCase):
             section_offer_repository=mock_repo,
             section_repository=AsyncMock(),
             offer_repository=AsyncMock(),
+            product_repository=AsyncMock(),
         )
         result = await service.search_by_id(id="x")
         self.assertEqual(result, "obj")
@@ -66,6 +77,7 @@ class TestSectionOfferServices(unittest.IsolatedAsyncioTestCase):
             section_offer_repository=mock_repo,
             section_repository=AsyncMock(),
             offer_repository=AsyncMock(),
+            product_repository=AsyncMock(),
         )
         result = await service.search_all(section_id="s", is_visible=True)
         self.assertEqual(result, ["obj"])
@@ -108,10 +120,53 @@ class TestSectionOfferServices(unittest.IsolatedAsyncioTestCase):
             section_offer_repository=mock_repo,
             section_repository=AsyncMock(),
             offer_repository=mock_offer_repo,
+            product_repository=AsyncMock(),
         )
         result = await service.search_all(section_id="sec", expand=["offer"])
         self.assertEqual(result[0].offer.id, "off")
         mock_offer_repo.select_by_id.assert_awaited_with(id="off", raise_404=False)
+
+    async def test_search_all_expand_product(self):
+        from app.crud.products.schemas import ProductInDB, ProductKind
+
+        mock_repo = AsyncMock()
+        so = SectionOfferInDB(
+            id="rel",
+            organization_id="org1",
+            section_id="sec",
+            offer_id=None,
+            product_id="prod",
+            position=1,
+            is_visible=True,
+            created_at=UTCDateTime.now(),
+            updated_at=UTCDateTime.now(),
+            is_active=True,
+        )
+        mock_repo.select_all.return_value = [so]
+        mock_product_repo = AsyncMock()
+        mock_product_repo.select_by_id.return_value = ProductInDB(
+            id="prod",
+            organization_id="org1",
+            name="Prod",
+            description="d",
+            unit_cost=1.0,
+            unit_price=2.0,
+            kind=ProductKind.REGULAR,
+            tags=[],
+            file_id=None,
+            created_at=UTCDateTime.now(),
+            updated_at=UTCDateTime.now(),
+            is_active=True,
+        )
+        service = SectionOfferServices(
+            section_offer_repository=mock_repo,
+            section_repository=AsyncMock(),
+            offer_repository=AsyncMock(),
+            product_repository=mock_product_repo,
+        )
+        result = await service.search_all(section_id="sec", expand=["product"])
+        self.assertEqual(result[0].product.id, "prod")
+        mock_product_repo.select_by_id.assert_awaited_with(id="prod", raise_404=False)
 
     async def test_delete_by_id(self):
         mock_repo = AsyncMock()
@@ -120,6 +175,7 @@ class TestSectionOfferServices(unittest.IsolatedAsyncioTestCase):
             section_offer_repository=mock_repo,
             section_repository=AsyncMock(),
             offer_repository=AsyncMock(),
+            product_repository=AsyncMock(),
         )
         result = await service.delete_by_id(id="d")
         self.assertEqual(result, "deleted")

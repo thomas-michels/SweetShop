@@ -112,3 +112,17 @@ class SectionOfferRepository(Repository):
 
         except Exception as error:
             _logger.error(f"Error on delete_by_offer_id: {error}")
+
+    async def delete_by_product_id(self, product_id: str) -> None:
+        try:
+            objects = SectionOfferModel.objects(
+                product_id=product_id,
+                is_active=True,
+                organization_id=self.organization_id,
+            )
+
+            for model in objects:
+                model.delete()
+
+        except Exception as error:
+            _logger.error(f"Error on delete_by_product_id: {error}")
