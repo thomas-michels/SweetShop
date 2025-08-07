@@ -8,8 +8,8 @@ from app.crud.section_items import (
     SectionItem,
     SectionItemInDB,
     UpdateSectionItem,
-    SectionItemServices,
 )
+from app.crud.section_items.services import SectionItemServices
 
 router = APIRouter(tags=["Section Items"])
 

@@ -6,7 +6,8 @@ from app.api.composers import section_item_composer
 from app.api.dependencies.response import build_response
 from app.api.dependencies.auth import decode_jwt
 from app.crud.users import UserInDB
-from app.crud.section_items import SectionItemServices, SectionItemInDB
+from app.crud.section_items import SectionItemInDB
+from app.crud.section_items.services import SectionItemServices
 
 router = APIRouter(tags=["Section Items"])
 
