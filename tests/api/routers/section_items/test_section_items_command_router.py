@@ -79,7 +79,7 @@ class TestSectionItemsCommandRouter(unittest.TestCase):
             json={
                 "sectionId": section_id,
                 "itemId": offer_id,
-                "itemType": "offer",
+                "itemType": "OFFER",
                 "position": 1,
                 "isVisible": True,
             },
@@ -95,7 +95,7 @@ class TestSectionItemsCommandRouter(unittest.TestCase):
             json={
                 "sectionId": section_id,
                 "itemId": offer_id,
-                "itemType": "offer",
+                "itemType": "OFFER",
                 "position": 1,
                 "isVisible": True,
             },
@@ -114,7 +114,7 @@ class TestSectionItemsCommandRouter(unittest.TestCase):
             json={
                 "sectionId": section_id,
                 "itemId": product_id,
-                "itemType": "product",
+                "itemType": "PRODUCT",
                 "position": 1,
                 "isVisible": True,
             },

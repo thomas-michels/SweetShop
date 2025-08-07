@@ -8,7 +8,7 @@ class SectionItemModel(BaseDocument):
     organization_id = StringField(required=True)
     section_id = StringField(required=True)
     item_id = StringField(required=True)
-    item_type = StringField(required=True, choices=("offer", "product"))
+    item_type = StringField(required=True)
     position = IntField(required=True)
     is_visible = BooleanField(default=True)
 
