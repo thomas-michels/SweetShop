@@ -27,7 +27,7 @@ from app.api.routers import (
     term_of_use_router,
     file_router,
     section_router,
-    section_offer_router,
+    section_item_router,
     menu_router,
     offer_router,
     home_router,
@@ -94,7 +94,7 @@ app.include_router(payment_router, prefix="/api")
 app.include_router(fast_order_router, prefix="/api")
 app.include_router(menu_router, prefix="/api")
 app.include_router(section_router, prefix="/api")
-app.include_router(section_offer_router, prefix="/api")
+app.include_router(section_item_router, prefix="/api")
 app.include_router(offer_router, prefix="/api")
 app.include_router(billing_router, prefix="/api")
 app.include_router(home_router, prefix="/api")

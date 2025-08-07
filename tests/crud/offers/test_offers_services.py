@@ -12,9 +12,9 @@ from app.crud.offers.schemas import (
 )
 from app.crud.offers.services import OfferServices
 from app.crud.products.schemas import ProductInDB
-from app.crud.section_offers.repositories import SectionOfferRepository
-from app.crud.section_offers.schemas import SectionOffer
-from app.crud.section_offers.models import SectionOfferModel
+from app.crud.section_items.repositories import SectionItemRepository
+from app.crud.section_items.schemas import SectionItem, ItemType
+from app.crud.section_items.models import SectionItemModel
 
 
 class TestOfferServices(unittest.IsolatedAsyncioTestCase):
@@ -28,12 +28,12 @@ class TestOfferServices(unittest.IsolatedAsyncioTestCase):
         repo = OfferRepository(organization_id="org1")
         self.product_repo = AsyncMock()
         self.file_repo = AsyncMock()
-        self.section_offer_repo = SectionOfferRepository(organization_id="org1")
+        self.section_item_repo = SectionItemRepository(organization_id="org1")
         self.service = OfferServices(
             offer_repository=repo,
             product_repository=self.product_repo,
             file_repository=self.file_repo,
-            section_offer_repository=self.section_offer_repo,
+            section_item_repository=self.section_item_repo,
         )
 
     def tearDown(self):
@@ -134,7 +134,7 @@ class TestOfferServices(unittest.IsolatedAsyncioTestCase):
             offer_repository=mock_repo,
             product_repository=AsyncMock(),
             file_repository=AsyncMock(),
-            section_offer_repository=AsyncMock(),
+            section_item_repository=AsyncMock(),
         )
         result = await service.search_all_paginated(query=None)
         self.assertEqual(result, ["offer"])
@@ -147,24 +147,24 @@ class TestOfferServices(unittest.IsolatedAsyncioTestCase):
             offer_repository=mock_repo,
             product_repository=AsyncMock(),
             file_repository=AsyncMock(),
-            section_offer_repository=AsyncMock(),
+            section_item_repository=AsyncMock(),
         )
         count = await service.search_count(query="a")
         self.assertEqual(count, 3)
         mock_repo.select_count.assert_awaited_with(query="a", is_visible=None)
 
-    async def test_delete_offer_removes_section_offers(self):
+    async def test_delete_offer_removes_section_items(self):
         self.product_repo.select_by_id.return_value = await self._product_in_db()
         offer = await self.service.create(await self._request_offer())
-        section_offer = SectionOffer(
-            section_id="sec1", offer_id=offer.id, position=1, is_visible=True
+        section_item = SectionItem(
+            section_id="sec1", item_id=offer.id, item_type=ItemType.OFFER, position=1, is_visible=True
         )
-        await self.section_offer_repo.create(section_offer)
+        await self.section_item_repo.create(section_item)
         self.assertEqual(
-            SectionOfferModel.objects(is_active=True).count(), 1
+            SectionItemModel.objects(is_active=True).count(), 1
         )
         await self.service.delete_by_id(id=offer.id)
         self.assertEqual(
-            SectionOfferModel.objects(is_active=True).count(), 0
+            SectionItemModel.objects(is_active=True).count(), 0
         )
 

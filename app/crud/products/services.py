@@ -6,6 +6,8 @@ from app.crud.files.schemas import FilePurpose
 from app.crud.tags.repositories import TagRepository
 from app.crud.files.repositories import FileRepository
 from app.crud.product_additionals.services import ProductAdditionalServices
+from app.crud.section_items.repositories import SectionItemRepository
+from app.crud.section_items.schemas import ItemType
 from .schemas import (
     CompleteProduct,
     Product,
@@ -23,11 +25,13 @@ class ProductServices:
             tag_repository: TagRepository,
             file_repository: FileRepository,
             additional_services: ProductAdditionalServices,
+            section_item_repository: SectionItemRepository,
         ) -> None:
         self.__product_repository = product_repository
         self.__tag_repository = tag_repository
         self.__file_repository = file_repository
         self.__additional_services = additional_services
+        self.__section_item_repository = section_item_repository
 
     async def create(self, product: Product) -> ProductInDB:
         plan_feature = await get_plan_feature(
@@ -106,6 +110,9 @@ class ProductServices:
     async def delete_by_id(self, id: str) -> ProductInDB:
         product_in_db = await self.__product_repository.delete_by_id(id=id)
         await self.__additional_services.delete_by_product_id(product_id=id)
+        await self.__section_item_repository.delete_by_item_id(
+            item_id=id, item_type=ItemType.PRODUCT
+        )
         return product_in_db
 
     async def __build_complete_product(self, products: List[ProductInDB], expand: List[str]) -> List[CompleteProduct]:

@@ -13,7 +13,7 @@ from app.crud.menus.models import MenuModel
 from tests.payloads import USER_IN_DB
 
 
-class TestSectionOffersCommandRouter(unittest.TestCase):
+class TestSectionItemsCommandRouter(unittest.TestCase):
     def setUp(self):
         def override_dependency(mock):
             def _dependency():
@@ -71,14 +71,15 @@ class TestSectionOffersCommandRouter(unittest.TestCase):
         product.save()
         return str(product.id)
 
-    def create_section_offer(self):
+    def create_section_item(self):
         section_id = self.insert_mock_section()
         offer_id = self.insert_mock_offer()
         response = self.test_client.post(
-            "/api/section_offers",
+            "/api/section_items",
             json={
                 "sectionId": section_id,
-                "offerId": offer_id,
+                "itemId": offer_id,
+                "itemType": "offer",
                 "position": 1,
                 "isVisible": True,
             },
@@ -86,14 +87,15 @@ class TestSectionOffersCommandRouter(unittest.TestCase):
         )
         return response.json()["data"]["id"], section_id, offer_id
 
-    def test_post_section_offer_success(self):
+    def test_post_section_item_success(self):
         section_id = self.insert_mock_section()
         offer_id = self.insert_mock_offer()
         response = self.test_client.post(
-            "/api/section_offers",
+            "/api/section_items",
             json={
                 "sectionId": section_id,
-                "offerId": offer_id,
+                "itemId": offer_id,
+                "itemType": "offer",
                 "position": 1,
                 "isVisible": True,
             },
@@ -101,17 +103,18 @@ class TestSectionOffersCommandRouter(unittest.TestCase):
         )
         json = response.json()
         self.assertEqual(response.status_code, 201)
-        self.assertEqual(json["message"], "Section offer created with success")
+        self.assertEqual(json["message"], "Section item created with success")
         self.assertIsNotNone(json["data"]["id"])
 
-    def test_post_section_offer_with_product_success(self):
+    def test_post_section_item_with_product_success(self):
         section_id = self.insert_mock_section()
         product_id = self.insert_mock_product()
         response = self.test_client.post(
-            "/api/section_offers",
+            "/api/section_items",
             json={
                 "sectionId": section_id,
-                "productId": product_id,
+                "itemId": product_id,
+                "itemType": "product",
                 "position": 1,
                 "isVisible": True,
             },
@@ -119,49 +122,49 @@ class TestSectionOffersCommandRouter(unittest.TestCase):
         )
         json = response.json()
         self.assertEqual(response.status_code, 201)
-        self.assertEqual(json["message"], "Section offer created with success")
+        self.assertEqual(json["message"], "Section item created with success")
         self.assertIsNotNone(json["data"]["id"])
 
-    def test_post_section_offer_invalid_payload_returns_422(self):
+    def test_post_section_item_invalid_payload_returns_422(self):
         response = self.test_client.post(
-            "/api/section_offers",
+            "/api/section_items",
             json={"sectionId": "sec"},
             headers={"organization-id": "org_123"},
         )
         self.assertEqual(response.status_code, 422)
 
-    def test_put_section_offer_success(self):
-        so_id, _, _ = self.create_section_offer()
+    def test_put_section_item_success(self):
+        so_id, _, _ = self.create_section_item()
         response = self.test_client.put(
-            f"/api/section_offers/{so_id}",
+            f"/api/section_items/{so_id}",
             json={"position": 2},
             headers={"organization-id": "org_123"},
         )
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["message"], "Section offer updated with success")
+        self.assertEqual(response.json()["message"], "Section item updated with success")
 
-    def test_put_section_offer_not_found(self):
+    def test_put_section_item_not_found(self):
         response = self.test_client.put(
-            "/api/section_offers/invalid",
+            "/api/section_items/invalid",
             json={"position": 2},
             headers={"organization-id": "org_123"},
         )
         self.assertEqual(response.status_code, 404)
-        self.assertEqual(response.json()["message"], "SectionOffer #invalid not found")
+        self.assertEqual(response.json()["message"], "SectionItem #invalid not found")
 
-    def test_delete_section_offer_success(self):
-        so_id, _, _ = self.create_section_offer()
+    def test_delete_section_item_success(self):
+        so_id, _, _ = self.create_section_item()
         response = self.test_client.delete(
-            f"/api/section_offers/{so_id}", headers={"organization-id": "org_123"}
+            f"/api/section_items/{so_id}", headers={"organization-id": "org_123"}
         )
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["message"], "Section offer deleted with success")
+        self.assertEqual(response.json()["message"], "Section item deleted with success")
 
-    def test_delete_section_offer_not_found(self):
+    def test_delete_section_item_not_found(self):
         response = self.test_client.delete(
-            "/api/section_offers/invalid",
+            "/api/section_items/invalid",
             headers={"organization-id": "org_123"},
         )
         self.assertEqual(response.status_code, 404)
-        self.assertEqual(response.json()["message"], "SectionOffer #invalid not found")
+        self.assertEqual(response.json()["message"], "SectionItem #invalid not found")
 

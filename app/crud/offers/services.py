@@ -3,7 +3,8 @@ from typing import List
 from app.crud.files.repositories import FileRepository
 from app.crud.products.repositories import ProductRepository
 from app.crud.products.schemas import ProductInDB
-from app.crud.section_offers.repositories import SectionOfferRepository
+from app.crud.section_items.repositories import SectionItemRepository
+from app.crud.section_items.schemas import ItemType
 
 from .repositories import OfferRepository
 from .schemas import (
@@ -25,12 +26,12 @@ class OfferServices:
         offer_repository: OfferRepository,
         product_repository: ProductRepository,
         file_repository: FileRepository,
-        section_offer_repository: SectionOfferRepository,
+        section_item_repository: SectionItemRepository,
     ) -> None:
         self.__offer_repository = offer_repository
         self.__product_repository = product_repository
         self.__file_repository = file_repository
-        self.__section_offer_repository = section_offer_repository
+        self.__section_item_repository = section_item_repository
 
     async def create(self, request_offer: RequestOffer) -> OfferInDB:
         total_cost, total_price, products = await self.__create_offer_product(
@@ -166,7 +167,7 @@ class OfferServices:
 
     async def delete_by_id(self, id: str) -> OfferInDB:
         offer_in_db = await self.__offer_repository.delete_by_id(id=id)
-        await self.__section_offer_repository.delete_by_offer_id(offer_id=id)
+        await self.__section_item_repository.delete_by_item_id(item_id=id, item_type=ItemType.OFFER)
         return offer_in_db
 
     async def update_product_in_offers(self, product: ProductInDB) -> None:

@@ -4,7 +4,7 @@ from app.api.composers import product_composer, offer_composer
 from app.api.dependencies import build_response, decode_jwt
 from app.crud.users import UserInDB
 from app.crud.products import Product, ProductInDB, UpdateProduct, ProductServices
-from app.crud.offers import OfferServices
+from app.crud.offers.services import OfferServices
 
 router = APIRouter(tags=["Products"])
 

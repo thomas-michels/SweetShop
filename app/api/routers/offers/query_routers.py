@@ -8,7 +8,8 @@ from app.api.dependencies.pagination_parameters import pagination_parameters
 from app.api.dependencies.paginator import Paginator
 from app.api.dependencies.response import build_list_response
 from app.crud.users import UserInDB
-from app.crud.offers import OfferInDB, OfferServices
+from app.crud.offers import OfferInDB
+from app.crud.offers.services import OfferServices
 
 router = APIRouter(tags=["Offers"])
 
