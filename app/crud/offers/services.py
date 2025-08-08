@@ -1,6 +1,8 @@
 from typing import List
 
+from app.api.exceptions.authentication_exceptions import BadRequestException
 from app.crud.files.repositories import FileRepository
+from app.crud.files.schemas import FilePurpose
 from app.crud.products.repositories import ProductRepository
 from app.crud.products.schemas import ProductInDB
 from app.crud.section_items.repositories import SectionItemRepository
@@ -39,7 +41,9 @@ class OfferServices:
         )
 
         if request_offer.file_id is not None:
-            await self.__file_repository.select_by_id(id=request_offer.file_id)
+            file_in_db = await self.__file_repository.select_by_id(id=request_offer.file_id)
+            if file_in_db.purpose != FilePurpose.OFFER:
+                raise BadRequestException(detail="Invalid image for the offer")
 
         offer = Offer(
             name=request_offer.name,
@@ -84,7 +88,9 @@ class OfferServices:
                 offer_in_db.unit_price = product_price
 
             if updated_offer.file_id is not None:
-                await self.__file_repository.select_by_id(id=updated_offer.file_id)
+                file_in_db = await self.__file_repository.select_by_id(id=updated_offer.file_id)
+                if file_in_db.purpose != FilePurpose.OFFER:
+                    raise BadRequestException(detail="Invalid image for the offer")
                 offer_in_db.file_id = updated_offer.file_id
 
             offer_in_db = await self.__offer_repository.update(offer=offer_in_db)

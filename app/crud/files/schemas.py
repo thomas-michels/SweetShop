@@ -8,6 +8,7 @@ from app.core.models.base_schema import GenericModel
 class FilePurpose(str, Enum):
     PRODUCT = "PRODUCTS"
     ORGANIZATION = "ORGANIZATIONS"
+    OFFER = "OFFERS"
 
 
 class File(GenericModel):
