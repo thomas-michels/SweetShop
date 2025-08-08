@@ -1,9 +1,12 @@
 import unittest
+from types import SimpleNamespace
 from unittest.mock import AsyncMock
 from mongoengine import connect, disconnect
 import mongomock
 
+from app.api.exceptions.authentication_exceptions import BadRequestException
 from app.core.utils.utc_datetime import UTCDateTime
+from app.crud.files.schemas import FilePurpose
 from app.crud.offers.repositories import OfferRepository
 from app.crud.offers.schemas import (
     RequestOffer,
@@ -113,7 +116,7 @@ class TestOfferServices(unittest.IsolatedAsyncioTestCase):
 
     async def test_create_offer_with_file(self):
         self.product_repo.select_by_id.return_value = await self._product_in_db()
-        self.file_repo.select_by_id.return_value = "file"
+        self.file_repo.select_by_id.return_value = SimpleNamespace(purpose=FilePurpose.OFFER)
         req = await self._request_offer(file_id="file1")
         result = await self.service.create(req)
         self.file_repo.select_by_id.assert_awaited_with(id="file1")
@@ -121,11 +124,29 @@ class TestOfferServices(unittest.IsolatedAsyncioTestCase):
 
     async def test_search_by_id_expand_file(self):
         self.product_repo.select_by_id.return_value = await self._product_in_db()
+        self.file_repo.select_by_id.side_effect = [
+            SimpleNamespace(purpose=FilePurpose.OFFER),
+            "file",
+        ]
         offer = await self.service.create(await self._request_offer(file_id="file2"))
-        self.file_repo.select_by_id.return_value = "file"
         result = await self.service.search_by_id(id=offer.id, expand=["file"])
         self.file_repo.select_by_id.assert_awaited_with(id="file2", raise_404=False)
         self.assertEqual(result.file, "file")
+
+    async def test_create_offer_invalid_file(self):
+        self.product_repo.select_by_id.return_value = await self._product_in_db()
+        self.file_repo.select_by_id.return_value = SimpleNamespace(purpose="OTHER")
+        req = await self._request_offer(file_id="file1")
+        with self.assertRaises(BadRequestException):
+            await self.service.create(req)
+
+    async def test_update_offer_invalid_file(self):
+        self.product_repo.select_by_id.return_value = await self._product_in_db()
+        offer = await self.service.create(await self._request_offer())
+        self.file_repo.select_by_id.return_value = SimpleNamespace(purpose="OTHER")
+        update = UpdateOffer(file_id="file1")
+        with self.assertRaises(BadRequestException):
+            await self.service.update(id=offer.id, updated_offer=update)
 
     async def test_search_all_paginated(self):
         mock_repo = AsyncMock()

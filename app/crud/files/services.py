@@ -30,6 +30,9 @@ class FileServices:
         elif purpose == FilePurpose.ORGANIZATION:
             validated_file = await self.validate_image(file=file, size=(640, 480))
 
+        elif purpose == FilePurpose.OFFER:
+            validated_file = await self.validate_image(file=file, size=(640, 480))
+
         else:
             raise BadRequestException(detail="Purpose not recognized")
 
