@@ -15,6 +15,7 @@ router = APIRouter(tags=["Section Items"])
 @router.get(
     "/sections/{section_id}/items",
     responses={200: {"model": List[SectionItemInDB]}},
+    tags=["Sections"]
 )
 async def get_section_items(
     section_id: str,
