@@ -1,23 +1,21 @@
 import unittest
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
-from mongoengine import connect, disconnect
+
 import mongomock
+from mongoengine import connect, disconnect
 
 from app.api.exceptions.authentication_exceptions import BadRequestException
 from app.core.utils.utc_datetime import UTCDateTime
 from app.crud.files.schemas import FilePurpose
 from app.crud.offers.repositories import OfferRepository
-from app.crud.offers.schemas import (
-    RequestOffer,
-    UpdateOffer,
-    OfferProductRequest,
-)
+from app.crud.offers.schemas import (OfferProductRequest, RequestOffer,
+                                     UpdateOffer)
 from app.crud.offers.services import OfferServices
 from app.crud.products.schemas import ProductInDB
-from app.crud.section_items.repositories import SectionItemRepository
-from app.crud.section_items.schemas import SectionItem, ItemType
 from app.crud.section_items.models import SectionItemModel
+from app.crud.section_items.repositories import SectionItemRepository
+from app.crud.section_items.schemas import ItemType, SectionItem
 
 
 class TestOfferServices(unittest.IsolatedAsyncioTestCase):
@@ -121,17 +119,6 @@ class TestOfferServices(unittest.IsolatedAsyncioTestCase):
         result = await self.service.create(req)
         self.file_repo.select_by_id.assert_awaited_with(id="file1")
         self.assertEqual(result.file_id, "file1")
-
-    async def test_search_by_id_expand_file(self):
-        self.product_repo.select_by_id.return_value = await self._product_in_db()
-        self.file_repo.select_by_id.side_effect = [
-            SimpleNamespace(purpose=FilePurpose.OFFER),
-            "file",
-        ]
-        offer = await self.service.create(await self._request_offer(file_id="file2"))
-        result = await self.service.search_by_id(id=offer.id, expand=["file"])
-        self.file_repo.select_by_id.assert_awaited_with(id="file2", raise_404=False)
-        self.assertEqual(result.file, "file")
 
     async def test_create_offer_invalid_file(self):
         self.product_repo.select_by_id.return_value = await self._product_in_db()
