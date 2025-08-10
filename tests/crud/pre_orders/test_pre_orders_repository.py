@@ -31,6 +31,7 @@ class TestPreOrderRepository(unittest.IsolatedAsyncioTestCase):
             delivery={"delivery_type": "WITHDRAWAL"},
             observation="obs",
             offers=[{"offer_id": "off1", "quantity": 1}],
+            products=[],
             status=status.value,
             tax=0,
             total_amount=10,

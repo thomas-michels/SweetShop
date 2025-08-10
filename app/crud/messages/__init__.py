@@ -1,2 +1,6 @@
 from .schemas import Message, MessageInDB
-from .services import MessageServices
+
+__all__ = [
+    "Message",
+    "MessageInDB",
+]
