@@ -5,8 +5,9 @@ from app.crud.pre_orders.schemas import (
     PreOrderInDB,
     PreOrderStatus,
     SelectedOffer,
+    Delivery,
+    DeliveryType,
 )
-from app.crud.orders.schemas import Delivery, DeliveryType
 from app.core.utils.utc_datetime import UTCDateTime
 
 

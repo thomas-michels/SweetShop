@@ -162,11 +162,13 @@ class OfferServices:
 
             complete_offer = CompleteOffer.model_validate(offer)
             complete_offer.products = complete_offer_products
-            if "file" in expand and offer.file_id:
+
+            if "files" in expand and offer.file_id:
                 complete_offer.file = await self.__file_repository.select_by_id(
                     id=offer.file_id,
                     raise_404=False,
                 )
+
             complete_offers.append(complete_offer)
 
         return complete_offers

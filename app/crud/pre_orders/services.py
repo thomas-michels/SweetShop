@@ -1,24 +1,38 @@
 from typing import List
 
-from app.crud.customers.repositories import CustomerRepository
-from app.crud.messages.services import MessageServices
+from typing import TYPE_CHECKING
 from app.crud.messages.schemas import Message, MessageType, Origin
-from app.crud.offers.repositories import OfferRepository
-from app.crud.organizations.repositories import OrganizationRepository
+from app.api.exceptions.authentication_exceptions import BadRequestException
 
-from .repositories import PreOrderRepository
-from .schemas import CompletePreOrder, PreOrderInDB, PreOrderStatus
+if TYPE_CHECKING:  # pragma: no cover
+    from app.crud.messages.services import MessageServices
+    from app.crud.customers.repositories import CustomerRepository
+    from app.crud.offers.repositories import OfferRepository
+    from app.crud.organizations.repositories import OrganizationRepository
+    from app.crud.additional_items.repositories import AdditionalItemRepository
+    from app.crud.product_additionals.repositories import ProductAdditionalRepository
+    from .repositories import PreOrderRepository
+
+from .schemas import (
+    CompletePreOrder,
+    PreOrderInDB,
+    PreOrderStatus,
+    SelectedOffer,
+    SelectedProduct,
+)
 
 
 class PreOrderServices:
 
     def __init__(
         self,
-        pre_order_repository: PreOrderRepository,
-        customer_repository: CustomerRepository,
-        offer_repository: OfferRepository,
-        organization_repository: OrganizationRepository,
-        message_services: MessageServices
+        pre_order_repository: 'PreOrderRepository',
+        customer_repository: 'CustomerRepository',
+        offer_repository: 'OfferRepository',
+        organization_repository: 'OrganizationRepository',
+        message_services: 'MessageServices',
+        additional_item_repository: 'AdditionalItemRepository',
+        product_additional_repository: 'ProductAdditionalRepository',
     ) -> None:
         self.__pre_order_repository = pre_order_repository
         self.__customer_repository = customer_repository
@@ -26,6 +40,8 @@ class PreOrderServices:
         self.__organization_repository = organization_repository
 
         self.__message_services = message_services
+        self.__additional_item_repository = additional_item_repository
+        self.__product_additional_repository = product_additional_repository
 
         self.__cache_customers = {}
         self.__cache_offers = {}
@@ -94,6 +110,9 @@ class PreOrderServices:
     async def __build_pre_order(self, pre_order_in_db: PreOrderInDB, expand: List[str] = []) -> CompletePreOrder:
         complete_pre_order = CompletePreOrder.model_validate(pre_order_in_db)
 
+        await self.__validate_offers(complete_pre_order.offers)
+        await self.__validate_products(complete_pre_order.products)
+
         full_phone = f"{pre_order_in_db.customer.international_code}{pre_order_in_db.customer.ddd}{pre_order_in_db.customer.phone_number}"
 
         if full_phone not in self.__cache_customers:
@@ -130,6 +149,79 @@ class PreOrderServices:
             complete_pre_order.offers = complete_offers
 
         return complete_pre_order
+
+    async def __validate_offers(self, offers: List[SelectedOffer]) -> List[SelectedOffer]:
+        for offer in offers:
+            if not offer.items:
+                continue
+
+            for item in offer.items:
+                additionals_group = await self.__product_additional_repository.select_by_product_id(
+                    product_id=item.item_id
+                )
+
+                group_map = {grp.id: grp for grp in additionals_group}
+                group_counts = {grp.id: 0 for grp in additionals_group}
+
+                if not item.additionals:
+                    item.additionals = []
+
+                for additional in item.additionals:
+                    item_in_db = await self.__additional_item_repository.select_by_id(id=additional.item_id)
+
+                    if (
+                        item_in_db.additional_id not in group_map
+                        or item_in_db.additional_id != additional.additional_id
+                    ):
+                        raise BadRequestException(
+                            detail="Additional item not allowed for this product"
+                        )
+
+                    group_counts[item_in_db.additional_id] += additional.quantity
+                    item.unit_price += item_in_db.unit_price * additional.quantity
+                    item.unit_cost += item_in_db.unit_cost * additional.quantity
+
+                for grp_id, grp in group_map.items():
+                    count = group_counts.get(grp_id, 0)
+                    if item.additionals and (count < grp.min_quantity or count > grp.max_quantity):
+                        raise BadRequestException(
+                            detail=f"Invalid quantity for additional group {grp.name}"
+                        )
+
+        return offers
+
+    async def __validate_products(self, products: List[SelectedProduct]) -> List[SelectedProduct]:
+        for product in products:
+            additionals_group = await self.__product_additional_repository.select_by_product_id(
+                product_id=product.product_id
+            )
+
+            group_map = {grp.id: grp for grp in additionals_group}
+            group_counts = {grp.id: 0 for grp in additionals_group}
+
+            for additional in product.additionals:
+                item_in_db = await self.__additional_item_repository.select_by_id(id=additional.item_id)
+
+                if (
+                    item_in_db.additional_id not in group_map
+                    or item_in_db.additional_id != additional.additional_id
+                ):
+                    raise BadRequestException(
+                        detail="Additional item not allowed for this product"
+                    )
+
+                group_counts[item_in_db.additional_id] += additional.quantity
+                product.unit_price += item_in_db.unit_price * additional.quantity
+                product.unit_cost += item_in_db.unit_cost * additional.quantity
+
+            for grp_id, grp in group_map.items():
+                count = group_counts.get(grp_id, 0)
+                if product.additionals and (count < grp.min_quantity or count > grp.max_quantity):
+                    raise BadRequestException(
+                        detail=f"Invalid quantity for additional group {grp.name}"
+                    )
+
+        return products
 
     async def send_client_message(self, pre_order: PreOrderInDB) -> bool:
         if not (pre_order.customer.international_code and pre_order.customer.ddd and pre_order.customer.phone_number):
