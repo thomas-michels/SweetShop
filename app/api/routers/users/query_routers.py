@@ -1,15 +1,22 @@
-from typing import List
-
 from fastapi import APIRouter, Depends, Security, Response
 
 from app.api.composers import user_composer
 from app.api.dependencies import build_response, decode_jwt
+from app.api.shared_schemas.responses import MessageResponse
+from .schemas import (
+    GetCurrentUserResponse,
+    GetUserByIdResponse,
+    GetUsersResponse,
+)
 from app.crud.users import UserInDB, UserServices
 
 router = APIRouter(tags=["Users"])
 
 
-@router.get("/users/me/", responses={200: {"model": UserInDB}})
+@router.get(
+    "/users/me/",
+    responses={200: {"model": GetCurrentUserResponse}},
+)
 async def current_user(
     current_user: UserInDB = Security(decode_jwt, scopes=["user:me"]),
 ):
@@ -18,7 +25,13 @@ async def current_user(
     )
 
 
-@router.get("/users/{user_id}", responses={200: {"model": UserInDB}})
+@router.get(
+    "/users/{user_id}",
+    responses={
+        200: {"model": GetUserByIdResponse},
+        404: {"model": MessageResponse},
+    },
+)
 async def get_user_by_id(
     user_id: str,
     current_user: UserInDB = Security(decode_jwt, scopes=["user:get"]),
@@ -37,7 +50,13 @@ async def get_user_by_id(
         )
 
 
-@router.get("/users", responses={200: {"model": List[UserInDB]}})
+@router.get(
+    "/users",
+    responses={
+        200: {"model": GetUsersResponse},
+        204: {"description": "No Content"},
+    },
+)
 async def get_users(
     current_user: UserInDB = Security(decode_jwt, scopes=["user:get"]),
     user_services: UserServices = Depends(user_composer),
