@@ -2,14 +2,26 @@ from fastapi import APIRouter, Depends, Security
 
 from app.api.composers import product_composer, offer_composer
 from app.api.dependencies import build_response, decode_jwt
+from app.api.shared_schemas.responses import MessageResponse
+from .schemas import (
+    CreateProductResponse,
+    UpdateProductResponse,
+    DeleteProductResponse,
+)
 from app.crud.users import UserInDB
-from app.crud.products import Product, ProductInDB, UpdateProduct, ProductServices
+from app.crud.products import Product, UpdateProduct, ProductServices
 from app.crud.offers.services import OfferServices
 
 router = APIRouter(tags=["Products"])
 
 
-@router.post("/products", responses={201: {"model": ProductInDB}})
+@router.post(
+    "/products",
+    responses={
+        201: {"model": CreateProductResponse},
+        400: {"model": MessageResponse},
+    },
+)
 async def create_products(
     product: Product,
     current_user: UserInDB = Security(decode_jwt, scopes=["product:create"]),
@@ -30,7 +42,13 @@ async def create_products(
         )
 
 
-@router.put("/products/{product_id}", responses={200: {"model": ProductInDB}})
+@router.put(
+    "/products/{product_id}",
+    responses={
+        200: {"model": UpdateProductResponse},
+        400: {"model": MessageResponse},
+    },
+)
 async def update_product(
     product_id: str,
     product: UpdateProduct,
@@ -52,7 +70,13 @@ async def update_product(
         )
 
 
-@router.delete("/products/{product_id}", responses={200: {"model": ProductInDB}})
+@router.delete(
+    "/products/{product_id}",
+    responses={
+        200: {"model": DeleteProductResponse},
+        404: {"model": MessageResponse},
+    },
+)
 async def delete_product(
     product_id: str,
     current_user: UserInDB = Security(decode_jwt, scopes=["product:delete"]),

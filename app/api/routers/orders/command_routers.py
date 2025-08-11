@@ -2,13 +2,25 @@ from fastapi import APIRouter, Depends, Security
 
 from app.api.composers import order_composer
 from app.api.dependencies import build_response, decode_jwt
+from app.api.shared_schemas.responses import MessageResponse
+from .schemas import (
+    CreateOrderResponse,
+    UpdateOrderResponse,
+    DeleteOrderResponse,
+)
 from app.crud.users import UserInDB
-from app.crud.orders import RequestOrder, OrderInDB, UpdateOrder, OrderServices
+from app.crud.orders import RequestOrder, UpdateOrder, OrderServices
 
 router = APIRouter(tags=["Orders"])
 
 
-@router.post("/orders", responses={201: {"model": OrderInDB}})
+@router.post(
+    "/orders",
+    responses={
+        201: {"model": CreateOrderResponse},
+        400: {"model": MessageResponse},
+    },
+)
 async def create_orders(
     order: RequestOrder,
     current_user: UserInDB = Security(decode_jwt, scopes=["order:create"]),
@@ -29,7 +41,13 @@ async def create_orders(
         )
 
 
-@router.put("/orders/{order_id}", responses={200: {"model": OrderInDB}})
+@router.put(
+    "/orders/{order_id}",
+    responses={
+        200: {"model": UpdateOrderResponse},
+        400: {"model": MessageResponse},
+    },
+)
 async def update_order(
     order_id: str,
     order: UpdateOrder,
@@ -49,7 +67,13 @@ async def update_order(
         )
 
 
-@router.delete("/orders/{order_id}", responses={200: {"model": OrderInDB}})
+@router.delete(
+    "/orders/{order_id}",
+    responses={
+        200: {"model": DeleteOrderResponse},
+        404: {"model": MessageResponse},
+    },
+)
 async def delete_order(
     order_id: str,
     current_user: UserInDB = Security(decode_jwt, scopes=["order:delete"]),

@@ -1,19 +1,31 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, Query, Request, Security, Response
+from fastapi import APIRouter, Depends, Query, Request, Response, Security
 
 from app.api.composers import customer_composer
 from app.api.dependencies import build_response, decode_jwt
 from app.api.dependencies.pagination_parameters import pagination_parameters
 from app.api.dependencies.paginator import Paginator
 from app.api.dependencies.response import build_list_response
+from app.api.shared_schemas.responses import MessageResponse
+from .schemas import (
+    GetCustomerResponse,
+    GetCustomersResponse,
+    GetCustomersCountResponse,
+)
 from app.crud.users import UserInDB
-from app.crud.customers import CustomerServices, CustomerInDB
+from app.crud.customers import CustomerServices
 
 router = APIRouter(tags=["Customers"])
 
 
-@router.get("/customers/{customer_id}", responses={200: {"model": CustomerInDB}})
+@router.get(
+    "/customers/{customer_id}",
+    responses={
+        200: {"model": GetCustomerResponse},
+        404: {"model": MessageResponse},
+    },
+)
 async def get_customer_by_id(
     customer_id: str,
     expand: List[str] = Query(default=[]),
@@ -36,7 +48,13 @@ async def get_customer_by_id(
         )
 
 
-@router.get("/customers", responses={200: {"model": List[CustomerInDB]}})
+@router.get(
+    "/customers",
+    responses={
+        200: {"model": GetCustomersResponse},
+        204: {"description": "No Content"},
+    },
+)
 async def get_customers(
     request: Request,
     query: str = Query(default=None),
@@ -77,7 +95,13 @@ async def get_customers(
         return Response(status_code=204)
 
 
-@router.get("/customers/metrics/count", responses={200: {"model": List[CustomerInDB]}})
+@router.get(
+    "/customers/metrics/count",
+    responses={
+        200: {"model": GetCustomersCountResponse},
+        204: {"description": "No Content"},
+    },
+)
 async def get_customers_count(
     current_user: UserInDB = Security(decode_jwt, scopes=["customer:get"]),
     customer_services: CustomerServices = Depends(customer_composer),
