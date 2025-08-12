@@ -2,14 +2,23 @@ from fastapi import APIRouter, Depends, Security
 
 from app.api.composers import fast_order_composer
 from app.api.dependencies import build_response, decode_jwt
+from app.api.shared_schemas.responses import MessageResponse
 from app.crud.fast_orders.schemas import RequestFastOrder
 from app.crud.users import UserInDB
-from app.crud.fast_orders import UpdateFastOrder, FastOrderInDB, FastOrderServices
+from app.crud.fast_orders import UpdateFastOrder, FastOrderServices
+from .schemas import (
+    CreateFastOrderResponse,
+    UpdateFastOrderResponse,
+    DeleteFastOrderResponse,
+)
 
 router = APIRouter(tags=["Fast Orders"])
 
 
-@router.post("/fast-orders", responses={201: {"model": FastOrderInDB}})
+@router.post(
+    "/fast-orders",
+    responses={201: {"model": CreateFastOrderResponse}, 400: {"model": MessageResponse}},
+)
 async def create_fast_orders(
     fast_order: RequestFastOrder,
     current_user: UserInDB = Security(decode_jwt, scopes=["fast_order:create"]),
@@ -30,7 +39,10 @@ async def create_fast_orders(
         )
 
 
-@router.put("/fast-orders/{fast_order_id}", responses={200: {"model": FastOrderInDB}})
+@router.put(
+    "/fast-orders/{fast_order_id}",
+    responses={200: {"model": UpdateFastOrderResponse}, 400: {"model": MessageResponse}},
+)
 async def update_fast_order(
     fast_order_id: str,
     fast_order: UpdateFastOrder,
@@ -50,7 +62,10 @@ async def update_fast_order(
         )
 
 
-@router.delete("/fast-orders/{fast_order_id}", responses={200: {"model": FastOrderInDB}})
+@router.delete(
+    "/fast-orders/{fast_order_id}",
+    responses={200: {"model": DeleteFastOrderResponse}, 404: {"model": MessageResponse}},
+)
 async def delete_fast_order(
     fast_order_id: str,
     current_user: UserInDB = Security(decode_jwt, scopes=["fast_order:delete"]),

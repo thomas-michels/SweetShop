@@ -4,13 +4,21 @@ from fastapi import APIRouter, Depends, Query, Security, Response
 
 from app.api.composers import section_composer
 from app.api.dependencies import build_response, decode_jwt
+from app.api.shared_schemas.responses import MessageResponse
 from app.crud.users import UserInDB
-from app.crud.sections import SectionInDB, SectionServices
+from app.crud.sections import SectionServices
+from .schemas import (
+    GetSectionResponse,
+    GetSectionsResponse,
+)
 
 router = APIRouter(tags=["Sections"])
 
 
-@router.get("/sections/{section_id}", responses={200: {"model": SectionInDB}})
+@router.get(
+    "/sections/{section_id}",
+    responses={200: {"model": GetSectionResponse}, 404: {"model": MessageResponse}},
+)
 async def get_section_by_id(
     section_id: str,
     expand: List[str] = Query(default=[]),
@@ -33,7 +41,11 @@ async def get_section_by_id(
         )
 
 
-@router.get("/menus/{menu_id}/sections", tags=["Menus"], responses={200: {"model": List[SectionInDB]}})
+@router.get(
+    "/menus/{menu_id}/sections",
+    tags=["Menus"],
+    responses={200: {"model": GetSectionsResponse}, 204: {"description": "No Content"}},
+)
 async def get_sections(
     menu_id: str,
     is_visible: bool = Query(default=None),

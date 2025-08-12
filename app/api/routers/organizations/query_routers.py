@@ -5,16 +5,29 @@ from fastapi import APIRouter, Depends, Header, Query, Security, Response
 from app.api.composers import organization_composer
 from app.api.dependencies import build_response, decode_jwt
 from app.api.dependencies.get_plan_feature import get_plan_feature
+from app.api.shared_schemas.responses import MessageResponse
 from app.core.configs import get_environment
 from app.core.utils.features import Feature
 from app.crud.users import UserInDB
-from app.crud.organizations import OrganizationInDB, OrganizationServices
+from app.crud.organizations import OrganizationServices
+from .schemas import (
+    GetUsersOrganizationsResponse,
+    GetOrganizationResponse,
+    GetOrganizationsResponse,
+    GetOrganizationFeatureResponse,
+)
 
 router = APIRouter(tags=["Organizations"])
 _env = get_environment()
 
 
-@router.get("/users/{user_id}/organizations", responses={200: {"model": OrganizationInDB}})
+@router.get(
+    "/users/{user_id}/organizations",
+    responses={
+        200: {"model": GetUsersOrganizationsResponse},
+        204: {"description": "No Content"},
+    },
+)
 async def get_users_organizations(
     user_id: str,
     expand: List[str] = Query(default=[]),
@@ -32,7 +45,13 @@ async def get_users_organizations(
         return Response(status_code=204)
 
 
-@router.get("/organizations/{organization_id}", responses={200: {"model": OrganizationInDB}})
+@router.get(
+    "/organizations/{organization_id}",
+    responses={
+        200: {"model": GetOrganizationResponse},
+        404: {"model": MessageResponse},
+    },
+)
 async def get_organization_by_id(
     organization_id: str,
     expand: List[str] = Query(default=[]),
@@ -55,7 +74,13 @@ async def get_organization_by_id(
         )
 
 
-@router.get("/organizations", responses={200: {"model": List[OrganizationInDB]}})
+@router.get(
+    "/organizations",
+    responses={
+        200: {"model": GetOrganizationsResponse},
+        204: {"description": "No Content"},
+    },
+)
 async def get_organizations(
     expand: List[str] = Query(default=[]),
     current_user: UserInDB = Security(decode_jwt, scopes=["organization:get"]),
@@ -72,7 +97,14 @@ async def get_organizations(
         return Response(status_code=204)
 
 
-@router.get("/organizations/{organization_id}/features/{feature_name}", responses={200: {"model": OrganizationInDB}})
+@router.get(
+    "/organizations/{organization_id}/features/{feature_name}",
+    responses={
+        200: {"model": GetOrganizationFeatureResponse},
+        400: {"model": GetOrganizationFeatureResponse},
+        401: {"model": MessageResponse},
+    },
+)
 async def get_organization_features_by_id(
     organization_id: str,
     feature_name: Feature,

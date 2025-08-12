@@ -4,13 +4,22 @@ from fastapi import APIRouter, Depends, Query, Security, Response
 
 from app.api.composers import invite_composer
 from app.api.dependencies import build_response, decode_jwt
+from app.api.shared_schemas.responses import MessageResponse
 from app.crud.users import UserInDB
-from app.crud.invites import InviteInDB, InviteServices
+from app.crud.invites import InviteServices
+from .schemas import (
+    GetInviteResponse,
+    GetInvitesByOrganizationResponse,
+    GetUserInvitesResponse,
+)
 
 router = APIRouter(tags=["Invites"])
 
 
-@router.get("/invites/{invite_id}", responses={200: {"model": InviteInDB}})
+@router.get(
+    "/invites/{invite_id}",
+    responses={200: {"model": GetInviteResponse}, 404: {"model": MessageResponse}},
+)
 async def get_invites_by_id(
     invite_id: str,
     current_user: UserInDB = Security(decode_jwt, scopes=[]),
@@ -29,7 +38,13 @@ async def get_invites_by_id(
         )
 
 
-@router.get("/organizations/{organization_id}/invites", responses={200: {"model": List[InviteInDB]}})
+@router.get(
+    "/organizations/{organization_id}/invites",
+    responses={
+        200: {"model": GetInvitesByOrganizationResponse},
+        204: {"description": "No Content"},
+    },
+)
 async def get_invites_by_organization_id(
     organization_id: str,
     accepted: bool = Query(default=False),
@@ -52,7 +67,13 @@ async def get_invites_by_organization_id(
         return Response(status_code=204)
 
 
-@router.get("/users/{user_id}/invites", responses={200: {"model": List[InviteInDB]}})
+@router.get(
+    "/users/{user_id}/invites",
+    responses={
+        200: {"model": GetUserInvitesResponse},
+        204: {"description": "No Content"},
+    },
+)
 async def get_user_invites(
     user_id: str,
     accepted: bool = Query(default=False),

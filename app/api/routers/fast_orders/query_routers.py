@@ -8,13 +8,21 @@ from app.api.dependencies import build_response, decode_jwt
 from app.api.dependencies.pagination_parameters import pagination_parameters
 from app.api.dependencies.paginator import Paginator
 from app.api.dependencies.response import build_list_response
+from app.api.shared_schemas.responses import MessageResponse
 from app.crud.users import UserInDB
-from app.crud.fast_orders import FastOrderInDB, FastOrderServices
+from app.crud.fast_orders import FastOrderServices
+from .schemas import (
+    GetFastOrderResponse,
+    GetFastOrdersResponse,
+)
 
 router = APIRouter(tags=["Fast Orders"])
 
 
-@router.get("/fast-orders/{fast_order_id}", responses={200: {"model": FastOrderInDB}})
+@router.get(
+    "/fast-orders/{fast_order_id}",
+    responses={200: {"model": GetFastOrderResponse}, 404: {"model": MessageResponse}},
+)
 async def get_fast_order_by_id(
     fast_order_id: str,
     current_user: UserInDB = Security(decode_jwt, scopes=["fast_order:get"]),
@@ -33,7 +41,13 @@ async def get_fast_order_by_id(
         )
 
 
-@router.get("/fast-orders", responses={200: {"model": List[FastOrderInDB]}})
+@router.get(
+    "/fast-orders",
+    responses={
+        200: {"model": GetFastOrdersResponse},
+        204: {"description": "No Content"},
+    },
+)
 async def get_fast_orders(
     request: Request,
     day: date | None = Query(default=None),

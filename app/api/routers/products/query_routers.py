@@ -7,13 +7,25 @@ from app.api.dependencies import build_response, decode_jwt
 from app.api.dependencies.pagination_parameters import pagination_parameters
 from app.api.dependencies.paginator import Paginator
 from app.api.dependencies.response import build_list_response
+from app.api.shared_schemas.responses import MessageResponse
+from .schemas import (
+    GetProductResponse,
+    GetProductsResponse,
+    GetProductsCountResponse,
+)
 from app.crud.users import UserInDB
-from app.crud.products import ProductInDB, ProductServices
+from app.crud.products import ProductServices
 
 router = APIRouter(tags=["Products"])
 
 
-@router.get("/products/{product_id}", responses={200: {"model": ProductInDB}})
+@router.get(
+    "/products/{product_id}",
+    responses={
+        200: {"model": GetProductResponse},
+        404: {"model": MessageResponse},
+    },
+)
 async def get_product_by_id(
     product_id: str,
     expand: List[str] = Query(default=[]),
@@ -36,7 +48,13 @@ async def get_product_by_id(
         )
 
 
-@router.get("/products", responses={200: {"model": List[ProductInDB]}})
+@router.get(
+    "/products",
+    responses={
+        200: {"model": GetProductsResponse},
+        204: {"description": "No Content"},
+    },
+)
 async def get_products(
     request: Request,
     query: str = Query(default=None),
@@ -76,7 +94,13 @@ async def get_products(
         return Response(status_code=204)
 
 
-@router.get("/products/metrics/count", responses={200: {"model": List[ProductInDB]}})
+@router.get(
+    "/products/metrics/count",
+    responses={
+        200: {"model": GetProductsCountResponse},
+        204: {"description": "No Content"},
+    },
+)
 async def get_products_count(
     current_user: UserInDB = Security(decode_jwt, scopes=["product:get"]),
     product_services: ProductServices = Depends(product_composer),

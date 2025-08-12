@@ -2,9 +2,15 @@ from fastapi import APIRouter, Depends, Security
 
 from app.api.composers import user_composer
 from app.api.dependencies import build_response, decode_jwt
+from app.api.shared_schemas.responses import MessageResponse
+from .schemas import (
+    DeleteCurrentUserResponse,
+    DeleteUserResponse,
+    UpdateCurrentUserResponse,
+    UpdateUserResponse,
+)
 from app.crud.users import (
     UpdateUser,
-    User,
     UserInDB,
     UserServices,
 )
@@ -32,7 +38,13 @@ router = APIRouter(tags=["Users"])
 #         )
 
 
-@router.put("/users/me", responses={200: {"model": UserInDB}})
+@router.put(
+    "/users/me",
+    responses={
+        200: {"model": UpdateCurrentUserResponse},
+        400: {"model": MessageResponse},
+    },
+)
 async def update_user(
     user: UpdateUser,
     current_user: UserInDB = Security(decode_jwt, scopes=["user:me"]),
@@ -51,7 +63,13 @@ async def update_user(
         )
 
 
-@router.put("/users/{user_id}", responses={200: {"model": UserInDB}})
+@router.put(
+    "/users/{user_id}",
+    responses={
+        200: {"model": UpdateUserResponse},
+        400: {"model": MessageResponse},
+    },
+)
 async def update_user(
     user_id: str,
     user: UpdateUser,
@@ -71,7 +89,13 @@ async def update_user(
         )
 
 
-@router.delete("/users/{user_id}", responses={200: {"model": UserInDB}})
+@router.delete(
+    "/users/{user_id}",
+    responses={
+        200: {"model": DeleteUserResponse},
+        404: {"model": MessageResponse},
+    },
+)
 async def delete_user(
     user_id: str,
     current_user: UserInDB = Security(decode_jwt, scopes=["user:delete"]),
@@ -90,7 +114,13 @@ async def delete_user(
         )
 
 
-@router.delete("/users/me", responses={200: {"model": UserInDB}})
+@router.delete(
+    "/users/me",
+    responses={
+        200: {"model": DeleteCurrentUserResponse},
+        404: {"model": MessageResponse},
+    },
+)
 async def delete_user(
     current_user: UserInDB = Security(decode_jwt, scopes=["user:me"]),
     user_services: UserServices = Depends(user_composer),

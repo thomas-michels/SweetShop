@@ -7,8 +7,10 @@ from app.api.dependencies import build_response, decode_jwt
 from app.api.dependencies.pagination_parameters import pagination_parameters
 from app.api.dependencies.paginator import Paginator
 from app.api.dependencies.response import build_list_response
+from app.api.shared_schemas.responses import MessageResponse
+from .schemas import GetOrderByIdResponse, GetOrdersResponse
 from app.core.utils.utc_datetime import UTCDateTimeType, UTCDateTime
-from app.crud.orders import OrderInDB, OrderServices
+from app.crud.orders import OrderServices
 from app.crud.orders.schemas import DeliveryType, OrderStatus
 from app.crud.shared_schemas.payment import PaymentStatus
 from app.crud.users import UserInDB
@@ -16,7 +18,13 @@ from app.crud.users import UserInDB
 router = APIRouter(tags=["Orders"])
 
 
-@router.get("/orders/{order_id}", responses={200: {"model": OrderInDB}})
+@router.get(
+    "/orders/{order_id}",
+    responses={
+        200: {"model": GetOrderByIdResponse},
+        404: {"model": MessageResponse},
+    },
+)
 async def get_order_by_id(
     order_id: str,
     expand: List[str] = Query(default=[]),
@@ -36,7 +44,13 @@ async def get_order_by_id(
         )
 
 
-@router.get("/orders", responses={200: {"model": List[OrderInDB]}})
+@router.get(
+    "/orders",
+    responses={
+        200: {"model": GetOrdersResponse},
+        204: {"description": "No Content"},
+    },
+)
 async def get_orders(
     request: Request,
     customer_id: str = Query(default=None, alias="customerId"),
