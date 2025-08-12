@@ -1,16 +1,20 @@
+"""Shared dependencies for FastAPI routers.
+
+This package re-exports common dependency callables.  Importing the
+authentication helpers at module import time can lead to circular import
+issues, so :func:`decode_jwt` is loaded lazily via ``__getattr__``.  This keeps
+the public API backwards compatible while avoiding import cycles.
+"""
+
 from .response import build_response
 
+__all__ = ["build_response", "decode_jwt"]
 
-async def decode_jwt(*args, **kwargs):
-    """Lazily import and execute the ``decode_jwt`` dependency.
 
-    Importing :mod:`app.api.dependencies.auth` at module load time creates a
-    circular import when services import modules from this package.  Deferring
-    the import until the function is called avoids the cycle while keeping the
-    public API the same for the rest of the application and tests.
-    """
+def __getattr__(name: str):  # pragma: no cover - simple delegation
+    if name == "decode_jwt":
+        from .auth import decode_jwt  # imported lazily to avoid circular import
 
-    from .auth import decode_jwt as _decode_jwt
-
-    return await _decode_jwt(*args, **kwargs)
+        return decode_jwt
+    raise AttributeError(f"module 'app.api.dependencies' has no attribute {name!r}")
 
