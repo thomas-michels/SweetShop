@@ -7,14 +7,21 @@ from app.api.dependencies import build_response, decode_jwt
 from app.api.dependencies.pagination_parameters import pagination_parameters
 from app.api.dependencies.paginator import Paginator
 from app.api.dependencies.response import build_list_response
+from app.api.shared_schemas.responses import MessageResponse
 from app.crud.users import UserInDB
-from app.crud.offers import OfferInDB
 from app.crud.offers.services import OfferServices
+from .schemas import GetOfferResponse, GetOffersResponse
 
 router = APIRouter(tags=["Offers"])
 
 
-@router.get("/offers", responses={200: {"model": List[OfferInDB]}})
+@router.get(
+    "/offers",
+    responses={
+        200: {"model": GetOffersResponse},
+        204: {"description": "No Content"},
+    },
+)
 async def get_offers_paginated(
     request: Request,
     query: str = Query(default=None),
@@ -49,7 +56,13 @@ async def get_offers_paginated(
         return Response(status_code=204)
 
 
-@router.get("/offers/{offer_id}", responses={200: {"model": OfferInDB}})
+@router.get(
+    "/offers/{offer_id}",
+    responses={
+        200: {"model": GetOfferResponse},
+        404: {"model": MessageResponse},
+    },
+)
 async def get_offer_by_id(
     offer_id: str,
     expand: List[str] = Query(default=[]),

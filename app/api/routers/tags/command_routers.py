@@ -2,18 +2,29 @@ from fastapi import APIRouter, Depends, Security
 
 from app.api.composers import tag_composer
 from app.api.dependencies import build_response, decode_jwt
+from app.api.shared_schemas.responses import MessageResponse
 from app.crud.tags import (
     Tag,
-    TagInDB,
     UpdateTag,
     TagServices
 )
 from app.crud.users import UserInDB
+from .schemas import (
+    CreateTagResponse,
+    UpdateTagResponse,
+    DeleteTagResponse,
+)
 
 router = APIRouter(tags=["Tags"])
 
 
-@router.post("/tags", responses={201: {"model": TagInDB}})
+@router.post(
+    "/tags",
+    responses={
+        201: {"model": CreateTagResponse},
+        400: {"model": MessageResponse},
+    },
+)
 async def create_tag(
     tag: Tag,
     tag_services: TagServices = Depends(tag_composer),
@@ -32,7 +43,13 @@ async def create_tag(
         )
 
 
-@router.put("/tags/{tag_id}", responses={200: {"model": TagInDB}})
+@router.put(
+    "/tags/{tag_id}",
+    responses={
+        200: {"model": UpdateTagResponse},
+        400: {"model": MessageResponse},
+    },
+)
 async def update_tag(
     tag_id: str,
     tag: UpdateTag,
@@ -52,7 +69,13 @@ async def update_tag(
         )
 
 
-@router.delete("/tags/{tag_id}", responses={200: {"model": TagInDB}})
+@router.delete(
+    "/tags/{tag_id}",
+    responses={
+        200: {"model": DeleteTagResponse},
+        404: {"model": MessageResponse},
+    },
+)
 async def delete_tag(
     tag_id: str,
     current_user: UserInDB = Security(decode_jwt, scopes=["tag:delete"]),

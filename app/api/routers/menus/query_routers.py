@@ -7,13 +7,21 @@ from app.api.dependencies import build_response, decode_jwt
 from app.api.dependencies.pagination_parameters import pagination_parameters
 from app.api.dependencies.paginator import Paginator
 from app.api.dependencies.response import build_list_response
+from app.api.shared_schemas.responses import MessageResponse
 from app.crud.users import UserInDB
-from app.crud.menus import MenuInDB, MenuServices
+from app.crud.menus import MenuServices
+from .schemas import GetMenuResponse, GetMenusResponse
 
 router = APIRouter(tags=["Menus"])
 
 
-@router.get("/menus/{menu_id}", responses={200: {"model": MenuInDB}})
+@router.get(
+    "/menus/{menu_id}",
+    responses={
+        200: {"model": GetMenuResponse},
+        404: {"model": MessageResponse},
+    },
+)
 async def get_menu_by_id(
     menu_id: str,
     current_user: UserInDB = Security(decode_jwt, scopes=[]),
@@ -32,7 +40,13 @@ async def get_menu_by_id(
         )
 
 
-@router.get("/menus", responses={200: {"model": List[MenuInDB]}})
+@router.get(
+    "/menus",
+    responses={
+        200: {"model": GetMenusResponse},
+        204: {"description": "No Content"},
+    },
+)
 async def get_menus(
     request: Request,
     query: str = Query(default=None),

@@ -6,15 +6,18 @@ from app.api.composers import section_item_composer
 from app.api.dependencies.response import build_response
 from app.api.dependencies.auth import decode_jwt
 from app.crud.users import UserInDB
-from app.crud.section_items import SectionItemInDB
 from app.crud.section_items.services import SectionItemServices
+from .schemas import GetSectionItemsResponse
 
 router = APIRouter(tags=["Section Items"])
 
 
 @router.get(
     "/sections/{section_id}/items",
-    responses={200: {"model": List[SectionItemInDB]}},
+    responses={
+        200: {"model": GetSectionItemsResponse},
+        204: {"description": "No Content"},
+    },
     tags=["Sections"]
 )
 async def get_section_items(

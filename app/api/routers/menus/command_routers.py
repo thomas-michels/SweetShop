@@ -2,13 +2,25 @@ from fastapi import APIRouter, Depends, Security
 
 from app.api.composers import menu_composer
 from app.api.dependencies import build_response, decode_jwt
+from app.api.shared_schemas.responses import MessageResponse
 from app.crud.users import UserInDB
-from app.crud.menus import Menu, MenuInDB, UpdateMenu, MenuServices
+from app.crud.menus import Menu, UpdateMenu, MenuServices
+from .schemas import (
+    CreateMenuResponse,
+    UpdateMenuResponse,
+    DeleteMenuResponse,
+)
 
 router = APIRouter(tags=["Menus"])
 
 
-@router.post("/menus", responses={201: {"model": MenuInDB}})
+@router.post(
+    "/menus",
+    responses={
+        201: {"model": CreateMenuResponse},
+        400: {"model": MessageResponse},
+    },
+)
 async def create_menu(
     menu: Menu,
     current_user: UserInDB = Security(decode_jwt, scopes=["menu:create"]),
@@ -29,7 +41,13 @@ async def create_menu(
         )
 
 
-@router.put("/menus/{menu_id}", responses={200: {"model": MenuInDB}})
+@router.put(
+    "/menus/{menu_id}",
+    responses={
+        200: {"model": UpdateMenuResponse},
+        400: {"model": MessageResponse},
+    },
+)
 async def update_menu(
     menu_id: str,
     menu: UpdateMenu,
@@ -49,7 +67,13 @@ async def update_menu(
         )
 
 
-@router.delete("/menus/{menu_id}", responses={200: {"model": MenuInDB}})
+@router.delete(
+    "/menus/{menu_id}",
+    responses={
+        200: {"model": DeleteMenuResponse},
+        404: {"model": MessageResponse},
+    },
+)
 async def delete_menu(
     menu_id: str,
     current_user: UserInDB = Security(decode_jwt, scopes=["menu:delete"]),

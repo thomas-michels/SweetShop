@@ -2,13 +2,25 @@ from fastapi import APIRouter, Depends, Security
 
 from app.api.composers import expense_composer
 from app.api.dependencies import build_response, decode_jwt
+from app.api.shared_schemas.responses import MessageResponse
 from app.crud.users import UserInDB
-from app.crud.expenses import Expense, ExpenseInDB, UpdateExpense, ExpenseServices
+from app.crud.expenses import Expense, UpdateExpense, ExpenseServices
+from .schemas import (
+    CreateExpenseResponse,
+    UpdateExpenseResponse,
+    DeleteExpenseResponse,
+)
 
 router = APIRouter(tags=["Expenses"])
 
 
-@router.post("/expenses", responses={201: {"model": ExpenseInDB}})
+@router.post(
+    "/expenses",
+    responses={
+        201: {"model": CreateExpenseResponse},
+        400: {"model": MessageResponse},
+    },
+)
 async def create_expenses(
     expense: Expense,
     current_user: UserInDB = Security(decode_jwt, scopes=["expense:create"]),
@@ -29,7 +41,13 @@ async def create_expenses(
         )
 
 
-@router.put("/expenses/{expense_id}", responses={200: {"model": ExpenseInDB}})
+@router.put(
+    "/expenses/{expense_id}",
+    responses={
+        200: {"model": UpdateExpenseResponse},
+        400: {"model": MessageResponse},
+    },
+)
 async def update_expenses(
     expense_id: str,
     expense: UpdateExpense,
@@ -49,7 +67,13 @@ async def update_expenses(
         )
 
 
-@router.delete("/expenses/{expense_id}", responses={200: {"model": ExpenseInDB}})
+@router.delete(
+    "/expenses/{expense_id}",
+    responses={
+        200: {"model": DeleteExpenseResponse},
+        404: {"model": MessageResponse},
+    },
+)
 async def delete_expenses(
     expense_id: str,
     current_user: UserInDB = Security(decode_jwt, scopes=["expense:delete"]),
