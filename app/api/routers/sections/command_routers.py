@@ -2,13 +2,22 @@ from fastapi import APIRouter, Depends, Security
 
 from app.api.composers import section_composer
 from app.api.dependencies import build_response, decode_jwt
+from app.api.shared_schemas.responses import MessageResponse
 from app.crud.users import UserInDB
-from app.crud.sections import Section, SectionInDB, UpdateSection, SectionServices
+from app.crud.sections import Section, UpdateSection, SectionServices
+from .schemas import (
+    CreateSectionResponse,
+    UpdateSectionResponse,
+    DeleteSectionResponse,
+)
 
 router = APIRouter(tags=["Sections"])
 
 
-@router.post("/sections", responses={201: {"model": SectionInDB}})
+@router.post(
+    "/sections",
+    responses={201: {"model": CreateSectionResponse}, 400: {"model": MessageResponse}},
+)
 async def create_sections(
     section: Section,
     current_user: UserInDB = Security(decode_jwt, scopes=["section:create"]),
@@ -29,7 +38,10 @@ async def create_sections(
         )
 
 
-@router.put("/sections/{section_id}", responses={200: {"model": SectionInDB}})
+@router.put(
+    "/sections/{section_id}",
+    responses={200: {"model": UpdateSectionResponse}, 400: {"model": MessageResponse}},
+)
 async def update_section(
     section_id: str,
     section: UpdateSection,
@@ -49,7 +61,10 @@ async def update_section(
         )
 
 
-@router.delete("/sections/{section_id}", responses={200: {"model": SectionInDB}})
+@router.delete(
+    "/sections/{section_id}",
+    responses={200: {"model": DeleteSectionResponse}, 404: {"model": MessageResponse}},
+)
 async def delete_section(
     section_id: str,
     current_user: UserInDB = Security(decode_jwt, scopes=["section:delete"]),

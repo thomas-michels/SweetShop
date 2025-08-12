@@ -2,19 +2,30 @@ from fastapi import APIRouter, Depends, Security
 
 from app.api.composers import product_additional_composer
 from app.api.dependencies import build_response, decode_jwt
+from app.api.shared_schemas.responses import MessageResponse
 from app.crud.users import UserInDB
 from app.crud.product_additionals import (
     ProductAdditional,
-    ProductAdditionalInDB,
     UpdateProductAdditional,
     AdditionalItem,
 )
 from app.crud.product_additionals.services import ProductAdditionalServices
+from .schemas import (
+    CreateProductAdditionalResponse,
+    UpdateProductAdditionalResponse,
+    DeleteProductAdditionalResponse,
+    AddAdditionalItemResponse,
+    UpdateAdditionalItemResponse,
+    DeleteAdditionalItemResponse,
+)
 
 router = APIRouter(tags=["ProductAdditionals"])
 
 
-@router.post("/products/{product_id}/additionals", responses={201: {"model": ProductAdditionalInDB}})
+@router.post(
+    "/products/{product_id}/additionals",
+    responses={201: {"model": CreateProductAdditionalResponse}, 400: {"model": MessageResponse}},
+)
 async def create_product_additional(
     product_id: str,
     product_additional: ProductAdditional,
@@ -34,7 +45,10 @@ async def create_product_additional(
         return build_response(status_code=400, message="Erro ao criar adicional", data=None)
 
 
-@router.put("/products/{product_id}/additionals/{additional_id}", responses={200: {"model": ProductAdditionalInDB}})
+@router.put(
+    "/products/{product_id}/additionals/{additional_id}",
+    responses={200: {"model": UpdateProductAdditionalResponse}, 400: {"model": MessageResponse}},
+)
 async def update_product_additional(
     product_id: str,
     additional_id: str,
@@ -52,7 +66,10 @@ async def update_product_additional(
         return build_response(status_code=400, message="Erro ao atualizar adicional", data=None)
 
 
-@router.delete("/products/{product_id}/additionals/{additional_id}", responses={200: {"model": ProductAdditionalInDB}})
+@router.delete(
+    "/products/{product_id}/additionals/{additional_id}",
+    responses={200: {"model": DeleteProductAdditionalResponse}, 404: {"model": MessageResponse}},
+)
 async def delete_product_additional(
     product_id: str,
     additional_id: str,
@@ -69,7 +86,7 @@ async def delete_product_additional(
 
 @router.post(
     "/products/{product_id}/additionals/{additional_id}/items",
-    responses={200: {"model": ProductAdditionalInDB}},
+    responses={200: {"model": AddAdditionalItemResponse}},
 )
 async def add_additional_item(
     product_id: str,
@@ -89,7 +106,7 @@ async def add_additional_item(
 
 @router.put(
     "/products/{product_id}/additionals/{additional_id}/items/{item_id}",
-    responses={200: {"model": ProductAdditionalInDB}},
+    responses={200: {"model": UpdateAdditionalItemResponse}},
 )
 async def update_additional_item(
     product_id: str,
@@ -112,7 +129,7 @@ async def update_additional_item(
 
 @router.delete(
     "/products/{product_id}/additionals/{additional_id}/items/{item_id}",
-    responses={200: {"model": ProductAdditionalInDB}},
+    responses={200: {"model": DeleteAdditionalItemResponse}},
 )
 async def delete_additional_item(
     product_id: str,

@@ -3,18 +3,26 @@ from fastapi import APIRouter, Depends, Security
 from app.api.composers import invite_composer
 from app.api.composers.organization_composite import organization_composer
 from app.api.dependencies import build_response, decode_jwt
+from app.api.shared_schemas.responses import MessageResponse
 from app.crud.invites import (
     Invite,
-    InviteInDB,
-    InviteServices
+    InviteServices,
 )
 from app.crud.organizations.services import OrganizationServices
 from app.crud.users import UserInDB
+from .schemas import (
+    CreateInviteResponse,
+    AcceptInviteResponse,
+    DeleteInviteResponse,
+)
 
 router = APIRouter(tags=["Invites"])
 
 
-@router.post("/invites", responses={201: {"model": InviteInDB}})
+@router.post(
+    "/invites",
+    responses={201: {"model": CreateInviteResponse}, 400: {"model": MessageResponse}},
+)
 async def create_invite(
     invite: Invite,
     invite_services: InviteServices = Depends(invite_composer),
@@ -38,7 +46,10 @@ async def create_invite(
         )
 
 
-@router.post("/invites/{invite_id}/accept", responses={200: {"model": InviteInDB}})
+@router.post(
+    "/invites/{invite_id}/accept",
+    responses={200: {"model": AcceptInviteResponse}, 400: {"model": MessageResponse}},
+)
 async def accept_invite(
     invite_id: str,
     invite_services: InviteServices = Depends(invite_composer),
@@ -65,7 +76,10 @@ async def accept_invite(
         )
 
 
-@router.delete("/invites/{invite_id}", responses={200: {"model": InviteInDB}})
+@router.delete(
+    "/invites/{invite_id}",
+    responses={200: {"model": DeleteInviteResponse}, 400: {"model": MessageResponse}},
+)
 async def delete_invite(
     invite_id: str,
     current_user: UserInDB = Security(decode_jwt, scopes=[]),

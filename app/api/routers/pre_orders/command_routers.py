@@ -3,13 +3,21 @@ from fastapi import APIRouter, Depends, Query, Security
 
 from app.api.composers import pre_order_composer
 from app.api.dependencies import build_response, decode_jwt
+from app.api.shared_schemas.responses import MessageResponse
 from app.crud.users import UserInDB
-from app.crud.pre_orders import PreOrderInDB, PreOrderServices, UpdatePreOrder
+from app.crud.pre_orders import PreOrderServices, UpdatePreOrder
+from .schemas import (
+    UpdatePreOrderResponse,
+    DeletePreOrderResponse,
+)
 
 router = APIRouter(tags=["Pre-Orders"])
 
 
-@router.put("/pre_orders/{pre_order_id}", responses={200: {"model": PreOrderInDB}})
+@router.put(
+    "/pre_orders/{pre_order_id}",
+    responses={200: {"model": UpdatePreOrderResponse}, 404: {"model": MessageResponse}},
+)
 async def update_pre_orders(
     pre_order_id: str,
     pre_order: UpdatePreOrder,
@@ -35,7 +43,10 @@ async def update_pre_orders(
 
 
 
-@router.delete("/pre_orders/{pre_order_id}", responses={200: {"model": PreOrderInDB}})
+@router.delete(
+    "/pre_orders/{pre_order_id}",
+    responses={200: {"model": DeletePreOrderResponse}, 404: {"model": MessageResponse}},
+)
 async def delete_pre_order(
     pre_order_id: str,
     current_user: UserInDB = Security(decode_jwt, scopes=["pre-order:delete"]),

@@ -7,13 +7,24 @@ from app.api.dependencies import build_response, decode_jwt
 from app.api.dependencies.pagination_parameters import pagination_parameters
 from app.api.dependencies.paginator import Paginator
 from app.api.dependencies.response import build_list_response
+from app.api.shared_schemas.responses import MessageResponse
 from app.crud.users import UserInDB
-from app.crud.pre_orders import PreOrderInDB, PreOrderServices, PreOrderStatus
+from app.crud.pre_orders import PreOrderServices, PreOrderStatus
+from .schemas import (
+    GetPreOrdersResponse,
+    GetPreOrderResponse,
+)
 
 router = APIRouter(tags=["Pre-Orders"])
 
 
-@router.get("/pre_orders", responses={200: {"model": List[PreOrderInDB]}})
+@router.get(
+    "/pre_orders",
+    responses={
+        200: {"model": GetPreOrdersResponse},
+        204: {"description": "No Content"},
+    },
+)
 async def get_pre_orders(
     request: Request,
     code: str = Query(default=None),
@@ -54,7 +65,10 @@ async def get_pre_orders(
         return Response(status_code=204)
 
 
-@router.get("/pre_orders/{pre_order_id}", responses={200: {"model": PreOrderInDB}})
+@router.get(
+    "/pre_orders/{pre_order_id}",
+    responses={200: {"model": GetPreOrderResponse}, 404: {"model": MessageResponse}},
+)
 async def get_pre_order_by_id(
     pre_order_id: str,
     expand: List[str] = Query(default=[]),
