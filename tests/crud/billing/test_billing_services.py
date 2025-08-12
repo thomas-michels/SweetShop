@@ -18,6 +18,7 @@ from app.crud.orders.schemas import (
     OrderStatus,
     PaymentInOrder,
     StoredProduct,
+    StoredAdditionalItem,
 )
 from app.crud.expenses.schemas import CompleteExpense
 from app.crud.products.schemas import ProductInDB, ProductKind
@@ -443,3 +444,226 @@ class TestBillingServices(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(daily_sales[1].day, 2)
         self.assertEqual(daily_sales[1].total_amount, 15)
         self.assertEqual(next(ds.total_amount for ds in daily_sales if ds.day == 3), 0)
+
+    @patch("app.crud.billing.services.RedisManager")
+    @patch("app.crud.billing.services.get_plan_feature", new_callable=AsyncMock)
+    async def test_get_billing_for_dashboard_includes_additionals(self, mock_plan, mock_redis):
+        mock_plan.return_value = SimpleNamespace(value="true")
+        mock_redis.return_value.get_value.return_value = None
+
+        mock_order_services = AsyncMock()
+        mock_expense_services = AsyncMock()
+        mock_fast_order_services = AsyncMock()
+
+        now = UTCDateTime.now()
+        additional = StoredAdditionalItem(
+            item_id="a1",
+            quantity=1,
+            label="Extra",
+            unit_price=3.0,
+            unit_cost=1.0,
+            consumption_factor=1.0,
+        )
+        product = StoredProduct(
+            product_id="p1",
+            name="Prod1",
+            unit_price=13.0,
+            unit_cost=6.0,
+            quantity=1,
+            additionals=[additional],
+        )
+
+        mock_order_services.search_all_without_filters.return_value = [
+            await self._order_with_products("o1", [product], now)
+        ]
+        mock_expense_services.search_all.return_value = []
+
+        service = BillingServices(
+            product_repository=AsyncMock(),
+            order_services=mock_order_services,
+            fast_order_services=mock_fast_order_services,
+            expenses_services=mock_expense_services,
+        )
+
+        billing = await service.get_billing_for_dashboard(month=now.month, year=now.year)
+
+        self.assertEqual(billing.total_amount, 13.0)
+
+    @patch("app.crud.billing.services.RedisManager")
+    @patch("app.crud.billing.services.get_plan_feature", new_callable=AsyncMock)
+    async def test_get_monthly_billings_includes_additionals(
+        self, mock_plan, mock_redis
+    ):
+        mock_plan.return_value = SimpleNamespace(value="true")
+        mock_redis.return_value.get_value.return_value = None
+
+        mock_order_services = AsyncMock()
+        mock_expense_services = AsyncMock()
+        mock_fast_order_services = AsyncMock()
+
+        now = UTCDateTime.now()
+        additional = StoredAdditionalItem(
+            item_id="a1",
+            quantity=1,
+            label="Extra",
+            unit_price=3.0,
+            unit_cost=1.0,
+            consumption_factor=1.0,
+        )
+        product = StoredProduct(
+            product_id="p1",
+            name="Prod1",
+            unit_price=13.0,
+            unit_cost=6.0,
+            quantity=1,
+            additionals=[additional],
+        )
+
+        mock_order_services.search_all_without_filters.return_value = [
+            await self._order_with_products("o1", [product], now)
+        ]
+        mock_expense_services.search_all.return_value = []
+
+        service = BillingServices(
+            product_repository=AsyncMock(),
+            order_services=mock_order_services,
+            fast_order_services=mock_fast_order_services,
+            expenses_services=mock_expense_services,
+        )
+
+        billings = await service.get_monthly_billings(last_months=1)
+
+        self.assertEqual(len(billings), 1)
+        self.assertEqual(billings[0].total_amount, 13.0)
+
+    @patch("app.crud.billing.services.RedisManager")
+    @patch("app.crud.billing.services.get_plan_feature", new_callable=AsyncMock)
+    async def test_get_best_selling_products_includes_additionals(
+        self, mock_plan, mock_redis
+    ):
+        mock_plan.return_value = SimpleNamespace(value="true")
+        mock_redis.return_value.get_value.return_value = None
+
+        mock_order_services = AsyncMock()
+        additional = StoredAdditionalItem(
+            item_id="a1",
+            quantity=1,
+            label="Extra",
+            unit_price=3.0,
+            unit_cost=1.0,
+            consumption_factor=1.0,
+        )
+        product = StoredProduct(
+            product_id="p1",
+            name="Prod1",
+            unit_price=13.0,
+            unit_cost=6.0,
+            quantity=1,
+            additionals=[additional],
+        )
+
+        mock_order_services.search_all_without_filters.return_value = [
+            await self._order_with_products(
+                "o1",
+                [product],
+                UTCDateTime(2024, 5, 1),
+            )
+        ]
+
+        service = BillingServices(
+            product_repository=AsyncMock(),
+            order_services=mock_order_services,
+            fast_order_services=AsyncMock(),
+            expenses_services=AsyncMock(),
+        )
+
+        selling_products = await service.get_best_selling_products(month=5, year=2024)
+
+        self.assertEqual(len(selling_products), 1)
+        self.assertEqual(selling_products[0].product_id, "p1")
+        self.assertEqual(selling_products[0].quantity, 1)
+
+    @patch("app.crud.billing.services.RedisManager")
+    @patch("app.crud.billing.services.get_plan_feature", new_callable=AsyncMock)
+    async def test_get_products_profit_includes_additionals(self, mock_plan, mock_redis):
+        mock_plan.return_value = SimpleNamespace(value="true")
+        mock_redis.return_value.get_value.return_value = None
+
+        mock_order_services = AsyncMock()
+        additional = StoredAdditionalItem(
+            item_id="a1",
+            quantity=1,
+            label="Extra",
+            unit_price=3.0,
+            unit_cost=1.0,
+            consumption_factor=1.0,
+        )
+        product = StoredProduct(
+            product_id="p1",
+            name="Prod1",
+            unit_price=13.0,
+            unit_cost=6.0,
+            quantity=2,
+            additionals=[additional],
+        )
+
+        mock_order_services.search_all_without_filters.return_value = [
+            await self._order_with_products("o1", [product], UTCDateTime(2024, 5, 1))
+        ]
+
+        service = BillingServices(
+            product_repository=AsyncMock(),
+            order_services=mock_order_services,
+            fast_order_services=AsyncMock(),
+            expenses_services=AsyncMock(),
+        )
+
+        products_profit = await service.get_products_profit(month=5, year=2024)
+
+        self.assertEqual(len(products_profit), 1)
+        self.assertEqual(products_profit[0].total_amount, 26.0)
+        self.assertEqual(products_profit[0].total_profit, 14.0)
+
+    @patch("app.crud.billing.services.RedisManager")
+    @patch("app.crud.billing.services.get_plan_feature", new_callable=AsyncMock)
+    async def test_get_daily_sales_includes_additionals(self, mock_plan, mock_redis):
+        mock_plan.return_value = SimpleNamespace(value="true")
+        mock_redis.return_value.get_value.return_value = None
+
+        additional = StoredAdditionalItem(
+            item_id="a1",
+            quantity=1,
+            label="Extra",
+            unit_price=3.0,
+            unit_cost=1.0,
+            consumption_factor=1.0,
+        )
+
+        mock_order_services = AsyncMock()
+        mock_order_services.search_all_without_filters.return_value = [
+            await self._order_with_products(
+                "o1",
+                [
+                    StoredProduct(
+                        product_id="p1",
+                        name="Prod1",
+                        unit_price=13.0,
+                        unit_cost=6.0,
+                        quantity=1,
+                        additionals=[additional],
+                    )
+                ],
+                UTCDateTime(2024, 5, 1),
+            )
+        ]
+
+        service = BillingServices(
+            product_repository=AsyncMock(),
+            order_services=mock_order_services,
+            fast_order_services=AsyncMock(),
+            expenses_services=AsyncMock(),
+        )
+
+        daily_sales = await service.get_daily_sales(month=5, year=2024)
+
+        self.assertEqual(daily_sales[0].total_amount, 13.0)
