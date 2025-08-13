@@ -21,6 +21,18 @@ EXAMPLE_ORGANIZATION = {
     "file_id": "fil_123",
     "unit_distance": "KM",
     "tax": 10,
+    "website": "https://sweetcorp.com",
+    "social_links": {
+        "tiktok": "https://tiktok.com/@sweetcorp",
+        "instagram": "https://instagram.com/sweetcorp",
+        "x": "https://x.com/sweetcorp",
+        "facebook": "https://facebook.com/sweetcorp",
+        "google_profile": "https://g.page/sweetcorp",
+    },
+    "styling": {
+        "primary_color": "#111111",
+        "secondary_color": "#222222",
+    },
     "created_at": "2024-01-01T00:00:00Z",
     "updated_at": "2024-01-01T00:00:00Z",
 }

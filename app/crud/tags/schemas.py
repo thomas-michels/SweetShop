@@ -1,14 +1,11 @@
 from typing import Optional
 
+from typing import Optional
+
 from bson import ObjectId
 from pydantic import ConfigDict, Field, field_validator
 from app.core.models.base_schema import GenericModel
-
-
-class Styling(GenericModel):
-    font_color: str = Field(example="#000000")
-    primary_color: str = Field(example="#000000")
-    secondary_color: str = Field(example="#111111")
+from app.crud.shared_schemas.styling import Styling
 
 
 class Tag(GenericModel):

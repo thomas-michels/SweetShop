@@ -8,7 +8,8 @@ from app.core.repositories.base_repository import Repository
 from app.core.utils.utc_datetime import UTCDateTime
 
 from .models import TagModel
-from .schemas import Styling, Tag, TagInDB
+from .schemas import Tag, TagInDB
+from app.crud.shared_schemas.styling import Styling
 
 _logger = get_logger(__name__)
 

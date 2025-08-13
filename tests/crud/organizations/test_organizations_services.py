@@ -6,9 +6,15 @@ from mongoengine import connect, disconnect
 
 from app.core.utils.utc_datetime import UTCDateTime
 from app.crud.organizations.repositories import OrganizationRepository
-from app.crud.organizations.schemas import Organization, OrganizationInDB
+from app.crud.organizations.schemas import (
+    Organization,
+    OrganizationInDB,
+    UpdateOrganization,
+    SocialLinks,
+)
 from app.crud.organizations.services import OrganizationServices
 from app.crud.shared_schemas.roles import RoleEnum
+from app.crud.shared_schemas.styling import Styling
 from app.crud.users.schemas import UserInDB
 
 
@@ -61,6 +67,28 @@ class TestOrganizationServices(unittest.IsolatedAsyncioTestCase):
         result = await self.service.search_all()
 
         self.assertEqual(len(result), 1)
+
+    async def test_update_styling_and_links(self):
+        org = await self.repo.create(Organization(name="Org"))
+        await self.repo.update(
+            org.id, {"users": [{"user_id": "owner", "role": RoleEnum.OWNER}]}
+        )
+
+        self.user_repo.select_by_id.return_value = await self._user("owner")
+
+        update = UpdateOrganization(
+            website="https://new.com",
+            social_links=SocialLinks(instagram="https://instagram.com/new"),
+            styling=Styling(primary_color="#123123", secondary_color="#321321"),
+        )
+
+        result = await self.service.update(
+            id=org.id, updated_organization=update, user_making_request="owner"
+        )
+
+        self.assertEqual(result.website, "https://new.com")
+        self.assertEqual(result.social_links.instagram, "https://instagram.com/new")
+        self.assertEqual(result.styling.primary_color, "#123123")
 
     async def test_delete_by_id_authorized(self):
         org = await self.repo.create(Organization(name="Del"))
