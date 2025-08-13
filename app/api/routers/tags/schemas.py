@@ -9,7 +9,6 @@ EXAMPLE_TAG = {
     "id": "tag_123",
     "name": "Street Mode",
     "styling": {
-        "font_color": "#000000",
         "primary_color": "#000000",
         "secondary_color": "#111111",
     },

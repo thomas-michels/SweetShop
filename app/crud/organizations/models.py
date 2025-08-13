@@ -18,6 +18,9 @@ class OrganizationModel(BaseDocument):
     file_id = StringField(required=False, default=None)
     unit_distance = StringField(required=False, default=None)
     tax = FloatField(required=False, default=0)
+    website = StringField(required=False, default=None)
+    social_links = DictField(required=False, default=None)
+    styling = DictField(required=False, default=None)
 
     meta = {"collection": "organizations"}
 
