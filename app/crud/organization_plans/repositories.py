@@ -193,13 +193,17 @@ class OrganizationPlanRepository(Repository):
 
         organization_plans = []
 
+        existing_plan = list(existing_plan.order_by("-end_date"))
+
         if existing_plan:
-            for organization_plan_model in existing_plan.order_by("-end_date"):
+            for organization_plan_model in existing_plan:
                 organization_plans.append(
                     OrganizationPlanInDB.model_validate(organization_plan_model)
                 )
 
             return organization_plans
+
+        return []
 
     def clear_cache(self, organization_id: str = None) -> bool:
         if organization_id:
