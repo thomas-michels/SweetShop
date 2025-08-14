@@ -379,7 +379,7 @@ class SubscriptionBuilder:
 
         update_invoice = UpdateInvoice(status=internal_status)
 
-        if internal_status == InvoiceStatus.PAID:
+        if invoice_in_db and internal_status == InvoiceStatus.PAID:
             update_invoice.paid_at = UTCDateTime.now()
             update_invoice.amount_paid = invoice_in_db.amount
 
@@ -400,7 +400,7 @@ class SubscriptionBuilder:
                 )
             )
 
-            if organization_plans:
+            if isinstance(organization_plans, list):
                 yesterday = (UTCDateTime.now() - timedelta(days=1)).date()
 
                 for organization_plan in organization_plans:

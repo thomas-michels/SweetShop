@@ -28,7 +28,7 @@ class AuthenticationServices:
     async def get_current_user(self, token: TokenData) -> CompleteUserInDB:
         cached_user = self.__cached_complete_users.get(token.id)
 
-        if cached_user:
+        if cached_user and cached_user.termsOfUseAccepted:
             logger.info(f"Getting cached user {token.id}")
             return cached_user
 
@@ -36,8 +36,9 @@ class AuthenticationServices:
 
         complete_user_in_db = await self.__build_complete_user(user=user_in_db)
 
-        self.__cached_complete_users[complete_user_in_db.user_id] = complete_user_in_db
-        logger.info(f"Caching user {token.id}")
+        if complete_user_in_db and complete_user_in_db.termsOfUseAccepted:
+            self.__cached_complete_users[complete_user_in_db.user_id] = complete_user_in_db
+            logger.info(f"Caching user {token.id}")
 
         return complete_user_in_db
 

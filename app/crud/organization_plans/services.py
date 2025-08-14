@@ -44,10 +44,11 @@ class OrganizationPlanServices:
                     end_date=organization_plan_in_db.end_date
                 )
 
-                for organization_plan_in_same_period in organization_plans_in_same_period:
-                    if organization_plan_in_same_period.id != organization_plan_in_db.id and organization_plan_in_same_period.calculate_active_plan():
-                        _logger.warning(f"An active plan already exists for this period - Organization: {organization_id}")
-                        raise UnprocessableEntity(message="An active plan already exists for this period")
+                if organization_plans_in_same_period:
+                    for organization_plan_in_same_period in organization_plans_in_same_period:
+                        if organization_plan_in_same_period.id != organization_plan_in_db.id and organization_plan_in_same_period.calculate_active_plan():
+                            _logger.warning(f"An active plan already exists for this period - Organization: {organization_id}")
+                            raise UnprocessableEntity(message="An active plan already exists for this period")
 
             organization_plan_in_db = await self.__organization_plan_repository.update(
                 organization_plan=organization_plan_in_db
