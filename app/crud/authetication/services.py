@@ -28,7 +28,7 @@ class AuthenticationServices:
     async def get_current_user(self, token: TokenData) -> CompleteUserInDB:
         cached_user = self.__cached_complete_users.get(token.id)
 
-        if cached_user:
+        if cached_user and cached_user.termsOfUseAccepted:
             logger.info(f"Getting cached user {token.id}")
             return cached_user
 
