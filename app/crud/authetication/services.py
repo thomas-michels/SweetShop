@@ -36,8 +36,9 @@ class AuthenticationServices:
 
         complete_user_in_db = await self.__build_complete_user(user=user_in_db)
 
-        self.__cached_complete_users[complete_user_in_db.user_id] = complete_user_in_db
-        logger.info(f"Caching user {token.id}")
+        if complete_user_in_db and complete_user_in_db.termsOfUseAccepted:
+            self.__cached_complete_users[complete_user_in_db.user_id] = complete_user_in_db
+            logger.info(f"Caching user {token.id}")
 
         return complete_user_in_db
 
