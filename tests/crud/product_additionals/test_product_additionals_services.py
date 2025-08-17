@@ -13,6 +13,7 @@ from app.crud.product_additionals.schemas import (
 from app.crud.product_additionals.services import ProductAdditionalServices
 from app.crud.additional_items.repositories import AdditionalItemRepository
 from app.core.utils.utc_datetime import UTCDateTime
+from unittest.mock import AsyncMock
 
 
 class TestProductAdditionalServices(unittest.IsolatedAsyncioTestCase):
@@ -132,9 +133,9 @@ class TestProductAdditionalServices(unittest.IsolatedAsyncioTestCase):
     async def test_search_by_product_id_includes_file(self):
         self.product_repo.select_by_id.return_value = "prod"
         await self.service.create(await self._group(with_item=True), product_id="prod1")
-        self.file_repo.select_by_id.return_value = "file"
+        self.file_repo.select_by_ids.return_value = {"f1": "file"}
         result = await self.service.search_by_product_id("prod1")
-        self.file_repo.select_by_id.assert_awaited_with(id="f1", raise_404=False)
+        self.file_repo.select_by_ids.assert_awaited_once_with(["f1"])
         self.assertEqual(result[0].items[0].file, "file")
 
     async def test_delete_by_product_id(self):

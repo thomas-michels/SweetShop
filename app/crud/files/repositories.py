@@ -51,6 +51,26 @@ class FileRepository(Repository):
                 _logger.error(f"Error on select_by_id: {str(error)}")
                 raise NotFoundError(message=f"File #{id} not found")
 
+    async def select_by_ids(self, ids: list[str]) -> dict[str, FileInDB]:
+        try:
+            files = {}
+
+            if not ids:
+                return files
+
+            objects = FileModel.objects(
+                id__in=ids, is_active=True, organization_id=self.organization_id
+            )
+
+            for file_model in objects:
+                files[str(file_model.id)] = FileInDB.model_validate(file_model)
+
+            return files
+
+        except Exception as error:
+            _logger.error(f"Error on select_by_ids: {str(error)}")
+            return {}
+
     async def delete_by_id(self, id: str, raise_404: bool = True) -> FileInDB:
         try:
             file_model: FileModel = FileModel.objects(

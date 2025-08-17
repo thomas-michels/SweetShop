@@ -9,8 +9,13 @@ from app.api.exceptions.authentication_exceptions import BadRequestException
 from app.core.utils.utc_datetime import UTCDateTime
 from app.crud.files.schemas import FilePurpose
 from app.crud.offers.repositories import OfferRepository
-from app.crud.offers.schemas import (OfferProductRequest, RequestOffer,
-                                     UpdateOffer)
+from app.crud.offers.schemas import (
+    OfferProductRequest,
+    RequestOffer,
+    UpdateOffer,
+    OfferInDB,
+    OfferProduct,
+)
 from app.crud.offers.services import OfferServices
 from app.crud.products.schemas import ProductInDB
 from app.crud.section_items.models import SectionItemModel
@@ -175,4 +180,47 @@ class TestOfferServices(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(
             SectionItemModel.objects(is_active=True).count(), 0
         )
+
+    async def test_search_all_with_files_uses_batch(self):
+        offer_repo = AsyncMock()
+        offer_repo.select_all.return_value = [
+            OfferInDB(
+                id="o1",
+                organization_id="org1",
+                name="Combo",
+                description="d",
+                products=[
+                    OfferProduct(
+                        product_id="p1",
+                        name="p",
+                        description="d",
+                        unit_cost=1.0,
+                        unit_price=2.0,
+                        quantity=1,
+                        file_id="pf1",
+                    )
+                ],
+                file_id="f1",
+                unit_cost=1.0,
+                unit_price=2.0,
+                starts_at=None,
+                ends_at=None,
+                is_visible=True,
+                created_at=UTCDateTime.now(),
+                updated_at=UTCDateTime.now(),
+                is_active=True,
+            )
+        ]
+        file_repo = AsyncMock()
+        file_repo.select_by_ids.return_value = {"f1": "of", "pf1": "pf"}
+        service = OfferServices(
+            offer_repository=offer_repo,
+            product_repository=AsyncMock(),
+            file_repository=file_repo,
+            section_item_repository=AsyncMock(),
+        )
+        result = await service.search_all(section_id="s1", expand=["files"])
+        file_repo.select_by_ids.assert_awaited_once()
+        self.assertEqual(result[0].file, "of")
+        self.assertEqual(result[0].products[0].file, "pf")
 

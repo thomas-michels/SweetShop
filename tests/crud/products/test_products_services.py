@@ -198,3 +198,47 @@ class TestProductServices(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(
             SectionItemModel.objects(is_active=True).count(), 0
         )
+
+    async def test_search_all_expand_file_uses_batch(self):
+        prod_repo = AsyncMock()
+        prod_repo.select_all.return_value = [
+            ProductInDB(
+                id="p1",
+                name="P1",
+                description="d",
+                unit_price=1.0,
+                unit_cost=1.0,
+                tags=[],
+                file_id="f1",
+                organization_id="org1",
+                created_at=UTCDateTime.now(),
+                updated_at=UTCDateTime.now(),
+                is_active=True,
+            ),
+            ProductInDB(
+                id="p2",
+                name="P2",
+                description="d",
+                unit_price=1.0,
+                unit_cost=1.0,
+                tags=[],
+                file_id="f2",
+                organization_id="org1",
+                created_at=UTCDateTime.now(),
+                updated_at=UTCDateTime.now(),
+                is_active=True,
+            ),
+        ]
+        file_repo = AsyncMock()
+        file_repo.select_by_ids.return_value = {"f1": "file1", "f2": "file2"}
+        service = ProductServices(
+            product_repository=prod_repo,
+            tag_repository=AsyncMock(),
+            file_repository=file_repo,
+            additional_services=AsyncMock(),
+            section_item_repository=AsyncMock(),
+        )
+        result = await service.search_all(query=None, expand=["file"])
+        file_repo.select_by_ids.assert_awaited_once_with(["f1", "f2"])
+        self.assertEqual(result[0].file, "file1")
+        self.assertEqual(result[1].file, "file2")
