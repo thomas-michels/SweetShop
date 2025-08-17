@@ -136,6 +136,24 @@ class CustomerRepository(Repository):
 
             _logger.error(f"Error on select_by_id: {str(error)}")
 
+    async def select_by_ids(self, ids: List[str]) -> List[CustomerInDB]:
+        try:
+            customers: List[CustomerInDB] = []
+            objects = CustomerModel.objects(
+                id__in=ids,
+                is_active=True,
+                organization_id=self.organization_id,
+            )
+
+            for customer_model in objects:
+                customers.append(CustomerInDB.model_validate(customer_model))
+
+            return customers
+
+        except Exception as error:
+            _logger.error(f"Error on select_by_ids: {str(error)}")
+            raise NotFoundError(message="Clientes não foram encontrados")
+
     async def select_by_phone(
         self,
         ddd: str,

@@ -267,6 +267,21 @@ class OrderServices:
             page_size=page_size
         )
 
+        if "customers" in expand:
+            customer_ids = {
+                order.customer_id
+                for order in orders
+                if order.customer_id and order.customer_id not in self.__cache_customers
+            }
+
+            if customer_ids:
+                customers = await self.__customer_repository.select_by_ids(
+                    list(customer_ids)
+                )
+
+                for customer in customers:
+                    self.__cache_customers[customer.id] = customer
+
         complete_orders = []
 
         for order in orders:
@@ -288,6 +303,21 @@ class OrderServices:
             end_date=end_date,
         )
 
+        if "customers" in expand:
+            customer_ids = {
+                order.customer_id
+                for order in orders
+                if order.customer_id and order.customer_id not in self.__cache_customers
+            }
+
+            if customer_ids:
+                customers = await self.__customer_repository.select_by_ids(
+                    list(customer_ids)
+                )
+
+                for customer in customers:
+                    self.__cache_customers[customer.id] = customer
+
         complete_orders = []
 
         for order in orders:
@@ -301,6 +331,21 @@ class OrderServices:
         self, limit: int = 10, expand: List[str] = []
     ) -> List[CompleteOrder]:
         orders = await self.__order_repository.select_recent(limit=limit)
+
+        if "customers" in expand:
+            customer_ids = {
+                order.customer_id
+                for order in orders
+                if order.customer_id and order.customer_id not in self.__cache_customers
+            }
+
+            if customer_ids:
+                customers = await self.__customer_repository.select_by_ids(
+                    list(customer_ids)
+                )
+
+                for customer in customers:
+                    self.__cache_customers[customer.id] = customer
 
         complete_orders = []
 
