@@ -19,6 +19,7 @@ from app.builder.order_calculator import OrderCalculator
 from app.crud.products.schemas import ProductInDB, ProductKind
 from app.crud.additional_items.schemas import AdditionalItemInDB
 from app.crud.product_additionals.schemas import ProductAdditionalInDB, OptionKind
+from app.crud.customers.schemas import CustomerInDB
 from app.api.exceptions.authentication_exceptions import BadRequestException
 
 
@@ -123,6 +124,133 @@ class TestOrderServices(unittest.IsolatedAsyncioTestCase):
         )
         self.assertEqual(len(results), 1)
         mock_repo.select_all.assert_awaited()
+
+    async def test_search_all_without_filters_prefetches_customers(self):
+        order1 = self._order_in_db()
+        order1.id = "ord1"
+        order1.customer_id = "c1"
+        order2 = self._order_in_db()
+        order2.id = "ord2"
+        order2.customer_id = "c2"
+
+        order_repo = AsyncMock()
+        order_repo.select_all_without_filters.return_value = [order1, order2]
+
+        customer_repo = AsyncMock()
+
+        customers = [
+            CustomerInDB(
+                id="c1",
+                name="Alice",
+                international_code="55",
+                ddd="047",
+                phone_number="111111111",
+                addresses=[],
+                tags=[],
+                organization_id="org1",
+                is_active=True,
+                created_at=UTCDateTime.now(),
+                updated_at=UTCDateTime.now(),
+            ),
+            CustomerInDB(
+                id="c2",
+                name="Bob",
+                international_code="55",
+                ddd="047",
+                phone_number="222222222",
+                addresses=[],
+                tags=[],
+                organization_id="org1",
+                is_active=True,
+                created_at=UTCDateTime.now(),
+                updated_at=UTCDateTime.now(),
+            ),
+        ]
+
+        customer_repo.select_by_ids.return_value = customers
+
+        service = OrderServices(
+            order_repository=order_repo,
+            product_repository=AsyncMock(),
+            tag_repository=AsyncMock(),
+            customer_repository=customer_repo,
+            organization_repository=AsyncMock(),
+            additional_item_repository=AsyncMock(),
+            product_additional_repository=AsyncMock(),
+        )
+
+        start = UTCDateTime.now()
+        end = UTCDateTime.now()
+
+        results = await service.search_all_without_filters(
+            start_date=start,
+            end_date=end,
+            expand=["customers"],
+        )
+
+        self.assertEqual(len(results), 2)
+        customer_repo.select_by_ids.assert_awaited_once()
+        customer_repo.select_by_id.assert_not_called()
+
+    async def test_search_recent_prefetches_customers(self):
+        order1 = self._order_in_db()
+        order1.id = "ord1"
+        order1.customer_id = "c1"
+        order2 = self._order_in_db()
+        order2.id = "ord2"
+        order2.customer_id = "c2"
+
+        order_repo = AsyncMock()
+        order_repo.select_recent.return_value = [order1, order2]
+
+        customer_repo = AsyncMock()
+
+        customers = [
+            CustomerInDB(
+                id="c1",
+                name="Alice",
+                international_code="55",
+                ddd="047",
+                phone_number="111111111",
+                addresses=[],
+                tags=[],
+                organization_id="org1",
+                is_active=True,
+                created_at=UTCDateTime.now(),
+                updated_at=UTCDateTime.now(),
+            ),
+            CustomerInDB(
+                id="c2",
+                name="Bob",
+                international_code="55",
+                ddd="047",
+                phone_number="222222222",
+                addresses=[],
+                tags=[],
+                organization_id="org1",
+                is_active=True,
+                created_at=UTCDateTime.now(),
+                updated_at=UTCDateTime.now(),
+            ),
+        ]
+
+        customer_repo.select_by_ids.return_value = customers
+
+        service = OrderServices(
+            order_repository=order_repo,
+            product_repository=AsyncMock(),
+            tag_repository=AsyncMock(),
+            customer_repository=customer_repo,
+            organization_repository=AsyncMock(),
+            additional_item_repository=AsyncMock(),
+            product_additional_repository=AsyncMock(),
+        )
+
+        results = await service.search_recent(limit=2, expand=["customers"])
+
+        self.assertEqual(len(results), 2)
+        customer_repo.select_by_ids.assert_awaited_once()
+        customer_repo.select_by_id.assert_not_called()
 
     async def test_validate_products_with_additionals(self):
         product_repo = AsyncMock()
