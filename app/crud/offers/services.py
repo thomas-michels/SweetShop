@@ -2,7 +2,7 @@ from typing import List
 
 from app.api.exceptions.authentication_exceptions import BadRequestException
 from app.crud.files.repositories import FileRepository
-from app.crud.files.schemas import FilePurpose
+from app.crud.files.schemas import FilePurpose, FileInDB
 from app.crud.products.repositories import ProductRepository
 from app.crud.products.schemas import ProductInDB
 from app.crud.section_items.repositories import SectionItemRepository
@@ -143,20 +143,27 @@ class OfferServices:
     async def __build_complete_offer(self, offers: List[OfferInDB], expand: List[str]) -> List[CompleteOffer]:
         complete_offers = []
 
+        files_map: dict[str, FileInDB] = {}
+
+        if "files" in expand:
+            file_ids = set()
+            for offer in offers:
+                if offer.file_id:
+                    file_ids.add(offer.file_id)
+                for product in offer.products:
+                    if product.file_id:
+                        file_ids.add(product.file_id)
+
+            files_map = await self.__file_repository.select_by_ids(list(file_ids))
+
         for offer in offers:
             complete_offer_products = []
 
             for product in offer.products:
                 offer_product = CompleteOfferProduct(**product.model_dump())
 
-                if "files" in expand:
-                    if product.file_id:
-                        file = await self.__file_repository.select_by_id(
-                            id=product.file_id,
-                            raise_404=False
-                        )
-
-                        offer_product.file = file
+                if "files" in expand and product.file_id:
+                    offer_product.file = files_map.get(product.file_id)
 
                 complete_offer_products.append(offer_product)
 
@@ -164,10 +171,7 @@ class OfferServices:
             complete_offer.products = complete_offer_products
 
             if "files" in expand and offer.file_id:
-                complete_offer.file = await self.__file_repository.select_by_id(
-                    id=offer.file_id,
-                    raise_404=False,
-                )
+                complete_offer.file = files_map.get(offer.file_id)
 
             complete_offers.append(complete_offer)
 

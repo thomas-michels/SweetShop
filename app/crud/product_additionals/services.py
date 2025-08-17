@@ -1,9 +1,14 @@
 from typing import List
 
-from app.crud.products.repositories import ProductRepository
+from typing import TYPE_CHECKING
+
 from app.crud.additional_items.repositories import AdditionalItemRepository
 from app.crud.additional_items.schemas import AdditionalItem, CompleteAdditionalItem
 from app.crud.files.repositories import FileRepository
+from app.crud.files.schemas import FileInDB
+
+if TYPE_CHECKING:
+    from app.crud.products.repositories import ProductRepository
 
 from .repositories import ProductAdditionalRepository
 from .schemas import (
@@ -17,7 +22,7 @@ class ProductAdditionalServices:
     def __init__(
         self,
         additional_repository: ProductAdditionalRepository,
-        product_repository: ProductRepository,
+        product_repository: "ProductRepository",
         item_repository: AdditionalItemRepository,
         file_repository: FileRepository,
     ) -> None:
@@ -137,13 +142,15 @@ class ProductAdditionalServices:
     async def __build_complete_items(self, items: List[AdditionalItem]) -> List[AdditionalItem]:
         complete_items: List[CompleteAdditionalItem] = []
 
+        files_map: dict[str, FileInDB] = {}
+        file_ids = [i.file_id for i in items if i.file_id]
+        if file_ids:
+            files_map = await self.__file_repository.select_by_ids(file_ids)
+
         for item in items:
             complete = CompleteAdditionalItem(**item.model_dump())
             if item.file_id:
-                complete.file = await self.__file_repository.select_by_id(
-                    id=item.file_id,
-                    raise_404=False,
-                )
+                complete.file = files_map.get(item.file_id)
             complete_items.append(complete)
 
         return complete_items

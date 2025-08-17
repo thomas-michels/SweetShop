@@ -2,7 +2,7 @@ from typing import List
 from app.api.dependencies.get_plan_feature import get_plan_feature
 from app.api.exceptions.authentication_exceptions import UnauthorizedException, BadRequestException
 from app.core.utils.features import Feature
-from app.crud.files.schemas import FilePurpose
+from app.crud.files.schemas import FilePurpose, FileInDB
 from app.crud.tags.repositories import TagRepository
 from app.crud.files.repositories import FileRepository
 from app.crud.product_additionals.services import ProductAdditionalServices
@@ -119,14 +119,17 @@ class ProductServices:
         complete_products = []
         tags = {}
 
+        files_map: dict[str, FileInDB] = {}
+
+        if "file" in expand:
+            file_ids = [p.file_id for p in products if p.file_id]
+            files_map = await self.__file_repository.select_by_ids(file_ids)
+
         for product in products:
             complete_product = CompleteProduct(**product.model_dump())
 
             if "file" in expand:
-                complete_product.file = await self.__file_repository.select_by_id(
-                    id=complete_product.file_id,
-                    raise_404=False
-                )
+                complete_product.file = files_map.get(complete_product.file_id)
 
             if "tags" in expand:
                 complete_product.tags = []
