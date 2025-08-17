@@ -12,15 +12,15 @@ logger = get_logger(__name__)
 
 
 async def get_access_token(request: Request) -> str:
-    logger.info("Getting access token")
+    logger.debug("Getting access token")
 
     stored_access_token = request.app.state.access_token
 
     if stored_access_token and UTCDateTime.now() < stored_access_token["expires_at"]:
-        logger.info("Using cached access token")
+        logger.debug("Using cached access token")
         return f"Bearer {stored_access_token['access_token']}"
 
-    logger.info("Validating new access token from request headers")
+    logger.debug("Validating new access token from request headers")
     access_token = generate_new_access_token()
 
     expires_at = UTCDateTime.now() + timedelta(
