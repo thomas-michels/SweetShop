@@ -1,5 +1,7 @@
 import boto3
 import mimetypes
+from time import time
+from typing import Dict, Tuple
 from boto3.s3.transfer import S3Transfer
 from urllib.parse import urlparse
 from app.core.configs import get_environment, get_logger
@@ -12,6 +14,8 @@ class S3BucketManager:
     """
     Classe para gerenciamento de operações com o bucket S3.
     """
+
+    _presigned_cache: Dict[str, Tuple[str, float]] = {}
 
     def __init__(self, mode: str = "private"):
         self.client = boto3.client(
@@ -83,7 +87,7 @@ class S3BucketManager:
 
     def generate_presigned_url(self, file_url: str, expiration: int = None) -> str:
         """
-        Gera uma URL pré-assinada para acesso ao arquivo no bucket.
+        Gera e faz cache de uma URL pré-assinada para acesso ao arquivo no bucket.
 
         :param file_url: Caminho do arquivo no bucket.
         :param expiration: Tempo de expiração da URL em segundos (padrão: configurado no ambiente).
@@ -91,6 +95,11 @@ class S3BucketManager:
         """
         expiration = expiration or _env.BUCKET_URL_EXPIRES_IN_SECONDS
         try:
+            cached = self._presigned_cache.get(file_url)
+            now = time()
+            if cached and cached[1] > now:
+                return cached[0]
+
             parsed_url = urlparse(file_url)
             bucket_path = parsed_url.path.removeprefix(f"/{self.bucket_name}/")
 
@@ -102,6 +111,7 @@ class S3BucketManager:
                 Params={"Bucket": self.bucket_name, "Key": bucket_path},
                 ExpiresIn=expiration,
             )
+            self._presigned_cache[file_url] = (url, now + expiration)
             return url
 
         except Exception as error:
