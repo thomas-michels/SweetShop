@@ -102,6 +102,7 @@ class S3BucketManager:
             cached = self._presigned_cache.get(file_url)
             now = time()
             if cached and cached[1] > now:
+                _logger.info(f"Returning cached presigned URL for '{file_url}'")
                 return cached[0]
 
             parsed_url = urlparse(file_url)
