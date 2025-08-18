@@ -17,6 +17,10 @@ class S3BucketManager:
 
     _presigned_cache: Dict[str, Tuple[str, float]] = {}
 
+    @classmethod
+    def set_cache(cls, cache: Dict[str, Tuple[str, float]]) -> None:
+        cls._presigned_cache = cache
+
     def __init__(self, mode: str = "private"):
         self.client = boto3.client(
             "s3",
