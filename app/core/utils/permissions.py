@@ -62,8 +62,8 @@ def get_role_permissions(role: RoleEnum) -> Set[str]:
         )
     )
 
-    if role == RoleEnum.MANAGER:
-        return permissions
+    # if role == RoleEnum.MANAGER:
+    #     return permissions
 
     # Admin
     permissions = permissions.union(
@@ -86,7 +86,7 @@ def get_role_permissions(role: RoleEnum) -> Set[str]:
         )
     )
 
-    if role == RoleEnum.ADMIN:
+    if role in [RoleEnum.ADMIN, RoleEnum.MANAGER]:
         return permissions
 
     # Owner

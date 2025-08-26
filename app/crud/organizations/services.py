@@ -248,7 +248,9 @@ class OrganizationServices:
 
         await self.__organization_repository.update(
             organization_id=organization_id,
-            organization=organization_in_db.model_dump()
+            organization=organization_in_db.model_dump(
+                include=["users"]
+            )
         )
 
         self.clear_user_cache(user_id=user_id)
@@ -285,7 +287,9 @@ class OrganizationServices:
 
         await self.__organization_repository.update(
             organization_id=organization_id,
-            organization=organization_in_db.model_dump()
+            organization=organization_in_db.model_dump(
+                include=["users"]
+            )
         )
 
         self.clear_user_cache(user_id=user_making_request)
@@ -324,7 +328,9 @@ class OrganizationServices:
 
         await self.__organization_repository.update(
             organization_id=organization_id,
-            organization=organization_in_db.model_dump()
+            organization=organization_in_db.model_dump(
+                include=["users"]
+            )
         )
 
         self.clear_user_cache(user_id=user_making_request)
@@ -356,7 +362,9 @@ class OrganizationServices:
 
             await self.__organization_repository.update(
                 organization_id=organization_id,
-                organization=organization_in_db.model_dump()
+                organization=organization_in_db.model_dump(
+                    include=["users"]
+                )
             )
 
         self.clear_user_cache(user_id=user_id)
