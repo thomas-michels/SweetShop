@@ -34,23 +34,28 @@ class WhatsAppMessageSender:
             return False
 
     def send_message(self, number: str, message: str) -> dict:
-        delay = random.randint(1, 3)
-        time.sleep(delay)
+        try:
+            delay = random.randint(1, 3)
+            time.sleep(delay)
 
-        url = f"{_env.EVOLUTION_BASE_URL}/message/sendText/{_env.EVOLUTION_INSTANCE}"
-        headers = {
-            "Content-Type": "application/json",
-            "apikey": _env.EVOLUTION_API_KEY
-        }
-        body = {
-            "number": number,
-            "text": message
-        }
+            url = f"{_env.EVOLUTION_BASE_URL}/message/sendText/{_env.EVOLUTION_INSTANCE}"
+            headers = {
+                "Content-Type": "application/json",
+                "apikey": _env.EVOLUTION_API_KEY
+            }
+            body = {
+                "number": number,
+                "text": message
+            }
 
-        response = requests.post(url, headers=headers, json=body)
+            response = requests.post(url, headers=headers, json=body)
 
-        if response.status_code != 201:
-            raise Exception(f"Falha ao enviar mensagem para {number}: {response.text}")
+            if response.status_code != 201:
+                raise Exception(f"Falha ao enviar mensagem para {number}: {response.text}")
 
-        _logger.info(f"Message sent to {number}")
-        return response.json()
+            _logger.info(f"Message sent to {number}")
+            return response.json()
+
+        except Exception as error:
+            _logger.error(f"Error on send message: {str(error)} - number: {number} - message: {message}")
+            return
