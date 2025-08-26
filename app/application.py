@@ -1,8 +1,10 @@
 from asgi_correlation_id import CorrelationIdMiddleware
 import sentry_sdk
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from app.api.dependencies.get_access_token import get_access_token
 from app.api.dependencies.response import build_response
+from app.api.dependencies.whats_app_adapter import WhatsAppMessageSender
 from app.api.middleware.rate_limiting import RateLimitMiddleware
 from app.api.routers import (
     user_router,
@@ -120,12 +122,25 @@ async def root_path(request: Request):
     return build_response(status_code=200, message="I'm alive!", data=None)
 
 
-# @app.get("/health", tags=["Health Check"])
-# async def health_check():
-#     return build_response(status_code=200, message="I'm alive!", data=None)
+@app.get("/health", tags=["Health Check"])
+async def health_check(
+    access_token=Depends(get_access_token),
+):
+    wa = WhatsAppMessageSender()
+
+    if access_token and wa.check_whatsapp_numbers(number="5547996240277"):
+        return build_response(status_code=200, message="I'm alive!", data=None)
+
+    return build_response(status_code=400, message="Health check failed", data=None)
 
 
 @app.head("/health", tags=["Health Check"])
 async def monitor_health_check(
+    access_token=Depends(get_access_token),
 ):
-    return build_response(status_code=200, message="I'm alive!", data=None)
+    wa = WhatsAppMessageSender()
+
+    if access_token and wa.check_whatsapp_numbers(number="5547996240277"):
+        return build_response(status_code=200, message="I'm alive!", data=None)
+
+    return build_response(status_code=400, message="Health check failed", data=None)
