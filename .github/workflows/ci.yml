@@ -27,10 +27,10 @@ jobs:
           pip install -r requirements/dev.txt
 
       - name: Test with pytest
-        run: |
-          pytest
+        run: pytest
 
   build-and-deploy:
+    if: github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     needs: [tests]
     env:
@@ -79,7 +79,7 @@ jobs:
             echo "EOF" >> $GITHUB_OUTPUT
           fi
 
-      # Deploy remoto via SSH (executa /opt/app/deploy.sh)
+      # Deploy remoto via SSH
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v0.1.10
         with:
