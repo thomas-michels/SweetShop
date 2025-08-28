@@ -44,8 +44,10 @@ jobs:
         run: |
           if [[ "${GITHUB_REF_NAME}" == "main" ]]; then
             echo "ENV=prod" >> $GITHUB_OUTPUT
+            echo "LATEST_TAG=main-latest" >> $GITHUB_OUTPUT
           else
             echo "ENV=dev" >> $GITHUB_OUTPUT
+            echo "LATEST_TAG=dev-latest" >> $GITHUB_OUTPUT
           fi
           echo "TAG=${GITHUB_REF_NAME}-${GITHUB_SHA}" >> $GITHUB_OUTPUT
 
@@ -60,9 +62,10 @@ jobs:
         run: |
           IMAGE="docker.io/${{ env.IMAGE_NAME }}"
           TAG="${{ steps.envsel.outputs.TAG }}"
-          docker build -t "${IMAGE}:${TAG}" -t "${IMAGE}:latest" .
+          BRANCH_LATEST="${{ steps.envsel.outputs.LATEST_TAG }}"
+          docker build -t "${IMAGE}:${TAG}" -t "${IMAGE}:${BRANCH_LATEST}" .
           docker push "${IMAGE}:${TAG}"
-          docker push "${IMAGE}:latest"
+          docker push "${IMAGE}:${BRANCH_LATEST}"
 
       - name: Set SSH target
         id: sshvars
