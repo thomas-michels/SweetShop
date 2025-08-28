@@ -22,7 +22,12 @@ class WhatsAppMessageSender:
         }
 
         try:
-            response = requests.post(url, headers=headers, json=body)
+            response = requests.post(
+                url=url,
+                headers=headers,
+                json=body,
+                timeout=10
+            )
 
             if response.status_code != 200:
                 return False
@@ -48,7 +53,12 @@ class WhatsAppMessageSender:
                 "text": message
             }
 
-            response = requests.post(url, headers=headers, json=body)
+            response = requests.post(
+                url=url,
+                headers=headers,
+                json=body,
+                timeout=10
+            )
 
             if response.status_code != 201:
                 raise Exception(f"Falha ao enviar mensagem para {number}: {response.text}")
