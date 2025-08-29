@@ -57,6 +57,7 @@ sentry_sdk.init(
     server_name=_env.APPLICATION_NAME,
     release=_env.RELEASE,
     environment=_env.ENVIRONMENT,
+    enable_logs=True,
     _experiments={
         "continuous_profiling_auto_start": True,
     },
