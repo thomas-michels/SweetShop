@@ -6,6 +6,9 @@ from app.api.exceptions.authentication_exceptions import UnauthorizedException, 
 from app.core.utils.features import Feature
 from app.crud.files.repositories import FileRepository
 from app.crud.files.schemas import FilePurpose
+from app.crud.messages.repositories import MessageRepository
+from app.crud.messages.schemas import Message, MessageType, Origin
+from app.crud.messages.services import MessageServices
 from app.crud.users.repositories import UserRepository
 from app.crud.users.schemas import CompleteUserInDB, UserInDB
 
@@ -24,7 +27,7 @@ class OrganizationServices:
         organization_repository: OrganizationRepository,
         user_repository: UserRepository,
         organization_plan_repository: OrganizationPlanRepository,
-        cached_complete_users: Dict[str, CompleteUserInDB]
+        cached_complete_users: Dict[str, CompleteUserInDB],
     ) -> None:
         self.__organization_repository = organization_repository
         self.__organization_plan_repository = organization_plan_repository
@@ -49,6 +52,11 @@ class OrganizationServices:
             message = message.replace("$USER_NAME$", owner.name.title())
 
         send_email(email_to=[owner.email], title=f"Bem-vindo à Pedidoz!", message=message)
+
+        await self.send_client_message(
+            user_in_db=owner,
+            organization=organization_in_db
+        )
 
         return organization_in_db
 
@@ -377,3 +385,24 @@ class OrganizationServices:
             return True
 
         return False
+
+    async def send_client_message(self, user_in_db: UserInDB, organization: OrganizationInDB) -> bool:
+        message_services = MessageServices(message_repository=MessageRepository(organization_id=organization.id))
+
+        text_message = f"""*Nova Organização criada - {organization.name}!*
+
+O usuário {user_in_db.name} acabou de criar uma nova organização.
+Telefone: +{organization.international_code} {organization.ddd} {organization.phone_number}
+
+_pedidoZ_"""
+
+        message = Message(
+            international_code="55",
+            ddd="047",
+            phone_number="996240277",
+            message_type=MessageType.INFORMATION,
+            origin=Origin.ORGANIZATIONS,
+            message=text_message
+        )
+
+        return await message_services.create(message=message)

@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 
 import mongomock
 from mongoengine import connect, disconnect
@@ -53,6 +53,61 @@ class TestOrganizationServices(unittest.IsolatedAsyncioTestCase):
             created_at=UTCDateTime.now(),
             updated_at=UTCDateTime.now(),
         )
+
+    async def test_create_sends_email_and_client_message(self):
+        owner = await self._user("owner")
+        # Ensure user lookups during add_user succeed
+        self.user_repo.select_by_id.return_value = owner
+
+        with patch("app.crud.organizations.services.send_email") as send_email_mock, \
+             patch.object(OrganizationServices, "send_client_message", new_callable=AsyncMock) as send_msg_mock:
+
+            org = await self.service.create(
+                organization=Organization(name="Org Test"),
+                owner=owner,
+            )
+
+            # Owner added
+            self.assertEqual(len(org.users), 1)
+            self.assertEqual(org.users[0].user_id, owner.user_id)
+
+            # Email sent
+            send_email_mock.assert_called_once()
+
+            # Client message triggered
+            send_msg_mock.assert_awaited_once()
+
+    async def test_send_client_message_uses_message_services(self):
+        owner = await self._user("owner")
+        # Create org with phone fields to validate message composition
+        org_in_db = await self.repo.create(
+            Organization(
+                name="My Org",
+                international_code="55",
+                ddd="047",
+                phone_number="999999999",
+            )
+        )
+
+        with patch("app.crud.organizations.services.MessageServices") as MessageServicesMock:
+            instance = MessageServicesMock.return_value
+            instance.create = AsyncMock(return_value=True)
+
+            result = await self.service.send_client_message(
+                user_in_db=owner,
+                organization=org_in_db,
+            )
+
+            self.assertTrue(result)
+            instance.create.assert_awaited_once()
+
+            # Validate message payload basics
+            await_args = instance.create.await_args
+            msg = await_args.args[0] if await_args and await_args.args else await_args.kwargs.get("message")
+            self.assertIsNotNone(msg)
+            self.assertEqual(msg.origin.value, "ORGANIZATIONS")
+            # Validator trims leading zero from ddd when BR (55)
+            self.assertIn("My Org", msg.message)
 
     async def test_search_by_id_calls_repo(self):
         org = await self.repo.create(Organization(name="Org"))
