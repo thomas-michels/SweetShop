@@ -10,6 +10,7 @@ class MessageType(str, Enum):
 
 
 class Origin(str, Enum):
+    ORGANIZATIONS = "ORGANIZATIONS"
     ORDERS = "ORDERS"
     PLANS = "PLANS"
 
