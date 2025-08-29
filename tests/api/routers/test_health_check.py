@@ -7,7 +7,3 @@ def test_health_check():
 
     response = api.head("/health")
     assert response.status_code == 200
-
-    body = response.json()
-
-    assert "message" in body
