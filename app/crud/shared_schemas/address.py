@@ -5,6 +5,7 @@ from app.core.models.base_schema import GenericModel
 
 class Address(GenericModel):
     zip_code: str | None = Field(default=None, example="12345-678")
+    state: str | None = Field(default=None, example="Blumenau")
     city: str = Field(example="Blumenau")
     neighborhood: str = Field(example="Bairro")
     line_1: str = Field(example="Rua de Testes")
