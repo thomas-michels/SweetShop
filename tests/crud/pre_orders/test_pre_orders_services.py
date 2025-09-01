@@ -8,12 +8,12 @@ from app.crud.pre_orders.services import PreOrderServices
 from app.crud.pre_orders.schemas import (
     PreOrderStatus,
     SelectedAdditional,
-    SelectedItem,
+    SelectedOfferItem,
     SelectedOffer,
     SelectedProduct,
 )
 from enum import Enum
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from app.core.utils.utc_datetime import UTCDateTime
 from app.api.exceptions.authentication_exceptions import BadRequestException
 
@@ -84,16 +84,19 @@ class TestPreOrderServices(unittest.IsolatedAsyncioTestCase):
     def tearDown(self):
         disconnect()
 
-    def _pre_order_model(self, code="001", status=PreOrderStatus.PENDING):
+    def _pre_order_model(self, code="001", status=PreOrderStatus.PENDING, items=None):
+        if items is None:
+            items = [{"kind": "OFFER", "offer_id": "off1", "quantity": 1, "items": []}]
+
         return {
             "organization_id": "org1",
+            "user_id": "usr1",
             "code": code,
             "menu_id": "men1",
             "payment_method": "CASH",
             "customer": {"name": "Ted", "ddd": "047", "phone_number": "9988"},
             "delivery": {"delivery_type": "WITHDRAWAL"},
-            "offers": [{"offer_id": "off1", "quantity": 1}],
-            "products": [],
+            "items": items,
             "status": status.value,
             "tax": 0,
             "total_amount": 10,
@@ -140,6 +143,70 @@ class TestPreOrderServices(unittest.IsolatedAsyncioTestCase):
         deleted = await self.service.delete_by_id(pre.id)
         self.assertEqual(deleted.id, pre.id)
 
+    async def test_search_by_id_returns_all_file_items(self):
+        from app.crud.pre_orders.models import PreOrderModel
+        class DummyOffer(BaseModel):
+            id: str = "off1"
+            organization_id: str = "org1"
+            name: str = "Offer1"
+            description: str = "Desc"
+            products: list = []
+            file_id: str | None = None
+            unit_cost: float = 10
+            unit_price: float = 12
+            starts_at: UTCDateTime | None = None
+            ends_at: UTCDateTime | None = None
+            is_visible: bool = True
+            created_at: UTCDateTime = UTCDateTime.now()
+            updated_at: UTCDateTime = UTCDateTime.now()
+            quantity: int | None = None
+            model_config = ConfigDict(extra="allow")
+
+        items = [
+            {
+                "kind": "OFFER",
+                "offer_id": "off1",
+                "quantity": 1,
+                "items": [
+                    {
+                        "item_id": "p1",
+                        "section_id": "s1",
+                        "name": "Prod1",
+                        "file_id": "file1",
+                        "unit_price": 2.0,
+                        "unit_cost": 1.0,
+                        "quantity": 1,
+                        "additionals": [],
+                    },
+                    {
+                        "item_id": "p2",
+                        "section_id": "s1",
+                        "name": "Prod2",
+                        "file_id": "file2",
+                        "unit_price": 2.0,
+                        "unit_cost": 1.0,
+                        "quantity": 1,
+                        "additionals": [],
+                    },
+                ],
+            }
+        ]
+
+        pre_model = PreOrderModel(**self._pre_order_model(items=items))
+        pre_model.save()
+
+        offer_db = DummyOffer()
+
+        self.offer_repo.select_by_id.return_value = offer_db
+        self.customer_repo.select_by_phone.return_value = None
+
+        result = await self.service.search_by_id(pre_model.id, expand=["offers"])
+
+        offer_item = result.items[0]
+        self.assertTrue(hasattr(offer_item, "items"))
+        self.assertEqual(len(offer_item.items), 2)
+        self.assertEqual({i.file_id for i in offer_item.items}, {"file1", "file2"})
+
     async def test_validate_offers_with_additionals(self):
         self.additional_repo.select_by_id.return_value = AdditionalItemInDB(
             id="a1",
@@ -174,7 +241,7 @@ class TestPreOrderServices(unittest.IsolatedAsyncioTestCase):
             offer_id="off1",
             quantity=1,
             items=[
-                SelectedItem(
+                SelectedOfferItem(
                     item_id="p1",
                     section_id="s1",
                     name="Prod1",
@@ -229,7 +296,7 @@ class TestPreOrderServices(unittest.IsolatedAsyncioTestCase):
             offer_id="off1",
             quantity=1,
             items=[
-                SelectedItem(
+                SelectedOfferItem(
                     item_id="p1",
                     section_id="s1",
                     name="Prod1",

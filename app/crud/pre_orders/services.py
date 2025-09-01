@@ -14,7 +14,6 @@ if TYPE_CHECKING:  # pragma: no cover
     from .repositories import PreOrderRepository
 
 from .schemas import (
-    CompletePreOrder,
     PreOrderInDB,
     PreOrderStatus,
     SelectedOffer,
@@ -107,19 +106,26 @@ class PreOrderServices:
         pre_order_in_db = await self.__pre_order_repository.delete_by_id(id=id)
         return pre_order_in_db
 
-    async def __build_pre_order(self, pre_order_in_db: PreOrderInDB, expand: List[str] = []) -> CompletePreOrder:
-        complete_pre_order = CompletePreOrder.model_validate(pre_order_in_db)
+    async def __build_pre_order(self, pre_order_in_db: PreOrderInDB, expand: List[str] = []) -> PreOrderInDB:
+        pre_order = PreOrderInDB.model_validate(pre_order_in_db)
 
-        await self.__validate_offers(complete_pre_order.offers)
-        await self.__validate_products(complete_pre_order.products)
+        offers: List[SelectedOffer] = [
+            item for item in pre_order.items if isinstance(item, SelectedOffer)
+        ]
+        products: List[SelectedProduct] = [
+            item for item in pre_order.items if isinstance(item, SelectedProduct)
+        ]
 
-        full_phone = f"{pre_order_in_db.customer.international_code}{pre_order_in_db.customer.ddd}{pre_order_in_db.customer.phone_number}"
+        await self.__validate_offers(offers)
+        await self.__validate_products(products)
+
+        full_phone = f"{pre_order.customer.international_code}{pre_order.customer.ddd}{pre_order.customer.phone_number}"
 
         if full_phone not in self.__cache_customers:
             customer_in_db = await self.__customer_repository.select_by_phone(
-                international_code=pre_order_in_db.customer.international_code,
-                ddd=pre_order_in_db.customer.ddd,
-                phone_number=pre_order_in_db.customer.phone_number,
+                international_code=pre_order.customer.international_code,
+                ddd=pre_order.customer.ddd,
+                phone_number=pre_order.customer.phone_number,
                 raise_404=False
             )
             self.__cache_customers[full_phone] = customer_in_db
@@ -128,14 +134,16 @@ class PreOrderServices:
             customer_in_db = self.__cache_customers.get(full_phone)
 
         if customer_in_db:
-            pre_order_in_db.customer.customer_id = customer_in_db.id
+            pre_order.customer.customer_id = customer_in_db.id
 
         if "offers" in expand:
             complete_offers = []
 
-            for offer in complete_pre_order.offers:
+            for offer in offers:
                 if offer.offer_id not in self.__cache_offers:
-                    offer_in_db = await self.__offer_repository.select_by_id(id=offer.offer_id, raise_404=False)
+                    offer_in_db = await self.__offer_repository.select_by_id(
+                        id=offer.offer_id, raise_404=False
+                    )
                     self.__cache_offers[offer.offer_id] = offer_in_db
 
                 else:
@@ -144,11 +152,15 @@ class PreOrderServices:
                 if offer_in_db:
                     offer_copy = offer_in_db.model_copy(deep=True)
                     offer_copy.quantity = offer.quantity
+                    if offer.items:
+                        offer_copy.items = offer.items
                     complete_offers.append(offer_copy)
 
-            complete_pre_order.offers = complete_offers
+            offers = complete_offers
 
-        return complete_pre_order
+        pre_order.items = [*products, *offers]
+
+        return pre_order
 
     async def __validate_offers(self, offers: List[SelectedOffer]) -> List[SelectedOffer]:
         for offer in offers:

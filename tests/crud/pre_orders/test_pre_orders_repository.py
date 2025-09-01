@@ -24,14 +24,14 @@ class TestPreOrderRepository(unittest.IsolatedAsyncioTestCase):
     def _pre_order_model(self, code="001", status=PreOrderStatus.PENDING):
         return PreOrderModel(
             organization_id="org1",
+            user_id="usr1",
             code=code,
             menu_id="men1",
             payment_method="CASH",
             customer={"name": "Ted", "ddd": "047", "phone_number": "9988"},
             delivery={"delivery_type": "WITHDRAWAL"},
             observation="obs",
-            offers=[{"offer_id": "off1", "quantity": 1}],
-            products=[],
+            items=[{"kind": "OFFER", "offer_id": "off1", "quantity": 1, "items": []}],
             status=status.value,
             tax=0,
             total_amount=10,
