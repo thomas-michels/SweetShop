@@ -8,6 +8,7 @@ from app.crud.files.repositories import FileRepository
 from app.crud.product_additionals.services import ProductAdditionalServices
 from app.crud.section_items.repositories import SectionItemRepository
 from app.crud.section_items.schemas import ItemType
+from app.crud.offers.repositories import OfferRepository
 from .schemas import (
     CompleteProduct,
     Product,
@@ -113,6 +114,27 @@ class ProductServices:
         await self.__section_item_repository.delete_by_item_id(
             item_id=id, item_type=ItemType.PRODUCT
         )
+        offer_repo = OfferRepository(
+            organization_id=self.__product_repository.organization_id
+        )
+        offers = await offer_repo.select_all_by_product_id(product_id=id)
+        for offer in offers:
+            offer.products = [
+                p for p in offer.products if p.product_id != id
+            ]
+            if not offer.products:
+                await offer_repo.delete_by_id(id=offer.id)
+                await self.__section_item_repository.delete_by_item_id(
+                    item_id=offer.id, item_type=ItemType.OFFER
+                )
+                continue
+            offer.unit_cost = sum(
+                p.unit_cost * p.quantity for p in offer.products
+            )
+            offer.unit_price = sum(
+                p.unit_price * p.quantity for p in offer.products
+            )
+            await offer_repo.update(offer=offer)
         return product_in_db
 
     async def __build_complete_product(self, products: List[ProductInDB], expand: List[str]) -> List[CompleteProduct]:
