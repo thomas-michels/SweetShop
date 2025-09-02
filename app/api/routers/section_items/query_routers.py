@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, Query, Security, Response
+from fastapi import APIRouter, Depends, Query, Security
 
 from app.api.composers import section_item_composer
 from app.api.dependencies.response import build_response
@@ -14,10 +14,7 @@ router = APIRouter(tags=["Section Items"])
 
 @router.get(
     "/sections/{section_id}/items",
-    responses={
-        200: {"model": GetSectionItemsResponse},
-        204: {"description": "No Content"},
-    },
+    responses={200: {"model": GetSectionItemsResponse}},
     tags=["Sections"]
 )
 async def get_section_items(
@@ -31,12 +28,8 @@ async def get_section_items(
         section_id=section_id, is_visible=is_visible, expand=expand
     )
 
-    if section_items:
-        return build_response(
-            status_code=200,
-            message="Section items found with success",
-            data=section_items,
-        )
-
-    else:
-        return Response(status_code=204)
+    return build_response(
+        status_code=200,
+        message="Section items found with success",
+        data=section_items,
+    )

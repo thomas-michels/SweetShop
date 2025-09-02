@@ -52,13 +52,15 @@ class TestSectionItemsQueryRouter(unittest.TestCase):
         self.assertEqual(len(response.json()["data"]), 1)
         self.mock_service.search_all.assert_awaited_with(section_id="sec1", is_visible=None, expand=[])
 
-    def test_get_section_items_empty_returns_204(self):
+    def test_get_section_items_empty_returns_200_with_empty_list(self):
         self.mock_service.search_all.return_value = []
         response = self.test_client.get(
             "/api/sections/sec1/items",
             headers={"organization-id": "org_123"},
         )
-        self.assertEqual(response.status_code, 204)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["data"], [])
+        self.assertEqual(response.json()["message"], "Section items found with success")
 
     def test_get_section_items_expand_items_offer(self):
         so = self._section_item_in_db()
