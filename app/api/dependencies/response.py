@@ -9,13 +9,15 @@ from app.api.shared_schemas.responses import ListResponseSchema, MessageResponse
 
 
 def build_response(
-    status_code: status, message: str, data: BaseModel | List[BaseModel] = None
+    status_code: status,
+    message: str,
+    data: BaseModel | List[BaseModel] | int | None = None,
 ) -> JSONResponse:
     if isinstance(data, int):
         raw_response = Response(message=message, data=None)
         raw_response.data = data
 
-    elif data:
+    elif data is not None:
         raw_response = Response(message=message, data=data)
 
     else:
