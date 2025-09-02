@@ -12,6 +12,8 @@ from app.crud.files.repositories import FileRepository
 from app.crud.section_items.repositories import SectionItemRepository
 from app.crud.section_items.schemas import SectionItem, ItemType
 from app.crud.section_items.models import SectionItemModel
+from app.crud.offers.repositories import OfferRepository
+from app.crud.offers.schemas import Offer, OfferProduct
 from app.core.utils.utc_datetime import UTCDateTime
 from app.api.exceptions.authentication_exceptions import UnauthorizedException, BadRequestException
 
@@ -198,6 +200,50 @@ class TestProductServices(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(
             SectionItemModel.objects(is_active=True).count(), 0
         )
+
+    @patch("app.crud.products.services.get_plan_feature", new_callable=AsyncMock)
+    async def test_delete_product_removes_from_offers(self, mock_plan):
+        mock_plan.return_value = SimpleNamespace(value="-")
+        prod1 = await self.service.create(await self._product(name="P1"))
+        prod2 = await self.service.create(await self._product(name="P2"))
+        offer_repo = OfferRepository(organization_id="org1")
+        offer = Offer(
+            name="Combo",
+            description="d",
+            products=[
+                OfferProduct(
+                    product_id=prod1.id,
+                    name=prod1.name,
+                    description=prod1.description,
+                    unit_cost=prod1.unit_cost,
+                    unit_price=prod1.unit_price,
+                    quantity=1,
+                    file_id=None,
+                ),
+                OfferProduct(
+                    product_id=prod2.id,
+                    name=prod2.name,
+                    description=prod2.description,
+                    unit_cost=prod2.unit_cost,
+                    unit_price=prod2.unit_price,
+                    quantity=1,
+                    file_id=None,
+                ),
+            ],
+            unit_cost=prod1.unit_cost + prod2.unit_cost,
+            unit_price=prod1.unit_price + prod2.unit_price,
+            starts_at=None,
+            ends_at=None,
+            file_id=None,
+            is_visible=True,
+        )
+        offer_in_db = await offer_repo.create(offer)
+        await self.service.delete_by_id(id=prod1.id)
+        updated_offer = await offer_repo.select_by_id(id=offer_in_db.id)
+        self.assertEqual(len(updated_offer.products), 1)
+        self.assertEqual(updated_offer.products[0].product_id, prod2.id)
+        self.assertEqual(updated_offer.unit_cost, prod2.unit_cost)
+        self.assertEqual(updated_offer.unit_price, prod2.unit_price)
 
     async def test_search_all_expand_file_uses_batch(self):
         prod_repo = AsyncMock()
