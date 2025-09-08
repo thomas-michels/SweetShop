@@ -69,6 +69,7 @@ class SelectedAdditional(GenericModel):
     item_id: str = Field(example="aitem_123")
     name: str | None = Field(default=None, example="Bacon extra")
     unit_price: float = Field(default=0, ge=0, example=1.5)
+    unit_cost: float = Field(default=0, ge=0, example=1)
     quantity: int = Field(ge=1, example=1)
 
 
@@ -163,3 +164,5 @@ class UpdatePreOrder(GenericModel):
 
 class PreOrderInDB(PreOrder, DatabaseModel):
     order_id: str | None = Field(default=None, example="ord_123")
+    total_amount: float = Field(ge=0, example=22.2)
+    total_cost: float = Field(ge=0, example=11.1)

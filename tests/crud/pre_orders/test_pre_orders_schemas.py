@@ -38,6 +38,7 @@ class TestPreOrderSchemas(unittest.TestCase):
             status=PreOrderStatus.PENDING,
             tax=0,
             total_amount=10,
+            total_cost=4,
             created_at=now,
             updated_at=now,
             is_active=True,

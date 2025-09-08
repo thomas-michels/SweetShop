@@ -13,6 +13,7 @@ class PreOrderModel(BaseDocument):
     delivery = DictField(required=True)
     observation = StringField(required=False)
     total_amount = FloatField(required=False)
+    total_cost = FloatField(required=False)
     status = StringField(default=None, required=False)
     items = ListField(DictField(), default=[])
     tax = FloatField(default=0, required=False)

@@ -35,6 +35,7 @@ class TestPreOrderRepository(unittest.IsolatedAsyncioTestCase):
             status=status.value,
             tax=0,
             total_amount=10,
+            total_cost=4,
         )
 
     async def test_update_status(self):
