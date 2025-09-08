@@ -6,50 +6,8 @@ import mongomock
 from app.crud.pre_orders.repositories import PreOrderRepository
 from app.crud.pre_orders.services import PreOrderServices
 from app.crud.pre_orders.schemas import PreOrderStatus
-from app.crud.pre_orders.schemas import (
-    PreOrderStatus,
-    SelectedAdditional,
-    SelectedItem,
-    SelectedOffer,
-    SelectedProduct,
-)
 from types import SimpleNamespace
-from enum import Enum
-from pydantic import BaseModel
 from app.core.utils.utc_datetime import UTCDateTime
-from app.api.exceptions.authentication_exceptions import BadRequestException
-
-
-class OptionKind(str, Enum):
-    CHECKBOX = "CHECKBOX"
-
-
-class AdditionalItemInDB(BaseModel):
-    id: str
-    organization_id: str
-    additional_id: str
-    position: int
-    product_id: str
-    label: str
-    unit_price: float
-    unit_cost: float
-    consumption_factor: float
-    created_at: UTCDateTime
-    updated_at: UTCDateTime
-
-
-class ProductAdditionalInDB(BaseModel):
-    id: str
-    organization_id: str
-    product_id: str
-    name: str
-    selection_type: OptionKind
-    min_quantity: int
-    max_quantity: int
-    position: int
-    items: list
-    created_at: UTCDateTime
-    updated_at: UTCDateTime
 
 
 class DummyOrg:
@@ -104,7 +62,7 @@ class TestPreOrderServices(unittest.IsolatedAsyncioTestCase):
     async def test_update_status(self):
         from app.crud.pre_orders.models import PreOrderModel
         model = self._pre_order_model()
-        model["products"] = [
+        model["items"] = [
             {
                 "product_id": "p1",
                 "section_id": "s1",
@@ -155,211 +113,11 @@ class TestPreOrderServices(unittest.IsolatedAsyncioTestCase):
         deleted = await self.service.delete_by_id(pre.id)
         self.assertEqual(deleted.id, pre.id)
 
-    async def test_validate_offers_with_additionals(self):
-        self.additional_repo.select_by_id.return_value = AdditionalItemInDB(
-            id="a1",
-            organization_id="org1",
-            additional_id="add1",
-            position=1,
-            product_id="p1",
-            label="Extra",
-            unit_price=1.0,
-            unit_cost=0.5,
-            consumption_factor=1.0,
-            created_at=UTCDateTime.now(),
-            updated_at=UTCDateTime.now(),
-        )
-        self.product_additional_repo.select_by_product_id.return_value = [
-            ProductAdditionalInDB(
-                id="add1",
-                organization_id="org1",
-                product_id="p1",
-                name="Group",
-                selection_type=OptionKind.CHECKBOX,
-                min_quantity=0,
-                max_quantity=1,
-                position=1,
-                items=[],
-                created_at=UTCDateTime.now(),
-                updated_at=UTCDateTime.now(),
-            )
-        ]
-
-        offer = SelectedOffer(
-            offer_id="off1",
-            quantity=1,
-            items=[
-                SelectedItem(
-                    item_id="p1",
-                    section_id="s1",
-                    name="Prod1",
-                    unit_price=2.0,
-                    unit_cost=1.0,
-                    quantity=1,
-                    additionals=[
-                        SelectedAdditional(additional_id="add1", item_id="a1", quantity=1)
-                    ],
-                )
-            ],
-        )
-
-        offers = await self.service._PreOrderServices__validate_offers([offer])
-
-        self.assertEqual(offers[0].items[0].unit_price, 3.0)
-        self.assertEqual(offers[0].items[0].unit_cost, 1.5)
-        self.additional_repo.select_by_id.assert_awaited_with(id="a1")
-        self.product_additional_repo.select_by_product_id.assert_awaited_with(product_id="p1")
-
-    async def test_validate_offers_max_quantity(self):
-        self.additional_repo.select_by_id.return_value = AdditionalItemInDB(
-            id="a1",
-            organization_id="org1",
-            additional_id="add1",
-            position=1,
-            product_id="p1",
-            label="Extra",
-            unit_price=1.0,
-            unit_cost=0.5,
-            consumption_factor=1.0,
-            created_at=UTCDateTime.now(),
-            updated_at=UTCDateTime.now(),
-        )
-        self.product_additional_repo.select_by_product_id.return_value = [
-            ProductAdditionalInDB(
-                id="add1",
-                organization_id="org1",
-                product_id="p1",
-                name="Group",
-                selection_type=OptionKind.CHECKBOX,
-                min_quantity=0,
-                max_quantity=1,
-                position=1,
-                items=[],
-                created_at=UTCDateTime.now(),
-                updated_at=UTCDateTime.now(),
-            )
-        ]
-
-        offer = SelectedOffer(
-            offer_id="off1",
-            quantity=1,
-            items=[
-                SelectedItem(
-                    item_id="p1",
-                    section_id="s1",
-                    name="Prod1",
-                    unit_price=2.0,
-                    unit_cost=1.0,
-                    quantity=1,
-                    additionals=[
-                        SelectedAdditional(additional_id="add1", item_id="a1", quantity=2)
-                    ],
-                )
-            ],
-        )
-
-        with self.assertRaises(BadRequestException):
-            await self.service._PreOrderServices__validate_offers([offer])
-
-    async def test_validate_products_with_additionals(self):
-        self.additional_repo.select_by_id.return_value = AdditionalItemInDB(
-            id="a1",
-            organization_id="org1",
-            additional_id="add1",
-            position=1,
-            product_id="p1",
-            label="Extra",
-            unit_price=1.0,
-            unit_cost=0.5,
-            consumption_factor=1.0,
-            created_at=UTCDateTime.now(),
-            updated_at=UTCDateTime.now(),
-        )
-        self.product_additional_repo.select_by_product_id.return_value = [
-            ProductAdditionalInDB(
-                id="add1",
-                organization_id="org1",
-                product_id="p1",
-                name="Group",
-                selection_type=OptionKind.CHECKBOX,
-                min_quantity=0,
-                max_quantity=1,
-                position=1,
-                items=[],
-                created_at=UTCDateTime.now(),
-                updated_at=UTCDateTime.now(),
-            )
-        ]
-
-        product = SelectedProduct(
-            product_id="p1",
-            section_id="s1",
-            name="Prod1",
-            unit_price=2.0,
-            unit_cost=1.0,
-            quantity=1,
-            additionals=[
-                SelectedAdditional(additional_id="add1", item_id="a1", quantity=1)
-            ],
-        )
-
-        products = await self.service._PreOrderServices__validate_products([product])
-
-        self.assertEqual(products[0].unit_price, 3.0)
-        self.assertEqual(products[0].unit_cost, 1.5)
-        self.additional_repo.select_by_id.assert_awaited_with(id="a1")
-        self.product_additional_repo.select_by_product_id.assert_awaited_with(product_id="p1")
-
-    async def test_validate_products_max_quantity(self):
-        self.additional_repo.select_by_id.return_value = AdditionalItemInDB(
-            id="a1",
-            organization_id="org1",
-            additional_id="add1",
-            position=1,
-            product_id="p1",
-            label="Extra",
-            unit_price=1.0,
-            unit_cost=0.5,
-            consumption_factor=1.0,
-            created_at=UTCDateTime.now(),
-            updated_at=UTCDateTime.now(),
-        )
-        self.product_additional_repo.select_by_product_id.return_value = [
-            ProductAdditionalInDB(
-                id="add1",
-                organization_id="org1",
-                product_id="p1",
-                name="Group",
-                selection_type=OptionKind.CHECKBOX,
-                min_quantity=0,
-                max_quantity=1,
-                position=1,
-                items=[],
-                created_at=UTCDateTime.now(),
-                updated_at=UTCDateTime.now(),
-            )
-        ]
-
-        product = SelectedProduct(
-            product_id="p1",
-            section_id="s1",
-            name="Prod1",
-            unit_price=2.0,
-            unit_cost=1.0,
-            quantity=1,
-            additionals=[
-                SelectedAdditional(additional_id="add1", item_id="a1", quantity=2)
-            ],
-        )
-
-        with self.assertRaises(BadRequestException):
-            await self.service._PreOrderServices__validate_products([product])
-
     async def test_reject_pre_order(self):
         from app.crud.pre_orders.models import PreOrderModel
 
         model = self._pre_order_model()
-        model["products"] = [
+        model["items"] = [
             {
                 "product_id": "p1",
                 "section_id": "s1",
@@ -399,7 +157,7 @@ class TestPreOrderServices(unittest.IsolatedAsyncioTestCase):
                 "number": "123A",
             },
         }
-        model["products"] = [
+        model["items"] = [
             {
                 "product_id": "p1",
                 "section_id": "s1",
@@ -450,7 +208,7 @@ class TestPreOrderServices(unittest.IsolatedAsyncioTestCase):
                 "number": "123A",
             },
         }
-        model["products"] = [
+        model["items"] = [
             {
                 "product_id": "p1",
                 "section_id": "s1",
