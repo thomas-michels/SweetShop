@@ -2,6 +2,7 @@ from typing import List
 from pydantic import Field, ConfigDict
 from app.api.shared_schemas.responses import Response, ListResponseSchema
 from app.crud.pre_orders.schemas import PreOrderInDB
+from app.crud.orders.schemas import OrderInDB
 EXAMPLE_PRE_ORDER = {
     "id": "pre_123",
     "code": "45623",
@@ -72,3 +73,15 @@ class UpdatePreOrderResponse(Response):
 class DeletePreOrderResponse(Response):
     data: PreOrderInDB | None = Field()
     model_config = ConfigDict(json_schema_extra={"example": {"message": "Pré pedido deletado com sucesso", "data": EXAMPLE_PRE_ORDER}})
+
+
+class AcceptPreOrderResponse(Response):
+    data: OrderInDB | None = Field()
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "message": "Pré pedido aceito com sucesso",
+                "data": {},
+            }
+        }
+    )

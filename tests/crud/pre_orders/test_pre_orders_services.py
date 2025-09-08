@@ -12,6 +12,7 @@ from app.crud.pre_orders.schemas import (
     SelectedOffer,
     SelectedProduct,
 )
+from types import SimpleNamespace
 from enum import Enum
 from pydantic import BaseModel
 from app.core.utils.utc_datetime import UTCDateTime
@@ -101,7 +102,20 @@ class TestPreOrderServices(unittest.IsolatedAsyncioTestCase):
 
     async def test_update_status(self):
         from app.crud.pre_orders.models import PreOrderModel
-        pre = PreOrderModel(**self._pre_order_model())
+        model = self._pre_order_model()
+        model["products"] = [
+            {
+                "product_id": "p1",
+                "section_id": "s1",
+                "name": "Prod1",
+                "file_id": None,
+                "unit_price": 1.0,
+                "unit_cost": 0.5,
+                "quantity": 1,
+                "additionals": [],
+            }
+        ]
+        pre = PreOrderModel(**model)
         pre.save()
         self.customer_repo.select_by_phone.return_value = None
         self.organization_repo.select_by_id.return_value = DummyOrg()
@@ -339,3 +353,131 @@ class TestPreOrderServices(unittest.IsolatedAsyncioTestCase):
 
         with self.assertRaises(BadRequestException):
             await self.service._PreOrderServices__validate_products([product])
+
+    async def test_reject_pre_order(self):
+        from app.crud.pre_orders.models import PreOrderModel
+
+        model = self._pre_order_model()
+        model["products"] = [
+            {
+                "product_id": "p1",
+                "section_id": "s1",
+                "name": "Prod1",
+                "file_id": None,
+                "unit_price": 1.0,
+                "unit_cost": 0.5,
+                "quantity": 1,
+                "additionals": [],
+            }
+        ]
+        pre = PreOrderModel(**model)
+        pre.save()
+
+        self.customer_repo.select_by_phone.return_value = None
+        self.organization_repo.select_by_id.return_value = DummyOrg()
+
+        rejected = await self.service.reject_pre_order(pre.id)
+
+        self.assertEqual(rejected.status, PreOrderStatus.REJECTED)
+        self.message_services.create.assert_awaited()
+
+    async def test_accept_pre_order_existing_customer_adds_address(self):
+        from app.crud.pre_orders.models import PreOrderModel
+
+        model = self._pre_order_model()
+        model["delivery"] = {
+            "delivery_type": "DELIVERY",
+            "delivery_value": 0,
+            "delivery_at": str(UTCDateTime.now()),
+            "address": {
+                "zip_code": "89066-000",
+                "city": "Blumenau",
+                "neighborhood": "Bairro dos testes",
+                "line_1": "Rua de teste",
+                "line_2": "Casa",
+                "number": "123A",
+            },
+        }
+        model["products"] = [
+            {
+                "product_id": "p1",
+                "section_id": "s1",
+                "name": "Prod1",
+                "file_id": None,
+                "unit_price": 1.0,
+                "unit_cost": 0.5,
+                "quantity": 1,
+                "additionals": [],
+            }
+        ]
+        pre = PreOrderModel(**model)
+        pre.save()
+
+        existing_customer = SimpleNamespace(id="cus1", addresses=[])
+
+        self.customer_repo.select_by_phone.return_value = existing_customer
+        self.customer_repo.update.return_value = existing_customer
+        self.organization_repo.select_by_id.return_value = DummyOrg()
+
+        mock_order_services = AsyncMock()
+        mock_order_services.create.return_value = "order_created"
+
+        order = await self.service.accept_pre_order(pre.id, mock_order_services)
+
+        self.assertEqual(order, "order_created")
+        self.customer_repo.update.assert_awaited()
+        updated_customer = self.customer_repo.update.call_args.kwargs["customer"]
+        self.assertEqual(updated_customer.addresses[0].zip_code, "89066-000")
+        mock_order_services.create.assert_awaited()
+        self.message_services.create.assert_awaited()
+
+    async def test_accept_pre_order_creates_customer_with_address(self):
+        from app.crud.pre_orders.models import PreOrderModel
+
+        model = self._pre_order_model()
+        model["customer"]["phone_number"] = "99887766"
+        model["delivery"] = {
+            "delivery_type": "DELIVERY",
+            "delivery_value": 0,
+            "delivery_at": str(UTCDateTime.now()),
+            "address": {
+                "zip_code": "89066-000",
+                "city": "Blumenau",
+                "neighborhood": "Bairro dos testes",
+                "line_1": "Rua de teste",
+                "line_2": "Casa",
+                "number": "123A",
+            },
+        }
+        model["products"] = [
+            {
+                "product_id": "p1",
+                "section_id": "s1",
+                "name": "Prod1",
+                "file_id": None,
+                "unit_price": 1.0,
+                "unit_cost": 0.5,
+                "quantity": 1,
+                "additionals": [],
+            }
+        ]
+        pre = PreOrderModel(**model)
+        pre.save()
+
+        created_customer = SimpleNamespace(id="cus1", addresses=[])
+
+        self.customer_repo.select_by_phone.return_value = None
+        self.customer_repo.create.return_value = created_customer
+        self.organization_repo.select_by_id.return_value = DummyOrg()
+
+        mock_order_services = AsyncMock()
+        mock_order_services.create.return_value = "order_created"
+
+        order = await self.service.accept_pre_order(pre.id, mock_order_services)
+
+        self.assertEqual(order, "order_created")
+        self.customer_repo.create.assert_awaited()
+        created_customer_arg = self.customer_repo.create.call_args.kwargs["customer"]
+        self.assertEqual(created_customer_arg.addresses[0].zip_code, "89066-000")
+        mock_order_services.create.assert_awaited()
+        self.message_services.create.assert_awaited()
