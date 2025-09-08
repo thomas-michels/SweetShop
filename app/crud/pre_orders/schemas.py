@@ -74,7 +74,6 @@ class SelectedAdditional(GenericModel):
 
 class SelectedOfferItem(GenericModel):
     item_id: str = Field(example="123")
-    section_id: str = Field(example="123")
     name: str = Field(example="Bacon")
     file_id: str | None = Field(default=None)
     unit_price: float = Field(ge=0)
@@ -94,7 +93,6 @@ class SelectedBase(GenericModel):
 class SelectedProduct(SelectedBase):
     kind: Literal["PRODUCT"] = "PRODUCT"
     product_id: str = Field(example="prod_123")
-    section_id: str = Field(example="123")
     name: str = Field(example="Brigadeiro")
     file_id: str | None = Field(default=None)
     unit_price: float = Field(ge=0)
