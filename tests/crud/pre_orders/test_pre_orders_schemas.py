@@ -23,17 +23,18 @@ class TestPreOrderSchemas(unittest.TestCase):
     def test_pre_order_in_db_creation(self):
         customer = PreOrderCustomer(name="Ted", ddd="047", phone_number="9988")
         delivery = Delivery(delivery_type=DeliveryType.WITHDRAWAL)
-        offer = SelectedOffer(offer_id="off1", quantity=1)
+        offer = SelectedOffer(offer_id="off1", name="Combo", unit_price=10.0, unit_cost=5.0, quantity=1)
         now = UTCDateTime.now()
         pre = PreOrderInDB(
             id="pre1",
             organization_id="org1",
+            user_id="usr1",
             code="001",
             menu_id="men1",
             payment_method="CASH",
             customer=customer,
             delivery=delivery,
-            offers=[offer],
+            items=[offer],
             status=PreOrderStatus.PENDING,
             tax=0,
             total_amount=10,
