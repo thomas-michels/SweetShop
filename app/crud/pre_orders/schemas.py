@@ -68,7 +68,7 @@ class SelectedAdditional(GenericModel):
     additional_id: str = Field(example="pad_123")
     item_id: str = Field(example="aitem_123")
     name: str | None = Field(default=None, example="Bacon extra")
-    unit_price: float = Field(ge=0, example=1.5)
+    unit_price: float = Field(default=0, ge=0, example=1.5)
     quantity: int = Field(ge=1, example=1)
 
 
@@ -108,13 +108,19 @@ class SelectedOffer(SelectedBase):
     name: str = Field(example="Combo")
     description: str | None = Field(default=None)
     file_id: str | None = Field(default=None)
-    unit_price: float = Field(ge=0)
-    unit_cost: float = Field(ge=0)
+    unit_price: float = Field(default=0, ge=0)
+    unit_cost: float = Field(default=0, ge=0)
     items: List[SelectedOfferItem] = Field(default=[])
     additionals: List[SelectedAdditional] = Field(default=[])
 
 
-PreOrderSelectedItem = Union[SelectedProduct, SelectedOffer]
+# ``SelectedItem`` is an alias for items inside an offer, kept for backward
+# compatibility with existing tests.
+SelectedItem = SelectedOfferItem
+
+# ``PreOrderItem`` represents a top-level item in the pre-order which can be
+# either a product or an offer.
+PreOrderItem = Union[SelectedProduct, SelectedOffer]
 
 
 class PreOrder(GenericModel):
@@ -139,8 +145,18 @@ class PreOrder(GenericModel):
         }
     )
     observation: str | None = Field(default=None, example="observation")
-    items: List[PreOrderSelectedItem] = Field(default=[])
+    items: List[PreOrderItem] = Field(default=[])
     tax: float | None = Field(default=0, example=12.2)
+
+    @property
+    def products(self) -> List[SelectedProduct]:
+        """Return only the selected products from ``items``."""
+        return [item for item in self.items if isinstance(item, SelectedProduct)]
+
+    @property
+    def offers(self) -> List[SelectedOffer]:
+        """Return only the selected offers from ``items``."""
+        return [item for item in self.items if isinstance(item, SelectedOffer)]
 
 
 class UpdatePreOrder(GenericModel):

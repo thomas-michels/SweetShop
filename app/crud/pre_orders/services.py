@@ -2,7 +2,6 @@ from typing import List
 
 from typing import TYPE_CHECKING
 from app.crud.messages.schemas import Message, MessageType, Origin
-from app.api.exceptions.authentication_exceptions import BadRequestException
 from app.core.utils.utc_datetime import UTCDateTime
 from app.crud.customers.schemas import Customer
 from app.crud.orders.schemas import (
@@ -26,8 +25,6 @@ if TYPE_CHECKING:  # pragma: no cover
 from .schemas import (
     PreOrderInDB,
     PreOrderStatus,
-    SelectedOffer,
-    SelectedProduct,
 )
 
 
