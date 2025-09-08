@@ -52,10 +52,11 @@ class PreOrderServices:
         self.__cache_customers = {}
         self.__cache_offers = {}
 
-    async def update_status(self, pre_order_id: str, new_status: PreOrderStatus, expand: List[str] = []) -> PreOrderInDB:
+    async def update_status(self, pre_order_id: str, new_status: PreOrderStatus, order_id: str | None = None, expand: List[str] = []) -> PreOrderInDB:
         pre_order_in_db = await self.__pre_order_repository.update_status(
             pre_order_id=pre_order_id,
-            new_status=new_status
+            new_status=new_status,
+            order_id=order_id,
         )
 
         await self.send_client_message(
@@ -152,7 +153,9 @@ class PreOrderServices:
 
         order_in_db = await order_services.create(order=request_order)
         await self.update_status(
-            pre_order_id=pre_order_id, new_status=PreOrderStatus.ACCEPTED
+            pre_order_id=pre_order_id,
+            new_status=PreOrderStatus.ACCEPTED,
+            order_id=order_in_db.id,
         )
 
         return order_in_db

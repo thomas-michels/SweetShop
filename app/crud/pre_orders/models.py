@@ -16,6 +16,7 @@ class PreOrderModel(BaseDocument):
     status = StringField(default=None, required=False)
     items = ListField(DictField(), default=[])
     tax = FloatField(default=0, required=False)
+    order_id = StringField(required=False)
 
     meta = {
         "collection": "pre_orders"

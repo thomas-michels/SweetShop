@@ -43,3 +43,4 @@ class TestPreOrderSchemas(unittest.TestCase):
             is_active=True,
         )
         self.assertEqual(pre.code, "001")
+        self.assertIsNone(pre.order_id)

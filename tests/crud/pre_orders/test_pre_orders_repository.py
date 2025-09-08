@@ -40,8 +40,9 @@ class TestPreOrderRepository(unittest.IsolatedAsyncioTestCase):
     async def test_update_status(self):
         model = self._pre_order_model()
         model.save()
-        updated = await self.repo.update_status(model.id, PreOrderStatus.ACCEPTED)
+        updated = await self.repo.update_status(model.id, PreOrderStatus.ACCEPTED, order_id="ord1")
         self.assertEqual(updated.status, PreOrderStatus.ACCEPTED)
+        self.assertEqual(updated.order_id, "ord1")
 
     async def test_select_count_and_all(self):
         self._pre_order_model(code="A").save()

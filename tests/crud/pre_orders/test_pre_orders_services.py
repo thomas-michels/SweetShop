@@ -179,11 +179,13 @@ class TestPreOrderServices(unittest.IsolatedAsyncioTestCase):
         self.organization_repo.select_by_id.return_value = DummyOrg()
 
         mock_order_services = AsyncMock()
-        mock_order_services.create.return_value = "order_created"
+        mock_order_services.create.return_value = SimpleNamespace(id="ord1")
 
         order = await self.service.accept_pre_order(pre.id, mock_order_services)
 
-        self.assertEqual(order, "order_created")
+        self.assertEqual(order.id, "ord1")
+        pre_in_db = await self.service.search_by_id(pre.id)
+        self.assertEqual(pre_in_db.order_id, "ord1")
         self.customer_repo.update.assert_awaited()
         updated_customer = self.customer_repo.update.call_args.kwargs["customer"]
         self.assertEqual(updated_customer.addresses[0].zip_code, "89066-000")
@@ -230,11 +232,11 @@ class TestPreOrderServices(unittest.IsolatedAsyncioTestCase):
         self.organization_repo.select_by_id.return_value = DummyOrg()
 
         mock_order_services = AsyncMock()
-        mock_order_services.create.return_value = "order_created"
+        mock_order_services.create.return_value = SimpleNamespace(id="ord1")
 
         order = await self.service.accept_pre_order(pre.id, mock_order_services)
 
-        self.assertEqual(order, "order_created")
+        self.assertEqual(order.id, "ord1")
         self.customer_repo.create.assert_awaited()
         created_customer_arg = self.customer_repo.create.call_args.kwargs["customer"]
         self.assertEqual(created_customer_arg.addresses[0].zip_code, "89066-000")
