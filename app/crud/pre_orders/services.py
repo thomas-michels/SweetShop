@@ -14,7 +14,6 @@ if TYPE_CHECKING:  # pragma: no cover
     from .repositories import PreOrderRepository
 
 from .schemas import (
-    CompletePreOrder,
     PreOrderInDB,
     PreOrderStatus,
     SelectedOffer,
@@ -56,19 +55,10 @@ class PreOrderServices:
             pre_order=pre_order_in_db
         )
 
-        return await self.__build_pre_order(
-            pre_order_in_db=pre_order_in_db,
-            expand=expand
-        )
+        return pre_order_in_db
 
     async def search_by_id(self, id: str, expand: List[str] = []) -> PreOrderInDB:
         pre_order_in_db = await self.__pre_order_repository.select_by_id(id=id)
-
-        if pre_order_in_db:
-            return await self.__build_pre_order(
-                pre_order_in_db=pre_order_in_db,
-                expand=expand
-            )
 
         return pre_order_in_db
 
@@ -90,138 +80,11 @@ class PreOrderServices:
             page_size=page_size
         )
 
-        complete_pre_orders = []
-
-        for pre_order_in_db in pre_orders:
-            if pre_order_in_db:
-                complete_pre_orders.append(
-                    await self.__build_pre_order(
-                        pre_order_in_db=pre_order_in_db,
-                        expand=expand
-                    )
-                )
-
-        return complete_pre_orders
+        return pre_orders
 
     async def delete_by_id(self, id: str) -> PreOrderInDB:
         pre_order_in_db = await self.__pre_order_repository.delete_by_id(id=id)
         return pre_order_in_db
-
-    async def __build_pre_order(self, pre_order_in_db: PreOrderInDB, expand: List[str] = []) -> CompletePreOrder:
-        complete_pre_order = CompletePreOrder.model_validate(pre_order_in_db)
-
-        await self.__validate_offers(complete_pre_order.offers)
-        await self.__validate_products(complete_pre_order.products)
-
-        full_phone = f"{pre_order_in_db.customer.international_code}{pre_order_in_db.customer.ddd}{pre_order_in_db.customer.phone_number}"
-
-        if full_phone not in self.__cache_customers:
-            customer_in_db = await self.__customer_repository.select_by_phone(
-                international_code=pre_order_in_db.customer.international_code,
-                ddd=pre_order_in_db.customer.ddd,
-                phone_number=pre_order_in_db.customer.phone_number,
-                raise_404=False
-            )
-            self.__cache_customers[full_phone] = customer_in_db
-
-        else:
-            customer_in_db = self.__cache_customers.get(full_phone)
-
-        if customer_in_db:
-            pre_order_in_db.customer.customer_id = customer_in_db.id
-
-        if "offers" in expand:
-            complete_offers = []
-
-            for offer in complete_pre_order.offers:
-                if offer.offer_id not in self.__cache_offers:
-                    offer_in_db = await self.__offer_repository.select_by_id(id=offer.offer_id, raise_404=False)
-                    self.__cache_offers[offer.offer_id] = offer_in_db
-
-                else:
-                    offer_in_db = self.__cache_offers.get(offer.offer_id)
-
-                if offer_in_db:
-                    offer_copy = offer_in_db.model_copy(deep=True)
-                    offer_copy.quantity = offer.quantity
-                    complete_offers.append(offer_copy)
-
-            complete_pre_order.offers = complete_offers
-
-        return complete_pre_order
-
-    async def __validate_offers(self, offers: List[SelectedOffer]) -> List[SelectedOffer]:
-        for offer in offers:
-            if not offer.items:
-                continue
-
-            for item in offer.items:
-                additionals_group = await self.__product_additional_repository.select_by_product_id(
-                    product_id=item.item_id
-                )
-
-                group_map = {grp.id: grp for grp in additionals_group}
-                group_counts = {grp.id: 0 for grp in additionals_group}
-
-                if not item.additionals:
-                    item.additionals = []
-
-                for additional in item.additionals:
-                    item_in_db = await self.__additional_item_repository.select_by_id(id=additional.item_id)
-
-                    if (
-                        item_in_db.additional_id not in group_map
-                        or item_in_db.additional_id != additional.additional_id
-                    ):
-                        raise BadRequestException(
-                            detail="Additional item not allowed for this product"
-                        )
-
-                    group_counts[item_in_db.additional_id] += additional.quantity
-                    item.unit_price += item_in_db.unit_price * additional.quantity
-                    item.unit_cost += item_in_db.unit_cost * additional.quantity
-
-                for grp_id, grp in group_map.items():
-                    count = group_counts.get(grp_id, 0)
-                    if item.additionals and (count < grp.min_quantity or count > grp.max_quantity):
-                        raise BadRequestException(
-                            detail=f"Invalid quantity for additional group {grp.name}"
-                        )
-
-        return offers
-
-    async def __validate_products(self, products: List[SelectedProduct]) -> List[SelectedProduct]:
-        for product in products:
-            additionals_group = await self.__product_additional_repository.select_by_product_id(
-                product_id=product.product_id
-            )
-
-            group_map = {grp.id: grp for grp in additionals_group}
-            group_counts = {grp.id: 0 for grp in additionals_group}
-
-            for additional in product.additionals:
-                item_in_db = await self.__additional_item_repository.select_by_id(id=additional.item_id)
-
-                if (
-                    item_in_db.additional_id not in group_map
-                    or item_in_db.additional_id != additional.additional_id
-                ):
-                    raise BadRequestException(
-                        detail="Additional item not allowed for this product"
-                    )
-
-                group_counts[item_in_db.additional_id] += additional.quantity
-                product.unit_price += item_in_db.unit_price * additional.quantity
-                product.unit_cost += item_in_db.unit_cost * additional.quantity
-
-            for grp_id, grp in group_map.items():
-                count = group_counts.get(grp_id, 0)
-                if product.additionals and (count < grp.min_quantity or count > grp.max_quantity):
-                    raise BadRequestException(
-                        detail=f"Invalid quantity for additional group {grp.name}"
-                    )
-
-        return products
 
     async def send_client_message(self, pre_order: PreOrderInDB) -> bool:
         if not (pre_order.customer.international_code and pre_order.customer.ddd and pre_order.customer.phone_number):
@@ -242,7 +105,7 @@ Aguarde o contato estabelecimento para maiores informações!
 
 Em caso de dúvidas o número de contato do estabelecimento para contato é +{organization.international_code} {organization.ddd} {organization.phone_number}
 
-_pedidoZ_"""
+_Está é uma mensagem automática gerada pela PedidoZ, por favor não responda!_"""
 
         message = Message(
             international_code=pre_order.customer.international_code,
