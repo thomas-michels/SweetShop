@@ -162,4 +162,4 @@ class UpdatePreOrder(GenericModel):
 
 
 class PreOrderInDB(PreOrder, DatabaseModel):
-    ...
+    order_id: str | None = Field(default=None, example="ord_123")
