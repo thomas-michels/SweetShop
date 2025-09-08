@@ -1,14 +1,11 @@
 from enum import Enum
-from typing import List, TYPE_CHECKING, Union
+from typing import List, Literal, Union
 from pydantic import Field, model_validator
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
+from app.core.utils.utc_datetime import UTCDateTime, UTCDateTimeType
 from app.crud.shared_schemas.address import Address
 from app.crud.shared_schemas.payment import PaymentMethod
-from app.core.utils.utc_datetime import UTCDateTime, UTCDateTimeType
-
-if TYPE_CHECKING:  # pragma: no cover
-    from app.crud.offers.schemas import OfferInDB
 
 
 class PreOrderStatus(str, Enum):
@@ -70,10 +67,12 @@ class Delivery(GenericModel):
 class SelectedAdditional(GenericModel):
     additional_id: str = Field(example="pad_123")
     item_id: str = Field(example="aitem_123")
+    name: str | None = Field(default=None, example="Bacon extra")
+    unit_price: float = Field(default=0, ge=0, example=1.5)
     quantity: int = Field(ge=1, example=1)
 
 
-class SelectedItem(GenericModel):
+class SelectedOfferItem(GenericModel):
     item_id: str = Field(example="123")
     section_id: str = Field(example="123")
     name: str = Field(example="Bacon")
@@ -84,59 +83,85 @@ class SelectedItem(GenericModel):
     additionals: List[SelectedAdditional] = Field(default=[])
 
 
-class SelectedProduct(GenericModel):
+class SelectedBase(GenericModel):
+    quantity: int = Field(ge=1, example=1)
+    observation: str | None = Field(
+        default=None,
+        example="Sem cebola / aniversário 20h",
+    )
+
+
+class SelectedProduct(SelectedBase):
+    kind: Literal["PRODUCT"] = "PRODUCT"
     product_id: str = Field(example="prod_123")
     section_id: str = Field(example="123")
     name: str = Field(example="Brigadeiro")
     file_id: str | None = Field(default=None)
     unit_price: float = Field(ge=0)
     unit_cost: float = Field(ge=0)
-    quantity: int = Field(ge=1, example=1)
     additionals: List[SelectedAdditional] = Field(default=[])
 
 
-class SelectedOffer(GenericModel):
+class SelectedOffer(SelectedBase):
+    kind: Literal["OFFER"] = "OFFER"
     offer_id: str = Field(example="off_123")
-    quantity: int = Field(gt=0, example=1)
-    items: List[SelectedItem] = Field(default=[])
+    name: str = Field(example="Combo")
+    description: str | None = Field(default=None)
+    file_id: str | None = Field(default=None)
+    unit_price: float = Field(default=0, ge=0)
+    unit_cost: float = Field(default=0, ge=0)
+    items: List[SelectedOfferItem] = Field(default=[])
+    additionals: List[SelectedAdditional] = Field(default=[])
 
 
-class PreOrderInDB(GenericModel, DatabaseModel):
-    code: str = Field(example="45623")
+# ``SelectedItem`` is an alias for items inside an offer, kept for backward
+# compatibility with existing tests.
+SelectedItem = SelectedOfferItem
+
+# ``PreOrderItem`` represents a top-level item in the pre-order which can be
+# either a product or an offer.
+PreOrderItem = Union[SelectedProduct, SelectedOffer]
+
+
+class PreOrder(GenericModel):
+    user_id: str = Field(example="usr_123")
+    status: PreOrderStatus = Field(example=PreOrderStatus.PENDING)
     menu_id: str = Field(example="men_123")
     payment_method: PaymentMethod = Field(example=PaymentMethod.CASH)
-    customer: PreOrderCustomer = Field(example={
-        "name": "Ted Mosby",
-        "ddd": "047",
-        "phone_number": "998899889"
-    })
-    delivery: Delivery = Field(example={
-        "delivery_type": "DELIVERY",
-        "address": {
-            "zip_code": "89066-000",
-            "city": "Blumenau",
-            "neighborhood": "Bairro dos testes",
-            "line_1": "Rua de teste",
-            "line_2": "Casa",
-            "number": "123A",
+    customer: PreOrderCustomer = Field(
+        example={"name": "Ted Mosby", "ddd": "047", "phone_number": "998899889"},
+    )
+    delivery: Delivery = Field(
+        example={
+            "delivery_type": "DELIVERY",
+            "address": {
+                "zip_code": "89066-000",
+                "city": "Blumenau",
+                "neighborhood": "Bairro dos testes",
+                "line_1": "Rua de teste",
+                "line_2": "Casa",
+                "number": "123A",
+            },
         }
-    })
+    )
     observation: str | None = Field(default=None, example="observation")
-    offers: List[SelectedOffer] = Field(default=[], example=[
-        {
-            "offer_id": "off_123",
-            "quantity": 5
-        }
-    ])
-    products: List[SelectedProduct] = Field(default=[])
-    status: PreOrderStatus | None = Field(default=PreOrderStatus.PENDING, example=PreOrderStatus.ACCEPTED)
-    tax: float | None = Field(default=0)
-    total_amount: float | None = Field(default=None, example=123)
+    items: List[PreOrderItem] = Field(default=[])
+    tax: float | None = Field(default=0, example=12.2)
+
+    @property
+    def products(self) -> List[SelectedProduct]:
+        """Return only the selected products from ``items``."""
+        return [item for item in self.items if isinstance(item, SelectedProduct)]
+
+    @property
+    def offers(self) -> List[SelectedOffer]:
+        """Return only the selected offers from ``items``."""
+        return [item for item in self.items if isinstance(item, SelectedOffer)]
 
 
 class UpdatePreOrder(GenericModel):
     status: PreOrderStatus = Field()
 
 
-class CompletePreOrder(PreOrderInDB):
-    offers: List[SelectedOffer] = Field(default=[])
+class PreOrderInDB(PreOrder, DatabaseModel):
+    ...

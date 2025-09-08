@@ -1,10 +1,16 @@
 from typing import List
-from pydantic import Field, ConfigDict
-from app.api.shared_schemas.responses import Response, ListResponseSchema
-from app.crud.pre_orders.schemas import PreOrderInDB
+
+from pydantic import ConfigDict, Field
+
+from app.api.shared_schemas.responses import ListResponseSchema, Response
+from app.api.routers.orders.schemas import EXAMPLE_ORDER
 from app.crud.orders.schemas import OrderInDB
+from app.crud.pre_orders.schemas import PreOrderInDB
+
 EXAMPLE_PRE_ORDER = {
     "id": "pre_123",
+    "organization_id": "org_123",
+    "user_id": "usr_123",
     "code": "45623",
     "menu_id": "men_123",
     "payment_method": "CASH",
@@ -61,27 +67,81 @@ EXAMPLE_PRE_ORDER = {
     "created_at": "2024-01-01T00:00:00Z",
     "updated_at": "2024-01-01T00:00:00Z",
 }
+
+
+class PreOrderResponse(PreOrderInDB):
+    """Response schema for a single pre-order."""
+
+    model_config = ConfigDict(json_schema_extra={"example": EXAMPLE_PRE_ORDER})
+
+
+class OrderResponse(OrderInDB):
+    """Response schema for an order created from a pre-order."""
+
+    model_config = ConfigDict(json_schema_extra={"example": EXAMPLE_ORDER})
+
+
 class GetPreOrdersResponse(ListResponseSchema):
-    data: List[PreOrderInDB] = Field()
-    model_config = ConfigDict(json_schema_extra={"example": {"message": "Pré pedidos encontrados com sucesso", "pagination": {"page": 1, "page_size": 1, "total": 1}, "data": [EXAMPLE_PRE_ORDER]}})
+    data: List[PreOrderResponse] = Field()
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "message": "Pré pedidos encontrados com sucesso",
+                "pagination": {"page": 1, "page_size": 1, "total": 1},
+                "data": [EXAMPLE_PRE_ORDER],
+            }
+        }
+    )
+
+
 class GetPreOrderResponse(Response):
-    data: PreOrderInDB | None = Field()
-    model_config = ConfigDict(json_schema_extra={"example": {"message": "Pré pedido encontrado com sucesso", "data": EXAMPLE_PRE_ORDER}})
+    data: PreOrderResponse | None = Field()
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "message": "Pré pedido encontrado com sucesso",
+                "data": EXAMPLE_PRE_ORDER,
+            }
+        }
+    )
+
+
 class UpdatePreOrderResponse(Response):
-    data: PreOrderInDB | None = Field()
-    model_config = ConfigDict(json_schema_extra={"example": {"message": "Pré pedido atualizado com sucesso", "data": EXAMPLE_PRE_ORDER}})
+    data: PreOrderResponse | None = Field()
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "message": "Pré pedido atualizado com sucesso",
+                "data": EXAMPLE_PRE_ORDER,
+            }
+        }
+    )
+
+
 class DeletePreOrderResponse(Response):
-    data: PreOrderInDB | None = Field()
-    model_config = ConfigDict(json_schema_extra={"example": {"message": "Pré pedido deletado com sucesso", "data": EXAMPLE_PRE_ORDER}})
+    data: PreOrderResponse | None = Field()
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "message": "Pré pedido deletado com sucesso",
+                "data": EXAMPLE_PRE_ORDER,
+            }
+        }
+    )
 
 
 class AcceptPreOrderResponse(Response):
-    data: OrderInDB | None = Field()
+    data: OrderResponse | None = Field()
+
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
                 "message": "Pré pedido aceito com sucesso",
-                "data": {},
+                "data": EXAMPLE_ORDER,
             }
         }
     )
