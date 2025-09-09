@@ -42,15 +42,9 @@ class PreOrderServices:
     ) -> None:
         self.__pre_order_repository = pre_order_repository
         self.__customer_repository = customer_repository
-        self.__offer_repository = offer_repository
         self.__organization_repository = organization_repository
 
         self.__message_services = message_services
-        self.__additional_item_repository = additional_item_repository
-        self.__product_additional_repository = product_additional_repository
-
-        self.__cache_customers = {}
-        self.__cache_offers = {}
 
     async def update_status(self, pre_order_id: str, new_status: PreOrderStatus, order_id: str | None = None, expand: List[str] = []) -> PreOrderInDB:
         pre_order_in_db = await self.__pre_order_repository.update_status(
@@ -98,6 +92,7 @@ class PreOrderServices:
                 tags=[],
             )
             customer_in_db = await self.__customer_repository.create(customer=customer)
+
         else:
             if address and not any(
                 addr.zip_code == address.zip_code for addr in customer_in_db.addresses

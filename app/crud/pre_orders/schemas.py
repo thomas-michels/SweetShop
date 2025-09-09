@@ -26,6 +26,9 @@ class PreOrderCustomer(GenericModel):
         if self.international_code is None:
             self.international_code = "55"
 
+        if self.ddd is not None:
+            self.ddd = self.ddd.zfill(3)
+
         return self
 
 
