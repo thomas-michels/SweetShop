@@ -103,6 +103,7 @@ class PreOrderServices:
         pre_order.customer.customer_id = customer_in_db.id
 
         requested_products: List[RequestedProduct] = []
+        discount = 0.0
 
         for product in pre_order.products:
             requested_products.append(
@@ -120,6 +121,7 @@ class PreOrderServices:
             )
 
         for offer in pre_order.offers:
+            offer_items_total = 0.0
             for item in offer.items:
                 requested_products.append(
                     RequestedProduct(
@@ -135,6 +137,17 @@ class PreOrderServices:
                     )
                 )
 
+                item_total = item.unit_price
+                for add in item.additionals:
+                    item_total += add.unit_price * add.quantity
+                item_total *= item.quantity
+                offer_items_total += item_total
+
+            offer_items_total *= offer.quantity
+            offer_price_total = offer.unit_price * offer.quantity
+            if offer_items_total > offer_price_total:
+                discount += offer_items_total - offer_price_total
+
         delivery = Delivery(**pre_order.delivery.model_dump())
         now = UTCDateTime.now()
         request_order = RequestOrder(
@@ -144,6 +157,7 @@ class PreOrderServices:
             preparation_date=now,
             order_date=now,
             description=pre_order.observation,
+            discount=discount if discount > 0 else 0,
         )
 
         order_in_db = await order_services.create(order=request_order)

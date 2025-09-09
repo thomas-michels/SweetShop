@@ -243,3 +243,97 @@ class TestPreOrderServices(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(created_customer_arg.addresses[0].zip_code, "89066-000")
         mock_order_services.create.assert_awaited()
         self.message_services.create.assert_awaited()
+
+    async def test_accept_pre_order_with_offer_discount_and_additionals(self):
+        from app.crud.pre_orders.models import PreOrderModel
+
+        model = self._pre_order_model()
+        model["items"] = [
+            {
+                "kind": "OFFER",
+                "offer_id": "off1",
+                "name": "Combo Deluxe",
+                "unit_price": 35.0,
+                "unit_cost": 17.5,
+                "quantity": 2,
+                "items": [
+                    {
+                        "item_id": "p1",
+                        "name": "Prod1",
+                        "file_id": None,
+                        "unit_price": 10.0,
+                        "unit_cost": 5.0,
+                        "quantity": 2,
+                        "additionals": [
+                            {
+                                "additional_id": "pa1",
+                                "item_id": "a1",
+                                "name": "Add1",
+                                "unit_price": 2.0,
+                                "unit_cost": 1.0,
+                                "quantity": 1,
+                            },
+                            {
+                                "additional_id": "pa2",
+                                "item_id": "a2",
+                                "name": "Add2",
+                                "unit_price": 1.0,
+                                "unit_cost": 0.5,
+                                "quantity": 2,
+                            },
+                        ],
+                    },
+                    {
+                        "item_id": "p2",
+                        "name": "Prod2",
+                        "file_id": None,
+                        "unit_price": 8.0,
+                        "unit_cost": 4.0,
+                        "quantity": 1,
+                        "additionals": [
+                            {
+                                "additional_id": "pa3",
+                                "item_id": "a3",
+                                "name": "Add3",
+                                "unit_price": 0.5,
+                                "unit_cost": 0.2,
+                                "quantity": 4,
+                            }
+                        ],
+                    },
+                ],
+                "additionals": [],
+            }
+        ]
+        pre = PreOrderModel(**model)
+        pre.save()
+
+        existing_customer = SimpleNamespace(id="cus1", addresses=[])
+
+        self.customer_repo.select_by_phone.return_value = existing_customer
+        self.organization_repo.select_by_id.return_value = DummyOrg()
+
+        mock_order_services = AsyncMock()
+        mock_order_services.create.return_value = SimpleNamespace(id="ord1")
+
+        order = await self.service.accept_pre_order(pre.id, mock_order_services)
+
+        self.assertEqual(order.id, "ord1")
+        mock_order_services.create.assert_awaited()
+        created_order = mock_order_services.create.call_args.kwargs["order"]
+        # items total = 76, offer total = 70, discount = 6
+        self.assertEqual(created_order.discount, 6.0)
+        products = created_order.products
+        self.assertEqual(len(products), 2)
+        self.assertEqual(products[0].product_id, "p1")
+        self.assertEqual(products[0].quantity, 4)
+        self.assertEqual(len(products[0].additionals), 2)
+        self.assertEqual(products[0].additionals[0].item_id, "a1")
+        self.assertEqual(products[0].additionals[0].quantity, 1)
+        self.assertEqual(products[0].additionals[1].item_id, "a2")
+        self.assertEqual(products[0].additionals[1].quantity, 2)
+        self.assertEqual(products[1].product_id, "p2")
+        self.assertEqual(products[1].quantity, 2)
+        self.assertEqual(len(products[1].additionals), 1)
+        self.assertEqual(products[1].additionals[0].item_id, "a3")
+        self.assertEqual(products[1].additionals[0].quantity, 4)
