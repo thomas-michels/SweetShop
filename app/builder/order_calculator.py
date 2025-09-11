@@ -7,8 +7,8 @@ class OrderCalculator:
 
     def __init__(self, product_repository: ProductRepository):
         # The repository is kept for interface compatibility but is not used in
-        # the calculations since product values are stored with their
-        # additional costs already included.
+        # the calculations since all required values are already available in
+        # the provided products.
         self.__product_repository = product_repository
 
     async def calculate(
@@ -18,10 +18,34 @@ class OrderCalculator:
         discount: float,
         products: List[StoredProduct],
     ) -> float:
-        total_amount = delivery_value + additional - discount
+        """Calculate the total order amount.
+
+        The calculation follows the business rules:
+
+        1. sum product prices
+        2. add prices of selected additional items
+        3. include any order level additional charges
+        4. subtract the discount (without affecting the delivery fee)
+        5. add the delivery value
+
+        The returned amount does **not** include tax, which must be applied
+        separately by the service layer.
+        """
+
+        subtotal = additional
 
         for stored_product in products:
-            total_amount += stored_product.unit_price * stored_product.quantity
+            subtotal += stored_product.unit_price * stored_product.quantity
+
+            for additional_item in stored_product.additionals:
+                subtotal += (
+                    additional_item.unit_price
+                    * additional_item.quantity
+                    * stored_product.quantity
+                )
+
+        subtotal = max(subtotal - discount, 0)
+        total_amount = subtotal + delivery_value
 
         return round(total_amount, 2)
 
@@ -42,5 +66,18 @@ class OrderCalculator:
             product["quantity"] += stored_product.quantity
             product["total_cost"] += stored_product.unit_cost * stored_product.quantity
             product["total_amount"] += stored_product.unit_price * stored_product.quantity
+
+            for additional_item in stored_product.additionals:
+                product["total_cost"] += (
+                    additional_item.unit_cost
+                    * additional_item.consumption_factor
+                    * additional_item.quantity
+                    * stored_product.quantity
+                )
+                product["total_amount"] += (
+                    additional_item.unit_price
+                    * additional_item.quantity
+                    * stored_product.quantity
+                )
 
         return products
