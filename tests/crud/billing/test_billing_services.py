@@ -83,7 +83,14 @@ class TestBillingServices(unittest.IsolatedAsyncioTestCase):
         additional: float = 0,
         discount: float = 0,
     ) -> OrderInDB:
-        total_amount = sum(p.unit_price * p.quantity for p in products)
+        total_amount = 0.0
+        for product in products:
+            total_amount += product.unit_price * product.quantity
+            for item in product.additionals:
+                total_amount += (
+                    item.unit_price * item.quantity * product.quantity
+                )
+
         total_amount += additional - discount
         return OrderInDB(
             id=order_id,
@@ -487,7 +494,7 @@ class TestBillingServices(unittest.IsolatedAsyncioTestCase):
 
         billing = await service.get_billing_for_dashboard(month=now.month, year=now.year)
 
-        self.assertEqual(billing.total_amount, 13.0)
+        self.assertEqual(billing.total_amount, 16.0)
 
     @patch("app.crud.billing.services.RedisManager")
     @patch("app.crud.billing.services.get_plan_feature", new_callable=AsyncMock)
@@ -534,7 +541,7 @@ class TestBillingServices(unittest.IsolatedAsyncioTestCase):
         billings = await service.get_monthly_billings(last_months=1)
 
         self.assertEqual(len(billings), 1)
-        self.assertEqual(billings[0].total_amount, 13.0)
+        self.assertEqual(billings[0].total_amount, 16.0)
 
     @patch("app.crud.billing.services.RedisManager")
     @patch("app.crud.billing.services.get_plan_feature", new_callable=AsyncMock)
@@ -621,8 +628,8 @@ class TestBillingServices(unittest.IsolatedAsyncioTestCase):
         products_profit = await service.get_products_profit(month=5, year=2024)
 
         self.assertEqual(len(products_profit), 1)
-        self.assertEqual(products_profit[0].total_amount, 26.0)
-        self.assertEqual(products_profit[0].total_profit, 14.0)
+        self.assertEqual(products_profit[0].total_amount, 32.0)
+        self.assertEqual(products_profit[0].total_profit, 18.0)
 
     @patch("app.crud.billing.services.RedisManager")
     @patch("app.crud.billing.services.get_plan_feature", new_callable=AsyncMock)
@@ -666,4 +673,4 @@ class TestBillingServices(unittest.IsolatedAsyncioTestCase):
 
         daily_sales = await service.get_daily_sales(month=5, year=2024)
 
-        self.assertEqual(daily_sales[0].total_amount, 13.0)
+        self.assertEqual(daily_sales[0].total_amount, 16.0)

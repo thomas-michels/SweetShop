@@ -135,14 +135,13 @@ class BillingServices:
             daily_sales[i] = DailySale(day=i)
 
         for order in orders:
-            for order_product in order.products:
-                daily_sales[order.order_date.day].total_amount += (
-                    order_product.unit_price * order_product.quantity
-                )
-
-            daily_sales[order.order_date.day].total_amount += (
-                order.additional - order.discount
+            total = await self.order_calculator.calculate(
+                delivery_value=0,
+                additional=order.additional,
+                discount=order.discount,
+                products=order.products,
             )
+            daily_sales[order.order_date.day].total_amount += total
 
         daily_sales = list(daily_sales.values())
 
