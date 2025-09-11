@@ -137,10 +137,13 @@ class PreOrderServices:
                     )
                 )
 
-                item_total = item.unit_price
-                for add in item.additionals:
-                    item_total += add.unit_price * add.quantity
-                item_total *= item.quantity
+                # ``offer_items_total`` must consider only the base price of each
+                # product. Additionals are charged separately and should not be
+                # used when calculating the discount. Including the additionals
+                # here would incorrectly subtract their price when the order is
+                # created, leading to a mismatch between the pre-order total and
+                # the final order total.
+                item_total = item.unit_price * item.quantity
                 offer_items_total += item_total
 
             offer_items_total *= offer.quantity

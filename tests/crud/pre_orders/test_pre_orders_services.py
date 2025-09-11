@@ -321,8 +321,13 @@ class TestPreOrderServices(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(order.id, "ord1")
         mock_order_services.create.assert_awaited()
         created_order = mock_order_services.create.call_args.kwargs["order"]
-        # items total = 76, offer total = 70, discount = 6
-        self.assertEqual(created_order.discount, 6.0)
+
+        # With the corrected discount calculation, additionals are no longer
+        # subtracted from the final value. Therefore, the expected discount is
+        # zero and the order total must match the sum of item prices plus the
+        # additional items.
+        self.assertEqual(created_order.discount, 0.0)
+
         products = created_order.products
         self.assertEqual(len(products), 2)
         self.assertEqual(products[0].product_id, "p1")
@@ -337,3 +342,82 @@ class TestPreOrderServices(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(products[1].additionals), 1)
         self.assertEqual(products[1].additionals[0].item_id, "a3")
         self.assertEqual(products[1].additionals[0].quantity, 4)
+
+        # compute total amount manually to ensure it matches the expected
+        # pre-order total (base items + additionals)
+        product_prices = {"p1": 10.0, "p2": 8.0}
+        additional_prices = {"a1": 2.0, "a2": 1.0, "a3": 0.5}
+
+        order_total = 0.0
+        for prod in products:
+            order_total += product_prices[prod.product_id] * prod.quantity
+            for add in prod.additionals:
+                order_total += (
+                    additional_prices[add.item_id] * add.quantity * prod.quantity
+                )
+
+        order_total -= created_order.discount
+
+        # items base total = 56, additionals = 20 -> total 76
+        self.assertAlmostEqual(order_total, 76.0)
+
+    async def test_accept_pre_order_total_amount_matches_order(self):
+        """Ensure order total matches pre-order total amount after acceptance."""
+        from app.crud.pre_orders.models import PreOrderModel
+
+        model = self._pre_order_model()
+        model["items"] = [
+            {
+                "product_id": "p1",
+                "section_id": "s1",
+                "name": "Prod1",
+                "file_id": None,
+                "unit_price": 5.0,
+                "unit_cost": 2.5,
+                "quantity": 2,
+                "additionals": [
+                    {
+                        "additional_id": "pa1",
+                        "item_id": "a1",
+                        "name": "Add1",
+                        "unit_price": 1.0,
+                        "unit_cost": 0.5,
+                        "quantity": 1,
+                    }
+                ],
+            }
+        ]
+
+        # total = (5 * 2) + (1 * 1 * 2) = 12
+        model["total_amount"] = 12.0
+        pre = PreOrderModel(**model)
+        pre.save()
+
+        existing_customer = SimpleNamespace(id="cus1", addresses=[])
+
+        self.customer_repo.select_by_phone.return_value = existing_customer
+        self.organization_repo.select_by_id.return_value = DummyOrg()
+
+        mock_order_services = AsyncMock()
+        mock_order_services.create.return_value = SimpleNamespace(id="ord1")
+
+        await self.service.accept_pre_order(pre.id, mock_order_services)
+
+        created_order = mock_order_services.create.call_args.kwargs["order"]
+
+        product_prices = {"p1": 5.0}
+        additional_prices = {"a1": 1.0}
+
+        order_total = 0.0
+        for prod in created_order.products:
+            order_total += product_prices[prod.product_id] * prod.quantity
+            for add in prod.additionals:
+                order_total += (
+                    additional_prices[add.item_id] * add.quantity * prod.quantity
+                )
+
+        order_total -= created_order.discount
+
+        pre_after = await self.service.search_by_id(pre.id)
+
+        self.assertAlmostEqual(order_total, pre_after.total_amount)
