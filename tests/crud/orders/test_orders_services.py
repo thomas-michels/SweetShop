@@ -886,3 +886,88 @@ class TestOrderServices(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(order_repo.create.await_args.kwargs["total_amount"], 5.5)
         self.assertEqual(order_repo.create.await_args.kwargs["order"].tax, 0.5)
+
+    async def test_create_includes_product_observation(self):
+        product_repo = AsyncMock()
+        product_repo.select_by_id.return_value = ProductInDB(
+            id="p1",
+            organization_id="org1",
+            name="Prod1",
+            description="desc",
+            unit_price=2.0,
+            unit_cost=1.0,
+            kind=ProductKind.REGULAR,
+            tags=[],
+            file_id=None,
+            created_at=UTCDateTime.now(),
+            updated_at=UTCDateTime.now(),
+        )
+
+        order_repo = AsyncMock()
+        stored_product = StoredProduct(
+            product_id="p1",
+            name="Prod1",
+            unit_price=2.0,
+            unit_cost=1.0,
+            quantity=1,
+            observation="Sem cebola",
+            additionals=[],
+        )
+        now = UTCDateTime.now()
+        order_repo.create.return_value = OrderInDB(
+            id="ord1",
+            organization_id="org1",
+            customer_id=None,
+            status=OrderStatus.PENDING,
+            payment_status=PaymentStatus.PENDING,
+            products=[stored_product],
+            tags=[],
+            delivery=Delivery(delivery_type=DeliveryType.WITHDRAWAL),
+            preparation_date=now,
+            order_date=now,
+            description=None,
+            additional=0,
+            discount=0,
+            total_amount=2.0,
+            tax=0,
+            payments=[],
+            is_active=True,
+            created_at=now,
+            updated_at=now,
+        )
+
+        organization_repo = AsyncMock()
+        organization_repo.select_by_id.return_value = type("Org", (), {"tax": 0})()
+
+        service = OrderServices(
+            order_repository=order_repo,
+            product_repository=product_repo,
+            tag_repository=AsyncMock(),
+            customer_repository=AsyncMock(),
+            organization_repository=organization_repo,
+            additional_item_repository=AsyncMock(),
+            product_additional_repository=AsyncMock(),
+        )
+
+        req_order = RequestOrder(
+            customer_id=None,
+            status=OrderStatus.PENDING,
+            products=[RequestedProduct(product_id="p1", quantity=1, observation="Sem cebola")],
+            tags=[],
+            delivery=Delivery(delivery_type=DeliveryType.WITHDRAWAL),
+            preparation_date=now,
+            order_date=now,
+            description=None,
+            additional=0,
+            discount=0,
+            reason_id=None,
+        )
+
+        with patch(
+            "app.crud.orders.services.get_plan_feature",
+            AsyncMock(return_value=type("PF", (), {"value": "-"})()),
+        ):
+            await service.create(req_order)
+
+        created_order = order_repo.create.await_args.kwargs["order"]
+        self.assertEqual(created_order.products[0].observation, "Sem cebola")

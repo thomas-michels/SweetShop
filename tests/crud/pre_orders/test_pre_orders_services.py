@@ -244,6 +244,37 @@ class TestPreOrderServices(unittest.IsolatedAsyncioTestCase):
         mock_order_services.create.assert_awaited()
         self.message_services.create.assert_awaited()
 
+    async def test_accept_pre_order_preserves_product_observation(self):
+        from app.crud.pre_orders.models import PreOrderModel
+
+        model = self._pre_order_model()
+        model["items"] = [
+            {
+                "product_id": "p1",
+                "section_id": "s1",
+                "name": "Prod1",
+                "file_id": None,
+                "unit_price": 1.0,
+                "unit_cost": 0.5,
+                "quantity": 1,
+                "additionals": [],
+                "observation": "Sem cebola",
+            }
+        ]
+        pre = PreOrderModel(**model)
+        pre.save()
+
+        self.customer_repo.select_by_phone.return_value = type("C", (), {"id": "cus1", "addresses": []})()
+        self.organization_repo.select_by_id.return_value = DummyOrg()
+
+        mock_order_services = AsyncMock()
+        mock_order_services.create.return_value = SimpleNamespace(id="ord1")
+
+        await self.service.accept_pre_order(pre.id, mock_order_services)
+
+        called_order = mock_order_services.create.await_args.kwargs["order"]
+        self.assertEqual(called_order.products[0].observation, "Sem cebola")
+
     async def test_accept_pre_order_with_offer_discount_and_additionals(self):
         from app.crud.pre_orders.models import PreOrderModel
 

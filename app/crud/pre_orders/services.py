@@ -110,6 +110,7 @@ class PreOrderServices:
                 RequestedProduct(
                     product_id=product.product_id,
                     quantity=product.quantity,
+                    observation=product.observation,
                     additionals=[
                         RequestedAdditionalItem(
                             item_id=add.item_id,
@@ -127,6 +128,7 @@ class PreOrderServices:
                     RequestedProduct(
                         product_id=item.item_id,
                         quantity=item.quantity * offer.quantity,
+                        observation=offer.observation,
                         additionals=[
                             RequestedAdditionalItem(
                                 item_id=add.item_id,
