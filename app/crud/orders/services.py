@@ -432,6 +432,7 @@ class OrderServices:
                 name=product_in_db.name,
                 unit_cost=product_in_db.unit_cost,
                 unit_price=product_in_db.unit_price,
+                observation=product.observation,
             )
 
             additionals_group = await self.__product_additional_repository.select_by_product_id(

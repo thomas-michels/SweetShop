@@ -40,3 +40,9 @@ class TestOrderSchemas(unittest.TestCase):
     def test_requested_additional_item_quantity_positive(self):
         with self.assertRaises(ValueError):
             RequestedAdditionalItem(item_id="a1", quantity=0)
+
+    def test_requested_product_observation_optional(self):
+        prod = RequestedProduct(product_id="p1", quantity=1, observation="Sem cebola")
+        self.assertEqual(prod.observation, "Sem cebola")
+        prod2 = RequestedProduct(product_id="p2", quantity=2)
+        self.assertIsNone(prod2.observation)
