@@ -451,8 +451,6 @@ class OrderServices:
                     )
 
                 group_counts[item_in_db.additional_id] += additional.quantity
-                stored_product.unit_price += item_in_db.unit_price * additional.quantity
-                stored_product.unit_cost += item_in_db.unit_cost * additional.quantity
 
                 stored_product.additionals.append(
                     StoredAdditionalItem(

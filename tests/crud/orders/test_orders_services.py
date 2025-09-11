@@ -15,6 +15,7 @@ from app.crud.orders.schemas import (
 from app.crud.orders.services import OrderServices
 from app.core.utils.utc_datetime import UTCDateTime
 from app.crud.shared_schemas.payment import PaymentStatus
+from app.crud.shared_schemas.address import Address
 from app.builder.order_calculator import OrderCalculator
 from app.crud.products.schemas import ProductInDB, ProductKind
 from app.crud.additional_items.schemas import AdditionalItemInDB
@@ -317,8 +318,8 @@ class TestOrderServices(unittest.IsolatedAsyncioTestCase):
         products = await service._OrderServices__validate_products(raw_products=[raw_product])
 
         self.assertEqual(products[0].additionals[0].label, "Extra")
-        self.assertEqual(products[0].unit_price, 3.0)
-        self.assertEqual(products[0].unit_cost, 1.5)
+        self.assertEqual(products[0].unit_price, 2.0)
+        self.assertEqual(products[0].unit_cost, 1.0)
         additional_repo.select_by_id.assert_awaited_with(id="a1")
         product_additional_repo.select_by_product_id.assert_awaited_with(product_id="p1")
 
@@ -401,8 +402,8 @@ class TestOrderServices(unittest.IsolatedAsyncioTestCase):
         prod = StoredProduct(
             product_id="p1",
             name="Prod1",
-            unit_price=3.0,
-            unit_cost=1.5,
+            unit_price=2.0,
+            unit_cost=1.0,
             quantity=2,
             additionals=[additional],
         )
@@ -412,7 +413,7 @@ class TestOrderServices(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(total, 6.0)
 
-    async def test_create_includes_additionals_in_product_value(self):
+    async def test_create_stores_additionals_separately(self):
         product_repo = AsyncMock()
         product_repo.select_by_id.return_value = ProductInDB(
             id="p1",
@@ -472,8 +473,8 @@ class TestOrderServices(unittest.IsolatedAsyncioTestCase):
         stored_product = StoredProduct(
             product_id="p1",
             name="Prod1",
-            unit_price=3.0,
-            unit_cost=1.5,
+            unit_price=2.0,
+            unit_cost=1.0,
             quantity=1,
             additionals=[stored_additional],
         )
@@ -535,4 +536,353 @@ class TestOrderServices(unittest.IsolatedAsyncioTestCase):
 
         created_order = order_repo.create.await_args.kwargs["order"]
         self.assertEqual(created_order.additional, 0)
-        self.assertEqual(created_order.products[0].unit_price, 3.0)
+        self.assertEqual(created_order.products[0].unit_price, 2.0)
+        self.assertEqual(
+            created_order.products[0].additionals[0].unit_price,
+            1.0,
+        )
+
+    async def test_create_calculates_total_with_additionals_discount_and_tax(self):
+        """Validate total amount calculation with multiple products and additionals."""
+
+        product_repo = AsyncMock()
+
+        async def product_side_effect(id: str):
+            if id == "p1":
+                return ProductInDB(
+                    id="p1",
+                    organization_id="org1",
+                    name="Prod1",
+                    description="desc",
+                    unit_price=2.0,
+                    unit_cost=1.0,
+                    kind=ProductKind.REGULAR,
+                    tags=[],
+                    file_id=None,
+                    created_at=UTCDateTime.now(),
+                    updated_at=UTCDateTime.now(),
+                )
+            return ProductInDB(
+                id="p2",
+                organization_id="org1",
+                name="Prod2",
+                description="desc",
+                unit_price=3.0,
+                unit_cost=2.0,
+                kind=ProductKind.REGULAR,
+                tags=[],
+                file_id=None,
+                created_at=UTCDateTime.now(),
+                updated_at=UTCDateTime.now(),
+            )
+
+        product_repo.select_by_id.side_effect = product_side_effect
+
+        additional_repo = AsyncMock()
+
+        async def additional_side_effect(id: str):
+            if id == "a1":
+                return AdditionalItemInDB(
+                    id="a1",
+                    organization_id="org1",
+                    additional_id="add1",
+                    position=1,
+                    product_id="p1",
+                    label="Extra1",
+                    unit_price=1.0,
+                    unit_cost=0.5,
+                    consumption_factor=1.0,
+                    created_at=UTCDateTime.now(),
+                    updated_at=UTCDateTime.now(),
+                )
+            return AdditionalItemInDB(
+                id="a2",
+                organization_id="org1",
+                additional_id="add2",
+                position=1,
+                product_id="p2",
+                label="Extra2",
+                unit_price=0.5,
+                unit_cost=0.2,
+                consumption_factor=1.0,
+                created_at=UTCDateTime.now(),
+                updated_at=UTCDateTime.now(),
+            )
+
+        additional_repo.select_by_id.side_effect = additional_side_effect
+
+        product_additional_repo = AsyncMock()
+
+        async def prod_add_side_effect(product_id: str):
+            return [
+                ProductAdditionalInDB(
+                    id=f"add{1 if product_id == 'p1' else 2}",
+                    organization_id="org1",
+                    product_id=product_id,
+                    name="Group",
+                    selection_type=OptionKind.CHECKBOX,
+                    min_quantity=0,
+                    max_quantity=5,
+                    position=1,
+                    items=[],
+                    created_at=UTCDateTime.now(),
+                    updated_at=UTCDateTime.now(),
+                )
+            ]
+
+        product_additional_repo.select_by_product_id.side_effect = prod_add_side_effect
+
+        order_repo = AsyncMock()
+        now = UTCDateTime.now()
+
+        order_repo.create.return_value = OrderInDB(
+            id="ord1",
+            organization_id="org1",
+            customer_id=None,
+            status=OrderStatus.PENDING,
+            payment_status=PaymentStatus.PENDING,
+            products=[],
+            tags=[],
+            delivery=Delivery(delivery_type=DeliveryType.WITHDRAWAL),
+            preparation_date=now,
+            order_date=now,
+            description=None,
+            additional=0,
+            discount=2.0,
+            total_amount=10.45,
+            tax=0.95,
+            payments=[],
+            is_active=True,
+            created_at=now,
+            updated_at=now,
+        )
+
+        organization_repo = AsyncMock()
+        organization_repo.select_by_id.return_value = type("Org", (), {"tax": 10})()
+
+        service = OrderServices(
+            order_repository=order_repo,
+            product_repository=product_repo,
+            tag_repository=AsyncMock(),
+            customer_repository=AsyncMock(),
+            organization_repository=organization_repo,
+            additional_item_repository=additional_repo,
+            product_additional_repository=product_additional_repo,
+        )
+
+        now = UTCDateTime.now()
+        req_order = RequestOrder(
+            customer_id=None,
+            status=OrderStatus.PENDING,
+            products=[
+                RequestedProduct(
+                    product_id="p1",
+                    quantity=2,
+                    additionals=[RequestedAdditionalItem(item_id="a1", quantity=2)],
+                ),
+                RequestedProduct(
+                    product_id="p2",
+                    quantity=1,
+                    additionals=[RequestedAdditionalItem(item_id="a2", quantity=1)],
+                ),
+            ],
+            tags=[],
+            delivery=Delivery(delivery_type=DeliveryType.WITHDRAWAL),
+            preparation_date=now,
+            order_date=now,
+            description=None,
+            additional=0,
+            discount=2.0,
+            reason_id=None,
+        )
+
+        with patch(
+            "app.crud.orders.services.get_plan_feature",
+            AsyncMock(return_value=type("PF", (), {"value": "-"})()),
+        ):
+            await service.create(req_order)
+
+        self.assertEqual(order_repo.create.await_args.kwargs["total_amount"], 10.45)
+        self.assertEqual(order_repo.create.await_args.kwargs["order"].tax, 0.95)
+
+    async def test_create_does_not_apply_discount_to_delivery(self):
+        """Large discounts should not reduce the delivery fee."""
+
+        product_repo = AsyncMock()
+
+        async def product_side_effect(id: str):
+            if id == "p1":
+                return ProductInDB(
+                    id="p1",
+                    organization_id="org1",
+                    name="Prod1",
+                    description="desc",
+                    unit_price=2.0,
+                    unit_cost=1.0,
+                    kind=ProductKind.REGULAR,
+                    tags=[],
+                    file_id=None,
+                    created_at=UTCDateTime.now(),
+                    updated_at=UTCDateTime.now(),
+                )
+            return ProductInDB(
+                id="p2",
+                organization_id="org1",
+                name="Prod2",
+                description="desc",
+                unit_price=3.0,
+                unit_cost=2.0,
+                kind=ProductKind.REGULAR,
+                tags=[],
+                file_id=None,
+                created_at=UTCDateTime.now(),
+                updated_at=UTCDateTime.now(),
+            )
+
+        product_repo.select_by_id.side_effect = product_side_effect
+
+        additional_repo = AsyncMock()
+
+        async def additional_side_effect(id: str):
+            if id == "a1":
+                return AdditionalItemInDB(
+                    id="a1",
+                    organization_id="org1",
+                    additional_id="add1",
+                    position=1,
+                    product_id="p1",
+                    label="Extra1",
+                    unit_price=1.0,
+                    unit_cost=0.5,
+                    consumption_factor=1.0,
+                    created_at=UTCDateTime.now(),
+                    updated_at=UTCDateTime.now(),
+                )
+            return AdditionalItemInDB(
+                id="a2",
+                organization_id="org1",
+                additional_id="add2",
+                position=1,
+                product_id="p2",
+                label="Extra2",
+                unit_price=0.5,
+                unit_cost=0.2,
+                consumption_factor=1.0,
+                created_at=UTCDateTime.now(),
+                updated_at=UTCDateTime.now(),
+            )
+
+        additional_repo.select_by_id.side_effect = additional_side_effect
+
+        product_additional_repo = AsyncMock()
+
+        async def prod_add_side_effect(product_id: str):
+            return [
+                ProductAdditionalInDB(
+                    id=f"add{1 if product_id == 'p1' else 2}",
+                    organization_id="org1",
+                    product_id=product_id,
+                    name="Group",
+                    selection_type=OptionKind.CHECKBOX,
+                    min_quantity=0,
+                    max_quantity=5,
+                    position=1,
+                    items=[],
+                    created_at=UTCDateTime.now(),
+                    updated_at=UTCDateTime.now(),
+                )
+            ]
+
+        product_additional_repo.select_by_product_id.side_effect = prod_add_side_effect
+
+        order_repo = AsyncMock()
+        now = UTCDateTime.now()
+
+        order_repo.create.return_value = OrderInDB(
+            id="ord1",
+            organization_id="org1",
+            customer_id=None,
+            status=OrderStatus.PENDING,
+            payment_status=PaymentStatus.PENDING,
+            products=[],
+            tags=[],
+            delivery=Delivery(
+                delivery_type=DeliveryType.DELIVERY,
+                delivery_value=5.0,
+                address=Address(
+                    city="City",
+                    neighborhood="N",
+                    line_1="Street",
+                    number="1",
+                ),
+                delivery_at=now,
+            ),
+            preparation_date=now,
+            order_date=now,
+            description=None,
+            additional=0,
+            discount=20.0,
+            total_amount=5.5,
+            tax=0.5,
+            payments=[],
+            is_active=True,
+            created_at=now,
+            updated_at=now,
+        )
+
+        organization_repo = AsyncMock()
+        organization_repo.select_by_id.return_value = type("Org", (), {"tax": 10})()
+
+        service = OrderServices(
+            order_repository=order_repo,
+            product_repository=product_repo,
+            tag_repository=AsyncMock(),
+            customer_repository=AsyncMock(),
+            organization_repository=organization_repo,
+            additional_item_repository=additional_repo,
+            product_additional_repository=product_additional_repo,
+        )
+
+        req_order = RequestOrder(
+            customer_id=None,
+            status=OrderStatus.PENDING,
+            products=[
+                RequestedProduct(
+                    product_id="p1",
+                    quantity=2,
+                    additionals=[RequestedAdditionalItem(item_id="a1", quantity=2)],
+                ),
+                RequestedProduct(
+                    product_id="p2",
+                    quantity=1,
+                    additionals=[RequestedAdditionalItem(item_id="a2", quantity=1)],
+                ),
+            ],
+            tags=[],
+            delivery=Delivery(
+                delivery_type=DeliveryType.DELIVERY,
+                delivery_value=5.0,
+                address=Address(
+                    city="City",
+                    neighborhood="N",
+                    line_1="Street",
+                    number="1",
+                ),
+                delivery_at=now,
+            ),
+            preparation_date=now,
+            order_date=now,
+            description=None,
+            additional=0,
+            discount=20.0,
+            reason_id=None,
+        )
+
+        with patch(
+            "app.crud.orders.services.get_plan_feature",
+            AsyncMock(return_value=type("PF", (), {"value": "-"})()),
+        ):
+            await service.create(req_order)
+
+        self.assertEqual(order_repo.create.await_args.kwargs["total_amount"], 5.5)
+        self.assertEqual(order_repo.create.await_args.kwargs["order"].tax, 0.5)
