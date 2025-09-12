@@ -32,6 +32,9 @@ class Product(GenericModel):
         if len(self.tags) != len(set(self.tags)):
             raise ValueError("Tags must contain unique items.")
 
+        if self.file_id == "":
+            self.file_id = None
+
         return self
 
     def validate_updated_fields(self, update_product: "UpdateProduct") -> bool:
@@ -61,7 +64,7 @@ class Product(GenericModel):
             self.tags = update_product.tags
             is_updated = True
 
-        if update_product.file_id is not None:
+        if update_product.file_id is not None or update_product.file_id != "":
             self.file_id = update_product.file_id
             is_updated = True
 
