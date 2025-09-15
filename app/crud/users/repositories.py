@@ -55,7 +55,10 @@ class UserRepository:
 
             if status_code == 200:
                 _logger.debug("User updated successfully")
-                return self.__mount_user(response)
+                updated_user = self.__mount_user(response)
+                self.__cache_users[user_id] = updated_user
+
+                return updated_user
 
             else:
                 _logger.warning(f"User {user_id} not updated")

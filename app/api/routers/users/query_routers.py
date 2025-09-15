@@ -19,9 +19,12 @@ router = APIRouter(tags=["Users"])
 )
 async def current_user(
     current_user: UserInDB = Security(decode_jwt, scopes=["user:me"]),
+    user_services: UserServices = Depends(user_composer),
 ):
+    updated_user = await user_services.update_last_access(user=current_user)
+
     return build_response(
-        status_code=200, message="User found with success", data=current_user
+        status_code=200, message="User found with success", data=updated_user
     )
 
 
