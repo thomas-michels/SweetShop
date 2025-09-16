@@ -56,8 +56,6 @@ async def update_product_additional(
     current_user: UserInDB = Security(decode_jwt, scopes=["product_additional:create"]),
     product_additional_services: ProductAdditionalServices = Depends(product_additional_composer),
 ):
-    if product_additional.product_id is None:
-        product_additional.product_id = product_id
     additional_in_db = await product_additional_services.update(id=additional_id, updated_product_additional=product_additional)
 
     if additional_in_db:

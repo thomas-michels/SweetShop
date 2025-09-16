@@ -84,6 +84,21 @@ class TestProductAdditionalServices(unittest.IsolatedAsyncioTestCase):
         updated = await self.service.update(id=created.id, updated_product_additional=update)
         self.assertEqual(updated.name, "New")
 
+    async def test_update_product_additional_without_changes_returns_existing(self):
+        self.product_repo.select_by_id.return_value = "prod"
+        created = await self.service.create(await self._group(), product_id="prod1")
+
+        calls_before_update = self.product_repo.select_by_id.await_count
+
+        update = UpdateProductAdditional()
+        updated = await self.service.update(id=created.id, updated_product_additional=update)
+
+        self.assertEqual(self.product_repo.select_by_id.await_count, calls_before_update)
+        self.assertEqual(
+            updated.model_dump(exclude={"created_at", "updated_at"}),
+            created.model_dump(exclude={"created_at", "updated_at"}),
+        )
+
     async def test_update_product_additional_with_items(self):
         self.product_repo.select_by_id.return_value = "prod"
         created = await self.service.create(await self._group(), product_id="prod1")
