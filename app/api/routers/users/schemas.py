@@ -11,7 +11,10 @@ EXAMPLE_USER = {
     "name": "Test",
     "nickname": "test",
     "picture": "http://localhost/image.png",
-    "user_metadata": {"phone": "123"},
+    "user_metadata": {
+        "phone": "123",
+        "last_access_at": "2024-01-01T12:00:00Z",
+    },
     "app_metadata": {},
     "last_login": "2024-01-01T00:00:00Z",
     "created_at": "2024-01-01T00:00:00Z",
