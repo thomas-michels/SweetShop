@@ -40,6 +40,7 @@ class TestMenuServices(unittest.IsolatedAsyncioTestCase):
         mock_plan.return_value = SimpleNamespace(value="true")
         result = await self.service.create(await self._menu(name="New"))
         self.assertEqual(result.name, "New")
+        self.assertEqual(result.slug, "new")
 
     async def _create_menu_in_db(self, name="Menu"):
         repo = self.service._MenuServices__menu_repository
@@ -49,6 +50,7 @@ class TestMenuServices(unittest.IsolatedAsyncioTestCase):
         created = await self._create_menu_in_db(name="Old")
         updated = await self.service.update(id=created.id, updated_menu=UpdateMenu(name="New"))
         self.assertEqual(updated.name, "New")
+        self.assertEqual(updated.slug, "new")
 
     async def test_search_all(self):
         mock_repo = AsyncMock()

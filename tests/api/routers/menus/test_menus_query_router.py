@@ -6,6 +6,7 @@ import mongomock
 from app.api.dependencies.auth import decode_jwt
 from app.api.dependencies.get_current_organization import check_current_organization
 from app.application import app
+from app.core.utils import slugify
 from app.crud.menus.models import MenuModel
 from tests.payloads import USER_IN_DB
 
@@ -30,7 +31,12 @@ class TestMenusQueryRouter(unittest.TestCase):
         app.dependency_overrides = {}
 
     def insert_mock_menu(self, name="Menu"):
-        menu = MenuModel(name=name, description="d", organization_id="org_123")
+        menu = MenuModel(
+            name=name,
+            slug=slugify(name),
+            description="d",
+            organization_id="org_123",
+        )
         menu.save()
         return str(menu.id)
 
