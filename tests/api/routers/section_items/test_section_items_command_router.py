@@ -6,6 +6,7 @@ import mongomock
 from app.api.dependencies.auth import decode_jwt
 from app.api.dependencies.get_current_organization import check_current_organization
 from app.application import app
+from app.core.utils import slugify
 from app.crud.offers.models import OfferModel
 from app.crud.products.models import ProductModel
 from app.crud.sections.models import SectionModel
@@ -33,7 +34,13 @@ class TestSectionItemsCommandRouter(unittest.TestCase):
         app.dependency_overrides = {}
 
     def insert_mock_section(self, name="Section"):
-        menu = MenuModel(name="Menu", description="d", organization_id="org_123")
+        menu_name = "Menu"
+        menu = MenuModel(
+            name=menu_name,
+            slug=slugify(menu_name),
+            description="d",
+            organization_id="org_123",
+        )
         menu.save()
         section = SectionModel(
             name=name,

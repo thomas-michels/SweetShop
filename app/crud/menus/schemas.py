@@ -104,3 +104,4 @@ class UpdateMenu(GenericModel):
 
 class MenuInDB(Menu, DatabaseModel):
     organization_id: str = Field(example="org_123")
+    slug: str = Field(example="doces")

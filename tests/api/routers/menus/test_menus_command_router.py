@@ -7,6 +7,7 @@ import mongomock
 from app.api.dependencies.auth import decode_jwt
 from app.api.dependencies.get_current_organization import check_current_organization
 from app.application import app
+from app.core.utils import slugify
 from app.core.utils.features import Feature
 from app.core.utils.utc_datetime import UTCDateTime
 from app.crud.plan_features.schemas import PlanFeatureInDB
@@ -48,7 +49,12 @@ class TestMenusCommandRouter(unittest.TestCase):
         app.dependency_overrides = {}
 
     def insert_mock_menu(self, name="Menu"):
-        menu = MenuModel(name=name, description="d", organization_id="org_123")
+        menu = MenuModel(
+            name=name,
+            slug=slugify(name),
+            description="d",
+            organization_id="org_123",
+        )
         menu.save()
         return str(menu.id)
 

@@ -10,6 +10,7 @@ EXAMPLE_MENU = {
     "name": "Doces",
     "description": "Bolos e tortas",
     "is_visible": True,
+    "slug": "doces",
     "organization_id": "org_123",
 }
 

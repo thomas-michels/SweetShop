@@ -7,6 +7,7 @@ from app.core.utils.utc_datetime import UTCDateTime
 class MenuModel(BaseDocument):
     organization_id = StringField(required=True)
     name = StringField(required=True)
+    slug = StringField(required=False)
     description = StringField(required=True)
     is_visible = BooleanField(default=True, required=False)
     operating_days = ListField(DictField(), required=False)
