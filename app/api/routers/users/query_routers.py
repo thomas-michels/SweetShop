@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Security, Response
+from fastapi import APIRouter, BackgroundTasks, Depends, Security, Response
 
 from app.api.composers import user_composer
 from app.api.dependencies import build_response, decode_jwt
@@ -18,13 +18,14 @@ router = APIRouter(tags=["Users"])
     responses={200: {"model": GetCurrentUserResponse}},
 )
 async def current_user(
+    background_tasks: BackgroundTasks,
     current_user: UserInDB = Security(decode_jwt, scopes=["user:me"]),
     user_services: UserServices = Depends(user_composer),
 ):
-    updated_user = await user_services.update_last_access(user=current_user)
+    background_tasks.add_task(user_services.update_last_access, user=current_user)
 
     return build_response(
-        status_code=200, message="User found with success", data=updated_user
+        status_code=200, message="User found with success", data=current_user
     )
 
 

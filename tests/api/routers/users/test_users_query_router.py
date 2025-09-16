@@ -72,8 +72,6 @@ class TestUsersQueryRouter(unittest.TestCase):
         self.assertEqual(self.mock_service.called_with.user_id, self.current_user.user_id)
 
         metadata = payload["data"]["userMetadata"]
-        self.assertIn("last_access_at", metadata)
-        self.assertEqual(
-            metadata["last_access_at"],
-            self.updated_user.user_metadata["last_access_at"],
-        )
+        self.assertEqual(payload["data"]["userId"], self.current_user.user_id)
+        self.assertEqual(metadata, self.current_user.user_metadata)
+        self.assertNotIn("last_access_at", metadata)
