@@ -70,6 +70,7 @@ class SectionItemServices:
                         id=section_item.item_id,
                         expand=expand,
                     )
+
                 elif section_item.item_type == ItemType.PRODUCT:
                     complete.product = await self.__product_service.search_by_id(
                         id=section_item.item_id,

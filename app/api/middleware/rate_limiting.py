@@ -18,7 +18,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.lock = threading.Lock()
 
     async def dispatch(self, request: Request, call_next):
-        client_ip = request.headers.get("fly-client-ip", request.client.host)
+        client_ip = "unkown"
+
+        if request.client is not None and request.client.host:
+            client_ip = request.client.host
 
         with self.lock:
             count = self.cache.get(client_ip, 0) + 1

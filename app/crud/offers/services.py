@@ -145,7 +145,7 @@ class OfferServices:
 
         files_map: dict[str, FileInDB] = {}
 
-        if "files" in expand:
+        if "file" in expand:
             file_ids = set()
             for offer in offers:
                 if offer.file_id:
@@ -162,7 +162,7 @@ class OfferServices:
             for product in offer.products:
                 offer_product = CompleteOfferProduct(**product.model_dump())
 
-                if "files" in expand and product.file_id:
+                if "file" in expand and product.file_id:
                     offer_product.file = files_map.get(product.file_id)
 
                 complete_offer_products.append(offer_product)
@@ -170,7 +170,7 @@ class OfferServices:
             complete_offer = CompleteOffer.model_validate(offer)
             complete_offer.products = complete_offer_products
 
-            if "files" in expand and offer.file_id:
+            if "file" in expand and offer.file_id:
                 complete_offer.file = files_map.get(offer.file_id)
 
             complete_offers.append(complete_offer)
@@ -230,4 +230,3 @@ class OfferServices:
             products.append(offer_product)
 
         return total_cost, total_price, products
-

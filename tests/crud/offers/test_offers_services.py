@@ -219,8 +219,7 @@ class TestOfferServices(unittest.IsolatedAsyncioTestCase):
             file_repository=file_repo,
             section_item_repository=AsyncMock(),
         )
-        result = await service.search_all(section_id="s1", expand=["files"])
+        result = await service.search_all(section_id="s1", expand=["file"])
         file_repo.select_by_ids.assert_awaited_once()
         self.assertEqual(result[0].file, "of")
         self.assertEqual(result[0].products[0].file, "pf")
-
