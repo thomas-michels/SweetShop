@@ -2,7 +2,7 @@ from fastapi import UploadFile, HTTPException
 from PIL import Image, UnidentifiedImageError, ImageFile
 
 MAX_FILE_SIZE_MB = 25
-ALLOWED_IMAGE_FORMATS = {"jpeg", "png", "jpg"}
+ALLOWED_IMAGE_FORMATS = {"jpeg", "png", "jpg", "webp", "svg"}
 MAX_MEGA_PIXELS = 60
 
 
