@@ -44,98 +44,24 @@ from app.api.dependencies.email_sender import send_email  # noqa: E402
 from app.core.configs import get_environment, get_logger  # noqa: E402
 
 
-EMAIL_TEMPLATE = Template(
-    """<!doctype html>
-<html lang="pt-BR">
-<head>
-  <meta charset="utf-8">
-  <title>Atualização PedidoZ + 2 meses grátis</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    /* Safe email defaults */
-    body{margin:0;padding:0;background:#D6D8CB;font-family:Arial,Helvetica,sans-serif;color:#050505;}
-    a{color:#050505;text-decoration:none;}
-    .wrapper{width:100%;background:#D6D8CB;padding:24px 0;}
-    .container{max-width:600px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;}
-    .header{background:#050505;color:#D6D8CB;padding:28px 24px;text-align:center;}
-    .title{font-size:22px;margin:0 0 8px 0;font-weight:700;line-height:1.3;}
-    .subtitle{font-size:14px;margin:0;opacity:0.85;}
-    .content{padding:24px;}
-    .h1{font-size:20px;margin:0 0 12px 0;line-height:1.35;}
-    .lead{font-size:15px;line-height:1.6;margin:0 0 16px 0;}
-    .badge{display:inline-block;background:#EE7B11;color:#050505;border-radius:999px;padding:8px 14px;font-weight:700;font-size:12px;letter-spacing:.3px;margin-bottom:12px;}
-    .list{padding-left:18px;margin:0 0 16px 0;}
-    .list li{margin-bottom:8px;line-height:1.5;}
-    .cta-row{margin:22px 0; text-align:center;}
-    .btn{display:inline-block;padding:14px 18px;border-radius:10px;font-weight:700;font-size:14px;margin:6px 4px;}
-    .btn-primary{background:#EE7B11;color:#050505;}
-    .btn-dark{background:#050505;color:#D6D8CB;}
-    .btn-outline{border:2px solid #EE7B11;color:#050505;}
-    .note{background:#F6F6F0;border:1px dashed #D6D8CB;border-radius:10px;padding:14px 16px;font-size:13px;margin:18px 0;line-height:1.5;}
-    .footer{padding:18px 24px;text-align:center;font-size:12px;color:#050505;opacity:.8;}
-    .small{font-size:12px;opacity:.9;}
-    @media (prefers-color-scheme: dark) {
-      body{background:#050505;color:#D6D8CB;}
-      .container{background:#111111;}
-      .footer{color:#D6D8CB;}
-    }
-  </style>
-</head>
-<body>
-  <div class="wrapper">
-    <div class="container">
-      <div class="header">
-        <div class="title">🚀 Grande atualização no PedidoZ</div>
-        <div class="subtitle">Pedidos mais rápidos, catálogo mais bonito e novas formas de vender</div>
-      </div>
+EMAIL_TEMPLATE_PATH = ROOT_DIR / "templates" / "marketing_email.html"
+_EMAIL_TEMPLATE: Template | None = None
 
-      <div class="content">
-        <span class="badge">🎁 2 MESES DE PREMIUM GRÁTIS</span>
-        <p class="lead">
-          Para comemorar esta atualização, estamos oferecendo <strong>2 meses grátis do plano Premium</strong> para todos os clientes e novas contas criadas até <strong>15/10</strong>.
-        </p>
 
-        <h1 class="h1">O que há de novo</h1>
-        <ul class="list">
-          <li><strong>Pedidos, produtos e catálogo atualizados</strong> para mais agilidade.</li>
-          <li><strong>Adicionais nos produtos</strong> para personalizar cada pedido.</li>
-          <li><strong>Ofertas agrupadas com desconto</strong> — fixas ou por tempo limitado.</li>
-          <li><strong>Melhorias visuais no catálogo</strong> para sua vitrine online.</li>
-          <li><strong>Conta do cliente</strong> + <strong>histórico de pedidos</strong> para mais autonomia.</li>
-          <li><strong>Pré-pedidos aprimorados</strong> com <em>navegação mais simples e rápida</em>.</li>
-        </ul>
+def _get_email_template() -> Template:
+    global _EMAIL_TEMPLATE
 
-        <div class="cta-row">
-          <a href="${ATIVAR_PREMIUM_URL}" class="btn btn-primary">Ativar meus 2 meses grátis</a>
-          <a href="${CTA_URL}" class="btn btn-dark">Ver novidades no meu catálogo</a>
-          <a href="${WHATSAPP_LINK}" class="btn btn-outline">Falar no WhatsApp</a>
-        </div>
+    if _EMAIL_TEMPLATE is None:
+        try:
+            template_content = EMAIL_TEMPLATE_PATH.read_text(encoding="utf-8")
+        except FileNotFoundError as exc:  # pragma: no cover - defensive, depends on FS
+            raise RuntimeError(
+                "Marketing email template not found at 'templates/marketing_email.html'."
+            ) from exc
 
-        <div class="note">
-          Precisa de ajuda para configurar adicionais, criar ofertas ou utilizar as novas funções?
-          Nosso time oferece <strong>treinamentos rápidos</strong> e suporte no <strong>WhatsApp</strong>.
-        </div>
+        _EMAIL_TEMPLATE = Template(template_content)
 
-        <p class="small">
-          Dúvidas? <a href="${WHATSAPP_LINK}"><strong>Chame no WhatsApp</strong></a> ou responda este e-mail.
-        </p>
-
-        <div class="cta-row">
-          <a href="${WHATSAPP_LINK}" class="btn btn-primary">📲 Abrir WhatsApp</a>
-          <a href="${CTA_URL}" class="btn btn-dark">🚀 Acessar meu PedidoZ</a>
-        </div>
-      </div>
-
-      <div class="footer">
-        © ${CURRENT_YEAR} PedidoZ — Todas as novidades, sem custo, por tempo limitado.<br>
-        Oferta válida para contas novas e existentes criadas/ativas até <strong>15/10</strong>.
-      </div>
-    </div>
-  </div>
-</body>
-</html>
-"""
-)
+    return _EMAIL_TEMPLATE
 
 
 def _load_environment() -> None:
@@ -238,7 +164,8 @@ def _compose_message(
         "CURRENT_YEAR": str(datetime.utcnow().year),
     }
     payload.update(extra_fields)
-    return EMAIL_TEMPLATE.substitute(payload)
+    template = _get_email_template()
+    return template.substitute(payload)
 
 
 def _send_marketing_emails(
