@@ -30,6 +30,7 @@ class TestMenuRepository(unittest.IsolatedAsyncioTestCase):
         result = await self.repo.create(menu)
         self.assertEqual(result.name, "Lunch")
         self.assertEqual(result.slug, "lunch")
+        self.assertFalse(result.accepts_outside_business_hours)
         self.assertEqual(MenuModel.objects.count(), 1)
 
     async def test_create_duplicate_menu_raises_error(self):
@@ -52,6 +53,13 @@ class TestMenuRepository(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(updated.name, "New")
         self.assertEqual(updated.slug, "new")
 
+    async def test_update_menu_accepts_outside_business_hours(self):
+        created = await self.repo.create(await self._menu(name="Outside"))
+        created.accepts_outside_business_hours = True
+        updated = await self.repo.update(created)
+
+        self.assertTrue(updated.accepts_outside_business_hours)
+
     async def test_update_menu_not_unique(self):
         first = await self.repo.create(await self._menu(name="A"))
         await self.repo.create(await self._menu(name="B"))
@@ -63,6 +71,7 @@ class TestMenuRepository(unittest.IsolatedAsyncioTestCase):
         created = await self.repo.create(await self._menu())
         result = await self.repo.select_by_id(id=created.id)
         self.assertEqual(result.id, created.id)
+        self.assertFalse(result.accepts_outside_business_hours)
 
     async def test_select_by_id_not_found(self):
         with self.assertRaises(NotFoundError):
