@@ -12,6 +12,7 @@ EXAMPLE_MENU = {
     "is_visible": True,
     "slug": "doces",
     "organization_id": "org_123",
+    "accepts_outside_business_hours": False,
 }
 
 

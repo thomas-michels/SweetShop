@@ -21,6 +21,7 @@ class MenuModel(BaseDocument):
     km_tax = FloatField(required=False) # TODO remove that soon
     unit_tax = FloatField(required=False)
     accept_delivery: bool = BooleanField(default=True, required=False)
+    accepts_outside_business_hours: bool = BooleanField(default=False, required=False)
 
     meta = {
         "collection": "menus"

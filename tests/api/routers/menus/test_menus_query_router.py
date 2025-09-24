@@ -48,6 +48,7 @@ class TestMenusQueryRouter(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["data"]["name"], "By ID")
+        self.assertFalse(response.json()["data"]["acceptsOutsideBusinessHours"])
         self.assertEqual(response.json()["message"], "Menu found with success")
 
     def test_get_menu_by_id_not_found(self):
@@ -68,6 +69,10 @@ class TestMenusQueryRouter(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["message"], "Menus found with success")
         self.assertGreaterEqual(len(response.json()["data"]), 2)
+        self.assertIn(
+            False,
+            [menu["acceptsOutsideBusinessHours"] for menu in response.json()["data"]],
+        )
 
     def test_get_menus_empty_returns_204(self):
         response = self.test_client.get(
