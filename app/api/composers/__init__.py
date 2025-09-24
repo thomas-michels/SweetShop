@@ -27,3 +27,4 @@ from .home_composite import home_composer
 from .pre_order_composite import pre_order_composer
 from .message_composite import message_composer
 from .product_additional_composite import product_additional_composer
+from .business_day_composite import business_day_composer

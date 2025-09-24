@@ -30,6 +30,7 @@ def get_role_permissions(role: RoleEnum) -> Set[str]:
             "calendar:get",
             "section:get",
             "pre-order:get",
+            "business_day:get",
         ]
     )
 
@@ -82,6 +83,7 @@ def get_role_permissions(role: RoleEnum) -> Set[str]:
                 "offer:delete",
                 "pre-order:create",
                 "pre-order:delete",
+                "business_day:update",
             ]
         )
     )
