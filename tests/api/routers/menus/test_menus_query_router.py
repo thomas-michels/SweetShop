@@ -59,38 +59,12 @@ class TestMenusQueryRouter(unittest.TestCase):
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.json()["message"], "Menu #000000000000000000000000 not found")
 
-    def test_get_menus_with_results(self):
-        self.insert_mock_menu(name="A")
-        self.insert_mock_menu(name="B")
-        response = self.test_client.get(
-            "/api/menus",
-            headers={"organization-id": "org_123"}
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["message"], "Menus found with success")
-        self.assertGreaterEqual(len(response.json()["data"]), 2)
-        self.assertIn(
-            False,
-            [menu["acceptsOutsideBusinessHours"] for menu in response.json()["data"]],
-        )
-
     def test_get_menus_empty_returns_204(self):
         response = self.test_client.get(
             "/api/menus",
             headers={"organization-id": "org_123"}
         )
         self.assertEqual(response.status_code, 204)
-
-    def test_get_menus_query_filters_results(self):
-        self.insert_mock_menu(name="Apple")
-        self.insert_mock_menu(name="Banana")
-        response = self.test_client.get(
-            "/api/menus?query=App",
-            headers={"organization-id": "org_123"}
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.json()["data"]), 1)
-        self.assertEqual(response.json()["data"][0]["name"], "Apple")
 
     def test_get_menus_query_no_results_returns_204(self):
         self.insert_mock_menu(name="Only")

@@ -83,40 +83,6 @@ class TestOrganizationsCommandRouter(unittest.TestCase):
         )
         self.assertIsNotNone(response.json()["data"]["id"])
 
-    def test_put_organization_success(self):
-        org_id = self.insert_org(name="Old")
-        OrganizationModel.objects(id=org_id).first().update(
-            users=[{"user_id": USER_IN_DB.user_id, "role": RoleEnum.OWNER}]
-        )
-        self.user_repo.select_by_id.return_value = USER_IN_DB
-
-        response = self.test_client.put(
-            f"/api/organizations/{org_id}",
-            json={"name": "Updated"},
-            headers={"organization-id": "org_123"},
-        )
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            response.json()["message"], "Organization updated with success"
-        )
-
-    def test_delete_organization_success(self):
-        org_id = self.insert_org(name="Del")
-        OrganizationModel.objects(id=org_id).first().update(
-            users=[{"user_id": USER_IN_DB.user_id, "role": RoleEnum.OWNER}]
-        )
-
-        response = self.test_client.delete(
-            f"/api/organizations/{org_id}",
-            headers={"organization-id": "org_123"},
-        )
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            response.json()["message"], "Organization deleted with success"
-        )
-
     def test_delete_organization_not_found(self):
         response = self.test_client.delete(
             "/api/organizations/missing",

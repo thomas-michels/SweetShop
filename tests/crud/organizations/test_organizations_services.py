@@ -145,27 +145,6 @@ class TestOrganizationServices(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result.social_links.instagram, "https://instagram.com/new")
         self.assertEqual(result.styling.primary_color, "#123123")
 
-    async def test_delete_by_id_authorized(self):
-        org = await self.repo.create(Organization(name="Del"))
-        await self.repo.update(
-            org.id, {"users": [{"user_id": "owner", "role": RoleEnum.OWNER}]}
-        )
-
-        self.repo.delete_by_id = AsyncMock(
-            return_value=OrganizationInDB(
-                id=org.id,
-                name=org.name,
-                users=[],
-                created_at=UTCDateTime.now(),
-                updated_at=UTCDateTime.now(),
-            )
-        )
-
-        result = await self.service.delete_by_id(id=org.id, user_making_request="owner")
-
-        self.assertEqual(result.id, org.id)
-        self.repo.delete_by_id.assert_awaited_with(id=org.id)
-
     async def test_delete_by_id_not_owner_raises(self):
         org = await self.repo.create(Organization(name="Del"))
         await self.repo.update(

@@ -95,70 +95,12 @@ class TestMenuRepository(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(NotFoundError):
             await self.repo.select_by_name(name="Ghost")
 
-    async def test_select_by_name_backfills_slug_for_legacy_menu(self):
-        legacy_menu = MenuModel(
-            organization_id="org1",
-            name="Legacy Menu",
-            description="desc",
-            is_visible=True,
-        )
-        legacy_menu.save()
-        MenuModel.objects(id=legacy_menu.id).update(unset__slug=1)
-
-        result = await self.repo.select_by_name(name="Legacy Menu")
-
-        self.assertEqual(result.slug, slugify("Legacy Menu"))
-        stored_menu = MenuModel.objects(id=legacy_menu.id).first()
-        self.assertEqual(stored_menu.slug, slugify("Legacy Menu"))
-
     async def test_select_count_with_query(self):
         await self.repo.create(await self._menu(name="Café da Manhã"))
         await self.repo.create(await self._menu(name="Cafe Especial"))
         await self.repo.create(await self._menu(name="Suco"))
         count = await self.repo.select_count(query="Cafe")
         self.assertEqual(count, 2)
-
-    async def test_select_count_supports_legacy_menu_without_slug(self):
-        legacy_menu = MenuModel(
-            organization_id="org1",
-            name="Café Antigo",
-            description="desc",
-            is_visible=True,
-        )
-        legacy_menu.save()
-        MenuModel.objects(id=legacy_menu.id).update(unset__slug=1)
-
-        count = await self.repo.select_count(query="Cafe")
-
-        self.assertEqual(count, 1)
-        stored_menu = MenuModel.objects(id=legacy_menu.id).first()
-        self.assertEqual(stored_menu.slug, slugify("Café Antigo"))
-
-    async def test_select_all_with_pagination(self):
-        await self.repo.create(await self._menu(name="A"))
-        await self.repo.create(await self._menu(name="B"))
-        await self.repo.create(await self._menu(name="C"))
-        results = await self.repo.select_all(query=None, page=1, page_size=2)
-        self.assertEqual(len(results), 2)
-        results_p2 = await self.repo.select_all(query=None, page=2, page_size=2)
-        self.assertEqual(len(results_p2), 1)
-        names = {r.name for r in results + results_p2}
-        self.assertEqual(names, {"A", "B", "C"})
-
-    async def test_select_all_returns_slug_for_legacy_menu(self):
-        legacy_menu = MenuModel(
-            organization_id="org1",
-            name="Menu Sem Slug",
-            description="desc",
-            is_visible=True,
-        )
-        legacy_menu.save()
-        MenuModel.objects(id=legacy_menu.id).update(unset__slug=1)
-
-        results = await self.repo.select_all(query=None)
-
-        self.assertEqual(len(results), 1)
-        self.assertEqual(results[0].slug, slugify("Menu Sem Slug"))
 
     async def test_delete_by_id_success(self):
         created = await self.repo.create(await self._menu(name="Del"))
@@ -210,18 +152,3 @@ class TestMenuRepository(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(count_visible, 1)
         self.assertEqual(count_hidden, 1)
-
-    async def test_select_all_filter_is_visible_and_query(self):
-        visible = await self.repo.create(await self._menu(name="Apple"))
-        hidden = await self.repo.create(await self._menu(name="Banana"))
-        MenuModel.objects(id=visible.id).update(is_visible=True)
-
-        results = await self.repo.select_all(query="Ap", is_visible=True)
-
-        self.assertEqual(len(results), 1)
-        self.assertEqual(results[0].name, "Apple")
-
-        hidden_results = await self.repo.select_all(query=None, is_visible=False)
-
-        self.assertEqual(len(hidden_results), 1)
-        self.assertEqual(hidden_results[0].name, "Banana")

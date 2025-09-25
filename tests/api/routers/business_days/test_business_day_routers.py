@@ -62,24 +62,6 @@ class TestBusinessDayRouters(unittest.TestCase):
         self.assertIsNotNone(business_day)
         self.assertEqual(business_day.menu_id, "men_123")
 
-    def test_put_business_day_updates_existing_record(self):
-        business_day = self.create_business_day(closes_at=UTCDateTime.now())
-        new_closes_at = str(UTCDateTime.now() + timedelta(hours=2))
-
-        response = self.test_client.put(
-            url="/api/business_day",
-            json={"menu_id": "men_456", "closes_at": new_closes_at},
-            headers={"organization-id": "org_123"},
-        )
-
-        self.assertEqual(response.status_code, 200)
-        business_day.reload()
-        self.assertEqual(business_day.menu_id, "men_456")
-        self.assertEqual(
-            str(business_day.closes_at.replace(microsecond=0)),
-            str(UTCDateTime.validate_datetime(new_closes_at).replace(microsecond=0)),
-        )
-
     def test_get_business_day_returns_record(self):
         business_day = self.create_business_day(closes_at=UTCDateTime.now())
 

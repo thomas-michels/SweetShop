@@ -6,6 +6,7 @@ from app.core.utils.utc_datetime import UTCDateTime
 
 class OrganizationModel(BaseDocument):
     name = StringField(required=True, unique=True)
+    slug = StringField(required=False)
     international_code = StringField(required=False)
     ddd = StringField(max_length=3, required=False)
     phone_number = StringField(max_length=9, required=False)

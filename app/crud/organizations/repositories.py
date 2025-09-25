@@ -7,6 +7,7 @@ from pydantic_core import ValidationError
 from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.core.repositories.base_repository import Repository
+from app.core.utils.slugify import slugify
 from app.core.utils.utc_datetime import UTCDateTime
 
 from .models import OrganizationModel
@@ -26,6 +27,7 @@ class OrganizationRepository(Repository):
             organization_model = OrganizationModel(
                 is_active=True,
                 users=[],
+                slug=slugify(json["name"]),
                 created_at=UTCDateTime.now(),
                 updated_at=UTCDateTime.now(),
                 **json,
@@ -54,6 +56,7 @@ class OrganizationRepository(Repository):
             organization_model.update(**organization)
 
             organization_model.name = organization_model.name.strip()
+            organization_model.slug = slugify(organization_model.name.strip())
 
             organization_model.save()
 

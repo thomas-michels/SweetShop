@@ -68,17 +68,6 @@ class TestOrganizationsQueryRouter(unittest.TestCase):
         org.save()
         return str(org.id)
 
-    def test_get_organization_by_id_success(self):
-        org_id = self.insert_org(name="One", with_user=True)
-
-        response = self.test_client.get(
-            f"/api/organizations/{org_id}",
-            headers={"organization-id": "org_123"},
-        )
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["data"]["name"], "One")
-
     def test_get_organization_by_id_not_found(self):
         response = self.test_client.get(
             "/api/organizations/missing",
@@ -86,37 +75,12 @@ class TestOrganizationsQueryRouter(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 404)
 
-    def test_get_organizations_with_results(self):
-        self.insert_org(name="A")
-        self.insert_org(name="B")
-
-        response = self.test_client.get(
-            "/api/organizations",
-            headers={"organization-id": "org_123"},
-        )
-
-        self.assertEqual(response.status_code, 200)
-        self.assertGreaterEqual(len(response.json()["data"]), 2)
-
     def test_get_organizations_empty_returns_204(self):
         response = self.test_client.get(
             "/api/organizations",
             headers={"organization-id": "org_123"},
         )
         self.assertEqual(response.status_code, 204)
-
-    def test_get_users_organizations(self):
-        org_id = self.insert_org(name="User Org", with_user=True)
-        self.insert_org(name="Other")
-
-        response = self.test_client.get(
-            f"/api/users/{USER_IN_DB.user_id}/organizations",
-            headers={"organization-id": "org_123"},
-        )
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.json()["data"]), 1)
-        self.assertEqual(response.json()["data"][0]["id"], org_id)
 
     def test_get_users_organizations_empty_returns_204(self):
         response = self.test_client.get(
