@@ -12,6 +12,8 @@ class PreOrderStatus(str, Enum):
     PENDING = "PENDING"
     ACCEPTED = "ACCEPTED"
     REJECTED = "REJECTED"
+    OUT_FOR_DELIVERY = "OUT_FOR_DELIVERY"
+    DONE = "DONE"
 
 
 class PreOrderCustomer(GenericModel):

@@ -23,14 +23,12 @@ router = APIRouter(tags=["Pre-Orders"])
 async def update_pre_orders(
     pre_order_id: str,
     pre_order: UpdatePreOrder,
-    expand: List[str] = Query(default=[]),
     current_user: UserInDB = Security(decode_jwt, scopes=["pre-order:create"]),
     pre_order_services: PreOrderServices = Depends(pre_order_composer),
 ):
     pre_order_in_db = await pre_order_services.update_status(
         pre_order_id=pre_order_id,
         new_status=pre_order.status,
-        expand=expand
     )
 
     if pre_order_in_db:

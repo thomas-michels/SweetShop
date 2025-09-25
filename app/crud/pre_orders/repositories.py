@@ -61,6 +61,25 @@ class PreOrderRepository(Repository):
             if raise_404:
                 raise NotFoundError(message=f"PreOrder #{id} not found")
 
+    async def select_by_order_id(self, order_id: str, raise_404: bool = True) -> PreOrderInDB:
+        try:
+            pre_order_model: PreOrderModel = PreOrderModel.objects(
+                order_id=order_id,
+                is_active=True,
+                organization_id=self.organization_id
+            ).first()
+
+            return PreOrderInDB.model_validate(pre_order_model)
+
+        except ValidationError:
+            if raise_404:
+                raise NotFoundError(message=f"PreOrder for Order #{order_id} not found")
+
+        except Exception as error:
+            _logger.error(f"Error on select_by_id: {error}")
+            if raise_404:
+                raise NotFoundError(message=f"PreOrder for Order #{order_id} not found")
+
     async def select_count(self, status: PreOrderStatus = None, code: str = None) -> int:
         try:
             objects = PreOrderModel.objects(

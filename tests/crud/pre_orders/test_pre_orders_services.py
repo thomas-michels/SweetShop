@@ -34,11 +34,8 @@ class TestPreOrderServices(unittest.IsolatedAsyncioTestCase):
         self.service = PreOrderServices(
             pre_order_repository=repo,
             customer_repository=self.customer_repo,
-            offer_repository=self.offer_repo,
             organization_repository=self.organization_repo,
             message_services=self.message_services,
-            additional_item_repository=self.additional_repo,
-            product_additional_repository=self.product_additional_repo,
         )
 
     def tearDown(self):
@@ -97,11 +94,8 @@ class TestPreOrderServices(unittest.IsolatedAsyncioTestCase):
         service = PreOrderServices(
             pre_order_repository=mock_repo,
             customer_repository=AsyncMock(),
-            offer_repository=AsyncMock(),
             organization_repository=AsyncMock(),
             message_services=AsyncMock(),
-            additional_item_repository=AsyncMock(),
-            product_additional_repository=AsyncMock(),
         )
         count = await service.search_count()
         self.assertEqual(count, 2)

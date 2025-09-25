@@ -34,11 +34,8 @@ class PreOrderServices:
         self,
         pre_order_repository: 'PreOrderRepository',
         customer_repository: 'CustomerRepository',
-        offer_repository: 'OfferRepository',
         organization_repository: 'OrganizationRepository',
         message_services: 'MessageServices',
-        additional_item_repository: 'AdditionalItemRepository',
-        product_additional_repository: 'ProductAdditionalRepository',
     ) -> None:
         self.__pre_order_repository = pre_order_repository
         self.__customer_repository = customer_repository
@@ -46,16 +43,17 @@ class PreOrderServices:
 
         self.__message_services = message_services
 
-    async def update_status(self, pre_order_id: str, new_status: PreOrderStatus, order_id: str | None = None, expand: List[str] = []) -> PreOrderInDB:
+    async def update_status(self, pre_order_id: str, new_status: PreOrderStatus, order_id: str | None = None) -> PreOrderInDB:
         pre_order_in_db = await self.__pre_order_repository.update_status(
             pre_order_id=pre_order_id,
             new_status=new_status,
             order_id=order_id,
         )
 
-        await self.send_client_message(
-            pre_order=pre_order_in_db
-        )
+        if new_status in [PreOrderStatus.ACCEPTED, PreOrderStatus.REJECTED]:
+            await self.send_client_message(
+                pre_order=pre_order_in_db
+            )
 
         return pre_order_in_db
 
@@ -139,12 +137,6 @@ class PreOrderServices:
                     )
                 )
 
-                # ``offer_items_total`` must consider only the base price of each
-                # product. Additionals are charged separately and should not be
-                # used when calculating the discount. Including the additionals
-                # here would incorrectly subtract their price when the order is
-                # created, leading to a mismatch between the pre-order total and
-                # the final order total.
                 item_total = item.unit_price * item.quantity
                 offer_items_total += item_total
 
@@ -176,6 +168,11 @@ class PreOrderServices:
 
     async def search_by_id(self, id: str, expand: List[str] = []) -> PreOrderInDB:
         pre_order_in_db = await self.__pre_order_repository.select_by_id(id=id)
+
+        return pre_order_in_db
+
+    async def search_by_order_id(self, order_id: str, expand: List[str] = []) -> PreOrderInDB:
+        pre_order_in_db = await self.__pre_order_repository.select_by_order_id(order_id=order_id, raise_404=False)
 
         return pre_order_in_db
 
