@@ -163,7 +163,6 @@ class MenuRepository(Repository):
                 objects = objects.skip(skip).limit(page_size)
 
             for menu_model in objects:
-                menu_model = self._ensure_slug(menu_model)
                 menus.append(MenuInDB.model_validate(menu_model))
 
             return menus
