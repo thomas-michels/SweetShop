@@ -1,4 +1,5 @@
 from fastapi import Depends
+from app.api.composers.message_composite import message_composer
 from app.api.dependencies.get_current_organization import check_current_organization
 from app.crud.customers.repositories import CustomerRepository
 from app.crud.orders.repositories import OrderRepository
@@ -8,10 +9,12 @@ from app.crud.products.repositories import ProductRepository
 from app.crud.tags.repositories import TagRepository
 from app.crud.additional_items.repositories import AdditionalItemRepository
 from app.crud.product_additionals.repositories import ProductAdditionalRepository
+from app.crud.messages.services import MessageServices
 
 
 async def order_composer(
-    organization_id: str = Depends(check_current_organization)
+    organization_id: str = Depends(check_current_organization),
+    message_services: MessageServices = Depends(message_composer),
 ) -> OrderServices:
     order_repository = OrderRepository(organization_id=organization_id)
     product_repository = ProductRepository(organization_id=organization_id)
@@ -31,5 +34,6 @@ async def order_composer(
         organization_repository=organization_repository,
         additional_item_repository=additional_item_repository,
         product_additional_repository=product_additional_repository,
+        message_services=message_services,
     )
     return order_services

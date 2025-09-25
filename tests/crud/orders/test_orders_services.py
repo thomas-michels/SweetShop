@@ -1,4 +1,5 @@
 import unittest
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
 from app.crud.orders.schemas import (
@@ -11,8 +12,10 @@ from app.crud.orders.schemas import (
     RequestedAdditionalItem,
     StoredAdditionalItem,
     RequestOrder,
+    UpdateOrder,
 )
 from app.crud.orders.services import OrderServices
+from app.crud.messages.services import MessageServices
 from app.core.utils.utc_datetime import UTCDateTime
 from app.crud.shared_schemas.payment import PaymentStatus
 from app.crud.shared_schemas.address import Address
@@ -57,6 +60,11 @@ class TestOrderServices(unittest.IsolatedAsyncioTestCase):
             updated_at=now,
         )
 
+    def _message_services(self):
+        message_services = AsyncMock(spec=MessageServices)
+        message_services.create = AsyncMock()
+        return message_services
+
     async def test_search_by_id(self):
         mock_repo = AsyncMock()
         mock_repo.select_by_id.return_value = self._order_in_db()
@@ -68,6 +76,7 @@ class TestOrderServices(unittest.IsolatedAsyncioTestCase):
             organization_repository=AsyncMock(),
             additional_item_repository=AsyncMock(),
             product_additional_repository=AsyncMock(),
+            message_services=self._message_services(),
         )
         result = await service.search_by_id(id="ord1")
         self.assertEqual(result.id, "ord1")
@@ -84,6 +93,7 @@ class TestOrderServices(unittest.IsolatedAsyncioTestCase):
             organization_repository=AsyncMock(),
             additional_item_repository=AsyncMock(),
             product_additional_repository=AsyncMock(),
+            message_services=self._message_services(),
         )
         count = await service.search_count(
             status=None,
@@ -110,6 +120,7 @@ class TestOrderServices(unittest.IsolatedAsyncioTestCase):
             organization_repository=AsyncMock(),
             additional_item_repository=AsyncMock(),
             product_additional_repository=AsyncMock(),
+            message_services=self._message_services(),
         )
         results = await service.search_all(
             status=None,
@@ -178,6 +189,7 @@ class TestOrderServices(unittest.IsolatedAsyncioTestCase):
             organization_repository=AsyncMock(),
             additional_item_repository=AsyncMock(),
             product_additional_repository=AsyncMock(),
+            message_services=self._message_services(),
         )
 
         start = UTCDateTime.now()
@@ -245,6 +257,7 @@ class TestOrderServices(unittest.IsolatedAsyncioTestCase):
             organization_repository=AsyncMock(),
             additional_item_repository=AsyncMock(),
             product_additional_repository=AsyncMock(),
+            message_services=self._message_services(),
         )
 
         results = await service.search_recent(limit=2, expand=["customers"])
@@ -307,6 +320,7 @@ class TestOrderServices(unittest.IsolatedAsyncioTestCase):
             organization_repository=AsyncMock(),
             additional_item_repository=additional_repo,
             product_additional_repository=product_additional_repo,
+            message_services=self._message_services(),
         )
 
         raw_product = RequestedProduct(
@@ -377,6 +391,7 @@ class TestOrderServices(unittest.IsolatedAsyncioTestCase):
             organization_repository=AsyncMock(),
             additional_item_repository=additional_repo,
             product_additional_repository=product_additional_repo,
+            message_services=self._message_services(),
         )
 
         raw_product = RequestedProduct(
@@ -512,6 +527,7 @@ class TestOrderServices(unittest.IsolatedAsyncioTestCase):
             organization_repository=organization_repo,
             additional_item_repository=additional_repo,
             product_additional_repository=product_additional_repo,
+            message_services=self._message_services(),
         )
 
         req_order = RequestOrder(
@@ -668,6 +684,7 @@ class TestOrderServices(unittest.IsolatedAsyncioTestCase):
             organization_repository=organization_repo,
             additional_item_repository=additional_repo,
             product_additional_repository=product_additional_repo,
+            message_services=self._message_services(),
         )
 
         now = UTCDateTime.now()
@@ -841,6 +858,7 @@ class TestOrderServices(unittest.IsolatedAsyncioTestCase):
             organization_repository=organization_repo,
             additional_item_repository=additional_repo,
             product_additional_repository=product_additional_repo,
+            message_services=self._message_services(),
         )
 
         req_order = RequestOrder(
@@ -947,6 +965,7 @@ class TestOrderServices(unittest.IsolatedAsyncioTestCase):
             organization_repository=organization_repo,
             additional_item_repository=AsyncMock(),
             product_additional_repository=AsyncMock(),
+            message_services=self._message_services(),
         )
 
         req_order = RequestOrder(
@@ -971,3 +990,188 @@ class TestOrderServices(unittest.IsolatedAsyncioTestCase):
 
         created_order = order_repo.create.await_args.kwargs["order"]
         self.assertEqual(created_order.products[0].observation, "Sem cebola")
+
+    async def test_update_out_for_delivery_requires_delivery_type(self):
+        order_repo = AsyncMock()
+        order_repo.organization_id = "org1"
+        order_repo.select_by_id.return_value = self._order_in_db()
+
+        message_services = self._message_services()
+
+        service = OrderServices(
+            order_repository=order_repo,
+            product_repository=AsyncMock(),
+            tag_repository=AsyncMock(),
+            customer_repository=AsyncMock(),
+            organization_repository=AsyncMock(),
+            additional_item_repository=AsyncMock(),
+            product_additional_repository=AsyncMock(),
+            message_services=message_services,
+        )
+
+        with self.assertRaises(BadRequestException):
+            await service.update(
+                id="ord1",
+                updated_order=UpdateOrder(status=OrderStatus.OUT_FOR_DELIVERY),
+            )
+
+        order_repo.update.assert_not_awaited()
+        message_services.create.assert_not_awaited()
+
+    async def test_update_to_out_for_delivery_sends_message(self):
+        now = UTCDateTime.now()
+        delivery = Delivery(
+            delivery_type=DeliveryType.DELIVERY,
+            delivery_value=5.0,
+            delivery_at=now,
+            address=Address(
+                city="City",
+                neighborhood="Center",
+                line_1="Main St",
+                number="123",
+            ),
+        )
+
+        product = StoredProduct(
+            product_id="p1",
+            name="Prod1",
+            unit_price=2.0,
+            unit_cost=1.0,
+            quantity=1,
+        )
+
+        base_order = OrderInDB(
+            id="ord1",
+            organization_id="org1",
+            customer_id="cust1",
+            status=OrderStatus.IN_PREPARATION,
+            payment_status=PaymentStatus.PENDING,
+            products=[product],
+            tags=[],
+            delivery=delivery,
+            preparation_date=now,
+            order_date=now,
+            description=None,
+            additional=0,
+            discount=0,
+            total_amount=7.0,
+            tax=0,
+            payments=[],
+            is_active=True,
+            created_at=now,
+            updated_at=now,
+        )
+
+        updated_order = base_order.model_copy(update={"status": OrderStatus.OUT_FOR_DELIVERY})
+
+        order_repo = AsyncMock()
+        order_repo.organization_id = "org1"
+        order_repo.select_by_id.return_value = base_order
+        order_repo.update.return_value = updated_order
+
+        customer_repo = AsyncMock()
+        customer_repo.select_by_id.return_value = CustomerInDB(
+            id="cust1",
+            name="Alice",
+            international_code="55",
+            ddd="047",
+            phone_number="999999999",
+            addresses=[],
+            tags=[],
+            organization_id="org1",
+            is_active=True,
+            created_at=now,
+            updated_at=now,
+        )
+
+        organization_repo = AsyncMock()
+        organization_repo.select_by_id.return_value = SimpleNamespace(
+            tax=0,
+            international_code="55",
+            ddd="047",
+            phone_number="111111111",
+        )
+
+        message_services = self._message_services()
+
+        service = OrderServices(
+            order_repository=order_repo,
+            product_repository=AsyncMock(),
+            tag_repository=AsyncMock(),
+            customer_repository=customer_repo,
+            organization_repository=organization_repo,
+            additional_item_repository=AsyncMock(),
+            product_additional_repository=AsyncMock(),
+            message_services=message_services,
+        )
+
+        result = await service.update(
+            id="ord1",
+            updated_order=UpdateOrder(status=OrderStatus.OUT_FOR_DELIVERY),
+        )
+
+        message_services.create.assert_awaited_once()
+        sent_message = message_services.create.await_args.kwargs["message"]
+        self.assertIn("saiu para entrega", sent_message.message)
+        self.assertEqual(sent_message.phone_number, "999999999")
+        self.assertEqual(result.status, OrderStatus.OUT_FOR_DELIVERY)
+
+    async def test_update_to_done_sends_message(self):
+        now = UTCDateTime.now()
+        base_order = self._order_in_db()
+        base_order.customer_id = "cust1"
+        base_order.status = OrderStatus.IN_PREPARATION
+
+        updated_order = base_order.model_copy(update={"status": OrderStatus.DONE})
+
+        order_repo = AsyncMock()
+        order_repo.organization_id = "org1"
+        order_repo.select_by_id.return_value = base_order
+        order_repo.update.return_value = updated_order
+
+        customer_repo = AsyncMock()
+        customer_repo.select_by_id.return_value = CustomerInDB(
+            id="cust1",
+            name="Bob",
+            international_code="55",
+            ddd="047",
+            phone_number="888888888",
+            addresses=[],
+            tags=[],
+            organization_id="org1",
+            is_active=True,
+            created_at=now,
+            updated_at=now,
+        )
+
+        organization_repo = AsyncMock()
+        organization_repo.select_by_id.return_value = SimpleNamespace(
+            tax=0,
+            international_code="55",
+            ddd="047",
+            phone_number="111111111",
+        )
+
+        message_services = self._message_services()
+
+        service = OrderServices(
+            order_repository=order_repo,
+            product_repository=AsyncMock(),
+            tag_repository=AsyncMock(),
+            customer_repository=customer_repo,
+            organization_repository=organization_repo,
+            additional_item_repository=AsyncMock(),
+            product_additional_repository=AsyncMock(),
+            message_services=message_services,
+        )
+
+        result = await service.update(
+            id="ord1",
+            updated_order=UpdateOrder(status=OrderStatus.DONE),
+        )
+
+        message_services.create.assert_awaited_once()
+        sent_message = message_services.create.await_args.kwargs["message"]
+        self.assertIn("pedido foi finalizado", sent_message.message)
+        self.assertEqual(sent_message.phone_number, "888888888")
+        self.assertEqual(result.status, OrderStatus.DONE)

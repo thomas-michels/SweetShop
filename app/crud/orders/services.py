@@ -14,6 +14,7 @@ from app.crud.shared_schemas.payment import PaymentStatus
 from app.crud.tags.repositories import TagRepository
 from app.crud.additional_items.repositories import AdditionalItemRepository
 from app.crud.product_additionals.repositories import ProductAdditionalRepository
+from app.crud.messages.services import MessageServices
 
 from .repositories import OrderRepository
 from .schemas import (
@@ -28,6 +29,7 @@ from .schemas import (
     StoredAdditionalItem,
     UpdateOrder,
 )
+from .message_manager import OrderMessageManager
 
 logger = get_logger(__name__)
 
@@ -43,6 +45,7 @@ class OrderServices:
         organization_repository: OrganizationRepository,
         additional_item_repository: AdditionalItemRepository,
         product_additional_repository: ProductAdditionalRepository,
+        message_services: MessageServices,
     ) -> None:
         self.__order_repository = order_repository
         self.__product_repository = product_repository
@@ -51,7 +54,6 @@ class OrderServices:
         self.__organization_repository = organization_repository
         self.__additional_item_repository = additional_item_repository
         self.__product_additional_repository = product_additional_repository
-
         self.organization_id = self.__order_repository.organization_id
 
         self.__cache_tags = {}
@@ -59,6 +61,12 @@ class OrderServices:
 
         self.__order_calculator = OrderCalculator(
             product_repository=self.__product_repository
+        )
+
+        self.__order_message_manager = OrderMessageManager(
+            message_services=message_services,
+            customer_repository=self.__customer_repository,
+            organization_repository=self.__organization_repository,
         )
 
     async def create(self, order: RequestOrder) -> CompleteOrder:
@@ -176,6 +184,8 @@ class OrderServices:
             delivery_value=delivery_value,
         )
 
+        previous_status = order_in_db.status
+
         is_updated = order_in_db.validate_updated_fields(update_order=updated_order)
 
         if is_updated or updated_fields.get("products"):
@@ -199,6 +209,13 @@ class OrderServices:
 
             order_in_db = await self.__order_repository.update(
                 order_id=order_in_db.id, order=updated_fields
+            )
+
+            await self.__order_message_manager.send_status_update(
+                order=order_in_db,
+                previous_status=previous_status,
+                organization_id=self.__order_repository.organization_id,
+                customer_cache=self.__cache_customers,
             )
 
         return await self.__build_complete_order(order_in_db)
