@@ -2,6 +2,7 @@ import unittest
 from mongoengine import connect, disconnect
 import mongomock
 
+from app.core.utils import slugify
 from app.crud.menus.models import MenuModel
 from app.crud.menus.repositories import MenuRepository
 from app.crud.menus.schemas import Menu
@@ -29,7 +30,7 @@ class TestMenuRepository(unittest.IsolatedAsyncioTestCase):
         menu = await self._menu(name="Lunch")
         result = await self.repo.create(menu)
         self.assertEqual(result.name, "Lunch")
-        self.assertEqual(result.slug, "lunch")
+        self.assertEqual(result.slug, slugify("Lunch"))
         self.assertFalse(result.accepts_outside_business_hours)
         self.assertEqual(MenuModel.objects.count(), 1)
 
@@ -44,14 +45,14 @@ class TestMenuRepository(unittest.IsolatedAsyncioTestCase):
         result = await self.repo.create(menu)
 
         self.assertEqual(result.name, "Café Da Manhã!")
-        self.assertEqual(result.slug, "cafe-da-manha")
+        self.assertEqual(result.slug, slugify("Café Da Manhã!"))
 
     async def test_update_menu(self):
         created = await self.repo.create(await self._menu(name="Old"))
         created.name = "New"
         updated = await self.repo.update(created)
         self.assertEqual(updated.name, "New")
-        self.assertEqual(updated.slug, "new")
+        self.assertEqual(updated.slug, slugify("New"))
 
     async def test_update_menu_accepts_outside_business_hours(self):
         created = await self.repo.create(await self._menu(name="Outside"))
@@ -81,14 +82,14 @@ class TestMenuRepository(unittest.IsolatedAsyncioTestCase):
         created = await self.repo.create(await self._menu(name="Sweet"))
         result = await self.repo.select_by_name(name="Sweet")
         self.assertEqual(result.id, created.id)
-        self.assertEqual(result.slug, "sweet")
+        self.assertEqual(result.slug, slugify("Sweet"))
 
     async def test_select_by_name_uses_slug(self):
         created = await self.repo.create(await self._menu(name="Crème Brûlée"))
         result = await self.repo.select_by_name(name="creme brulee")
 
         self.assertEqual(result.id, created.id)
-        self.assertEqual(result.slug, "creme-brulee")
+        self.assertEqual(result.slug, slugify("Crème Brûlée"))
 
     async def test_select_by_name_not_found(self):
         with self.assertRaises(NotFoundError):
@@ -106,9 +107,9 @@ class TestMenuRepository(unittest.IsolatedAsyncioTestCase):
 
         result = await self.repo.select_by_name(name="Legacy Menu")
 
-        self.assertEqual(result.slug, "legacy-menu")
+        self.assertEqual(result.slug, slugify("Legacy Menu"))
         stored_menu = MenuModel.objects(id=legacy_menu.id).first()
-        self.assertEqual(stored_menu.slug, "legacy-menu")
+        self.assertEqual(stored_menu.slug, slugify("Legacy Menu"))
 
     async def test_select_count_with_query(self):
         await self.repo.create(await self._menu(name="Café da Manhã"))
@@ -131,7 +132,7 @@ class TestMenuRepository(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(count, 1)
         stored_menu = MenuModel.objects(id=legacy_menu.id).first()
-        self.assertEqual(stored_menu.slug, "cafe-antigo")
+        self.assertEqual(stored_menu.slug, slugify("Café Antigo"))
 
     async def test_select_all_with_pagination(self):
         await self.repo.create(await self._menu(name="A"))
@@ -157,7 +158,7 @@ class TestMenuRepository(unittest.IsolatedAsyncioTestCase):
         results = await self.repo.select_all(query=None)
 
         self.assertEqual(len(results), 1)
-        self.assertEqual(results[0].slug, "menu-sem-slug")
+        self.assertEqual(results[0].slug, slugify("Menu Sem Slug"))
 
     async def test_delete_by_id_success(self):
         created = await self.repo.create(await self._menu(name="Del"))
@@ -188,7 +189,7 @@ class TestMenuRepository(unittest.IsolatedAsyncioTestCase):
         menu = await self._menu(name="mY meNu")
         result = await self.repo.create(menu)
         self.assertEqual(result.name, "My Menu")
-        self.assertEqual(result.slug, "my-menu")
+        self.assertEqual(result.slug, slugify("My Menu"))
 
     async def test_select_by_id_raise_false_returns_none(self):
         result = await self.repo.select_by_id(id="missing", raise_404=False)
