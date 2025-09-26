@@ -50,6 +50,7 @@ class Organization(GenericModel):
     website: str | None = Field(default=None, example="https://your_company.com")
     social_links: SocialLinks | None = Field(default=None)
     styling: Styling | None = Field(default=None)
+    enable_order_notifications: bool = Field(default=False)
 
     @model_validator(mode="after")
     def validate_model(self) -> "Organization":
@@ -151,6 +152,12 @@ class Organization(GenericModel):
             self.styling = update_organization.styling
             is_updated = True
 
+        if update_organization.enable_order_notifications is not None:
+            self.enable_order_notifications = (
+                update_organization.enable_order_notifications
+            )
+            is_updated = True
+
         return is_updated
 
 
@@ -170,6 +177,7 @@ class UpdateOrganization(GenericModel):
     website: Optional[str] = Field(default=None)
     social_links: Optional[SocialLinks] = Field(default=None)
     styling: Optional[Styling] = Field(default=None)
+    enable_order_notifications: Optional[bool] = Field(default=None)
 
     @model_validator(mode="after")
     def validate_model(self) -> "UpdateOrganization":
