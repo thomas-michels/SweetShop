@@ -208,6 +208,9 @@ class PreOrderServices:
             id=self.__pre_order_repository.organization_id
         )
 
+        if not getattr(organization, "enable_order_notifications", False):
+            return False
+
         status = "ACEITO" if pre_order.status.startswith("A") else "RECUSADO"
 
         text_message = f"""*Seu pedido foi atualizado!*

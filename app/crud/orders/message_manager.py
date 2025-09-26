@@ -70,6 +70,9 @@ class OrderMessageManager:
             id=organization_id
         )
 
+        if not getattr(organization, "enable_order_notifications", False):
+            return
+
         if order.status == OrderStatus.OUT_FOR_DELIVERY:
             title = "*Seu pedido saiu para entrega!*"
             body = "Informamos que seu pedido saiu para entrega e chegará em breve!"
