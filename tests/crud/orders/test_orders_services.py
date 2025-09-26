@@ -1090,6 +1090,7 @@ class TestOrderServices(unittest.IsolatedAsyncioTestCase):
             international_code="55",
             ddd="047",
             phone_number="111111111",
+            enable_order_notifications=True,
         )
 
         message_services = self._message_services()
@@ -1150,6 +1151,7 @@ class TestOrderServices(unittest.IsolatedAsyncioTestCase):
             international_code="55",
             ddd="047",
             phone_number="111111111",
+            enable_order_notifications=True,
         )
 
         message_services = self._message_services()

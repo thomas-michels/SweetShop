@@ -14,6 +14,7 @@ class DummyOrg:
     international_code = "55"
     ddd = "047"
     phone_number = "123456789"
+    enable_order_notifications = True
 
 
 class TestPreOrderServices(unittest.IsolatedAsyncioTestCase):
