@@ -69,6 +69,9 @@ class Environment(BaseSettings):
     EVOLUTION_INSTANCE: str | None = None
     EVOLUTION_API_KEY: str | None = None
 
+    # VIACEP
+    VIACEP_LINK: str = "https://viacep.com.br"
+
 
     class Config:
         """Load config file"""
