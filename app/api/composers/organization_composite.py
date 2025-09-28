@@ -3,6 +3,8 @@ from fastapi import Depends
 from app.api.dependencies.cache_plans import get_cached_plans
 from app.api.dependencies.cache_users import get_cached_complete_users, get_cached_users
 from app.api.dependencies.get_access_token import get_access_token
+from app.crud.addresses.repositories import AddressRepository
+from app.crud.addresses.services import AddressServices
 from app.crud.organization_plans.repositories import OrganizationPlanRepository
 from app.crud.organizations.repositories import OrganizationRepository
 from app.crud.organizations.services import OrganizationServices
@@ -25,9 +27,14 @@ async def organization_composer(
         cache_plans=cache_plans
     )
 
+    address_services = AddressServices(
+        address_repository=AddressRepository()
+    )
+
     organization_services = OrganizationServices(
         organization_repository=organization_repository,
         organization_plan_repository=organization_plan_repository,
+        address_services=address_services,
         user_repository=user_repository,
         cached_complete_users=cached_complete_users,
     )

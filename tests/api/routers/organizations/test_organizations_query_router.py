@@ -39,11 +39,14 @@ class TestOrganizationsQueryRouter(unittest.TestCase):
         self.repo = OrganizationRepository()
         self.user_repo = AsyncMock()
         self.plan_repo = AsyncMock()
+        self.address_service = AsyncMock()
+        self.address_service.search_by_cep = AsyncMock(return_value=None)
 
         self.service = OrganizationServices(
             organization_repository=self.repo,
             user_repository=self.user_repo,
             organization_plan_repository=self.plan_repo,
+            address_services=self.address_service,
             cached_complete_users={},
         )
 
