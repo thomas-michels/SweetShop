@@ -4,6 +4,8 @@ from unittest.mock import AsyncMock, patch
 import mongomock
 from mongoengine import connect, disconnect
 
+from app.api.exceptions.authentication_exceptions import BadRequestException
+from app.core.exceptions import NotFoundError
 from app.core.utils.utc_datetime import UTCDateTime
 from app.crud.organizations.repositories import OrganizationRepository
 from app.crud.organizations.schemas import (
@@ -13,6 +15,7 @@ from app.crud.organizations.schemas import (
     SocialLinks,
 )
 from app.crud.organizations.services import OrganizationServices
+from app.crud.shared_schemas.address import Address
 from app.crud.shared_schemas.roles import RoleEnum
 from app.crud.shared_schemas.styling import Styling
 from app.crud.users.schemas import UserInDB
@@ -34,10 +37,14 @@ class TestOrganizationServices(unittest.IsolatedAsyncioTestCase):
         self.repo = OrganizationRepository()
         self.user_repo = AsyncMock()
         self.plan_repo = AsyncMock()
+        self.address_service = AsyncMock()
+        self.address_service.search_by_cep = AsyncMock(return_value=None)
+
         self.service = OrganizationServices(
             organization_repository=self.repo,
             user_repository=self.user_repo,
             organization_plan_repository=self.plan_repo,
+            address_services=self.address_service,
             cached_complete_users={},
         )
 
@@ -153,6 +160,50 @@ class TestOrganizationServices(unittest.IsolatedAsyncioTestCase):
 
         with self.assertRaises(Exception):
             await self.service.delete_by_id(id=org.id, user_making_request="admin")
+
+    async def test_create_with_invalid_zip_code_raises(self):
+        owner = await self._user("owner")
+        self.user_repo.select_by_id.return_value = owner
+        self.address_service.search_by_cep.side_effect = NotFoundError(message="not found")
+
+        with self.assertRaises(BadRequestException):
+            await self.service.create(
+                organization=Organization(
+                    name="Org Test",
+                    address=Address(
+                        zip_code="89012-000",
+                        city="City",
+                        neighborhood="Neighborhood",
+                        line_1="Street",
+                        number="100",
+                    ),
+                ),
+                owner=owner,
+            )
+
+    async def test_update_with_invalid_zip_code_raises(self):
+        org = await self.repo.create(Organization(name="Org"))
+        await self.repo.update(
+            org.id, {"users": [{"user_id": "owner", "role": RoleEnum.OWNER}]}
+        )
+
+        self.user_repo.select_by_id.return_value = await self._user("owner")
+        self.address_service.search_by_cep.side_effect = NotFoundError(message="not found")
+
+        with self.assertRaises(BadRequestException):
+            await self.service.update(
+                id=org.id,
+                updated_organization=UpdateOrganization(
+                    address=Address(
+                        zip_code="00000-000",
+                        city="City",
+                        neighborhood="Neighborhood",
+                        line_1="Street",
+                        number="10",
+                    )
+                ),
+                user_making_request="owner",
+            )
 
     async def test_add_user_success(self):
         org = await self.repo.create(Organization(name="Org"))

@@ -4,6 +4,8 @@ from app.api.dependencies.email_sender import send_email
 from app.api.dependencies.get_plan_feature import get_plan_feature
 from app.api.exceptions.authentication_exceptions import UnauthorizedException, BadRequestException
 from app.core.utils.features import Feature
+from app.core.exceptions import NotFoundError
+from app.crud.addresses import AddressServices
 from app.crud.files.repositories import FileRepository
 from app.crud.files.schemas import FilePurpose
 from app.crud.messages.repositories import MessageRepository
@@ -11,6 +13,7 @@ from app.crud.messages.schemas import Message, MessageType, Origin
 from app.crud.messages.services import MessageServices
 from app.crud.users.repositories import UserRepository
 from app.crud.users.schemas import CompleteUserInDB, UserInDB
+from app.crud.shared_schemas.address import Address
 
 from .schemas import CompleteOrganization, Organization, OrganizationInDB, RoleEnum, UpdateOrganization, UserOrganization
 from .repositories import OrganizationRepository
@@ -27,15 +30,19 @@ class OrganizationServices:
         organization_repository: OrganizationRepository,
         user_repository: UserRepository,
         organization_plan_repository: OrganizationPlanRepository,
+        address_services: AddressServices,
         cached_complete_users: Dict[str, CompleteUserInDB],
     ) -> None:
         self.__organization_repository = organization_repository
         self.__organization_plan_repository = organization_plan_repository
         self.__user_repository = user_repository
+        self.__address_services = address_services
 
         self.__cached_complete_users = cached_complete_users
 
     async def create(self, organization: Organization, owner: UserInDB) -> OrganizationInDB:
+        await self.__validate_address_zip_code(address=organization.address)
+
         organization_in_db = await self.__organization_repository.create(organization=organization)
 
         await self.add_user(
@@ -92,6 +99,8 @@ class OrganizationServices:
             if file_in_db.purpose != FilePurpose.ORGANIZATION:
                 raise BadRequestException(detail="Invalid image for the organization")
 
+        await self.__validate_address_zip_code(address=updated_organization.address)
+
         is_updated = organization_in_db.validate_updated_fields(update_organization=updated_organization)
 
         if is_updated:
@@ -101,6 +110,15 @@ class OrganizationServices:
             )
 
         return organization_in_db
+
+    async def __validate_address_zip_code(self, address: Address | None) -> None:
+        if not address or not address.zip_code:
+            return
+
+        try:
+            await self.__address_services.search_by_cep(zip_code=address.zip_code)
+        except NotFoundError:
+            raise BadRequestException(detail=f"Invalid zip code: {address.zip_code}")
 
     async def search_by_id(self, id: str, expand: List[str] = []) -> CompleteOrganization:
         organization_in_db = await self.__organization_repository.select_by_id(id=id)
