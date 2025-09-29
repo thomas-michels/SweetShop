@@ -8,7 +8,15 @@ from .schemas import (
     GetUserByIdResponse,
     GetUsersResponse,
 )
-from app.crud.users import UserInDB, UserServices
+from app.crud.users import CompleteUserInDB, UserInDB, UserServices
+
+
+async def _run_current_user_side_effects(
+    user_services: UserServices,
+    user: CompleteUserInDB,
+) -> None:
+    await user_services.notify_plan_expiration(user=user)
+    await user_services.update_last_access(user=user)
 
 router = APIRouter(tags=["Users"])
 
@@ -19,10 +27,12 @@ router = APIRouter(tags=["Users"])
 )
 async def current_user(
     background_tasks: BackgroundTasks,
-    current_user: UserInDB = Security(decode_jwt, scopes=["user:me"]),
+    current_user: CompleteUserInDB = Security(decode_jwt, scopes=["user:me"]),
     user_services: UserServices = Depends(user_composer),
 ):
-    background_tasks.add_task(user_services.update_last_access, user=current_user)
+    background_tasks.add_task(
+        _run_current_user_side_effects, user_services, current_user
+    )
 
     return build_response(
         status_code=200, message="User found with success", data=current_user
