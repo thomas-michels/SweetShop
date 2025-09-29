@@ -6,22 +6,26 @@ from app.api.composers import user_composer
 from app.api.dependencies.auth import decode_jwt
 from app.application import app
 from app.core.utils.utc_datetime import UTCDateTime
-from app.crud.users.schemas import UserInDB
+from app.crud.users.schemas import CompleteUserInDB
 
 
 class MockUserServices:
-    def __init__(self, response_user: UserInDB):
+    def __init__(self, response_user: CompleteUserInDB):
         self.response_user = response_user
         self.called_with = None
+        self.notified_with = None
 
-    async def update_last_access(self, user: UserInDB) -> UserInDB:
+    async def update_last_access(self, user: CompleteUserInDB) -> CompleteUserInDB:
         self.called_with = user
         return self.response_user
+
+    async def notify_plan_expiration(self, user: CompleteUserInDB) -> None:
+        self.notified_with = user
 
 
 class TestUsersQueryRouter(unittest.TestCase):
     def setUp(self):
-        self.current_user = UserInDB(
+        self.current_user = CompleteUserInDB(
             user_id="auth0|123",
             email="user@test.com",
             name="Test User",
@@ -29,9 +33,11 @@ class TestUsersQueryRouter(unittest.TestCase):
             user_metadata={"phone": "123"},
             created_at=UTCDateTime.now(),
             updated_at=UTCDateTime.now(),
+            organizations=["org_123"],
+            organizations_roles={},
         )
 
-        self.updated_user = UserInDB(
+        self.updated_user = CompleteUserInDB(
             user_id=self.current_user.user_id,
             email=self.current_user.email,
             name=self.current_user.name,
@@ -42,6 +48,8 @@ class TestUsersQueryRouter(unittest.TestCase):
             },
             created_at=self.current_user.created_at,
             updated_at=self.current_user.updated_at,
+            organizations=self.current_user.organizations,
+            organizations_roles=self.current_user.organizations_roles,
         )
 
         self.mock_service = MockUserServices(response_user=self.updated_user)
@@ -70,6 +78,8 @@ class TestUsersQueryRouter(unittest.TestCase):
         self.assertEqual(payload["message"], "User found with success")
         self.assertIsNotNone(self.mock_service.called_with)
         self.assertEqual(self.mock_service.called_with.user_id, self.current_user.user_id)
+        self.assertIsNotNone(self.mock_service.notified_with)
+        self.assertEqual(self.mock_service.notified_with.user_id, self.current_user.user_id)
 
         metadata = payload["data"]["userMetadata"]
         self.assertEqual(payload["data"]["userId"], self.current_user.user_id)
