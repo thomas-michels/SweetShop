@@ -2,29 +2,29 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
+from app.api.exceptions.authentication_exceptions import BadRequestException
+from app.builder.order_calculator import OrderCalculator
+from app.core.utils.utc_datetime import UTCDateTime
+from app.crud.additional_items.schemas import AdditionalItemInDB
+from app.crud.customers.schemas import CustomerInDB
+from app.crud.messages.services import MessageServices
 from app.crud.orders.schemas import (
-    OrderInDB,
     Delivery,
     DeliveryType,
-    StoredProduct,
+    OrderInDB,
     OrderStatus,
-    RequestedProduct,
     RequestedAdditionalItem,
-    StoredAdditionalItem,
+    RequestedProduct,
     RequestOrder,
+    StoredAdditionalItem,
+    StoredProduct,
     UpdateOrder,
 )
 from app.crud.orders.services import OrderServices
-from app.crud.messages.services import MessageServices
-from app.core.utils.utc_datetime import UTCDateTime
-from app.crud.shared_schemas.payment import PaymentStatus
-from app.crud.shared_schemas.address import Address
-from app.builder.order_calculator import OrderCalculator
+from app.crud.product_additionals.schemas import OptionKind, ProductAdditionalInDB
 from app.crud.products.schemas import ProductInDB, ProductKind
-from app.crud.additional_items.schemas import AdditionalItemInDB
-from app.crud.product_additionals.schemas import ProductAdditionalInDB, OptionKind
-from app.crud.customers.schemas import CustomerInDB
-from app.api.exceptions.authentication_exceptions import BadRequestException
+from app.crud.shared_schemas.address import Address
+from app.crud.shared_schemas.payment import PaymentStatus
 
 
 class TestOrderServices(unittest.IsolatedAsyncioTestCase):
@@ -329,13 +329,17 @@ class TestOrderServices(unittest.IsolatedAsyncioTestCase):
             additionals=[RequestedAdditionalItem(item_id="a1", quantity=1)],
         )
 
-        products = await service._OrderServices__validate_products(raw_products=[raw_product])
+        products = await service._OrderServices__validate_products(
+            raw_products=[raw_product]
+        )
 
         self.assertEqual(products[0].additionals[0].label, "Extra")
         self.assertEqual(products[0].unit_price, 2.0)
         self.assertEqual(products[0].unit_cost, 1.0)
         additional_repo.select_by_id.assert_awaited_with(id="a1")
-        product_additional_repo.select_by_product_id.assert_awaited_with(product_id="p1")
+        product_additional_repo.select_by_product_id.assert_awaited_with(
+            product_id="p1"
+        )
 
     async def test_validate_products_max_quantity(self):
         product_repo = AsyncMock()
@@ -533,7 +537,13 @@ class TestOrderServices(unittest.IsolatedAsyncioTestCase):
         req_order = RequestOrder(
             customer_id=None,
             status=OrderStatus.PENDING,
-            products=[RequestedProduct(product_id="p1", quantity=1, additionals=[RequestedAdditionalItem(item_id="a1", quantity=1)])],
+            products=[
+                RequestedProduct(
+                    product_id="p1",
+                    quantity=1,
+                    additionals=[RequestedAdditionalItem(item_id="a1", quantity=1)],
+                )
+            ],
             tags=[],
             delivery=Delivery(delivery_type=DeliveryType.WITHDRAWAL),
             preparation_date=now,
@@ -971,7 +981,9 @@ class TestOrderServices(unittest.IsolatedAsyncioTestCase):
         req_order = RequestOrder(
             customer_id=None,
             status=OrderStatus.PENDING,
-            products=[RequestedProduct(product_id="p1", quantity=1, observation="Sem cebola")],
+            products=[
+                RequestedProduct(product_id="p1", quantity=1, observation="Sem cebola")
+            ],
             tags=[],
             delivery=Delivery(delivery_type=DeliveryType.WITHDRAWAL),
             preparation_date=now,
@@ -991,34 +1003,7 @@ class TestOrderServices(unittest.IsolatedAsyncioTestCase):
         created_order = order_repo.create.await_args.kwargs["order"]
         self.assertEqual(created_order.products[0].observation, "Sem cebola")
 
-    async def test_update_out_for_delivery_requires_delivery_type(self):
-        order_repo = AsyncMock()
-        order_repo.organization_id = "org1"
-        order_repo.select_by_id.return_value = self._order_in_db()
-
-        message_services = self._message_services()
-
-        service = OrderServices(
-            order_repository=order_repo,
-            product_repository=AsyncMock(),
-            tag_repository=AsyncMock(),
-            customer_repository=AsyncMock(),
-            organization_repository=AsyncMock(),
-            additional_item_repository=AsyncMock(),
-            product_additional_repository=AsyncMock(),
-            message_services=message_services,
-        )
-
-        with self.assertRaises(BadRequestException):
-            await service.update(
-                id="ord1",
-                updated_order=UpdateOrder(status=OrderStatus.OUT_FOR_DELIVERY),
-            )
-
-        order_repo.update.assert_not_awaited()
-        message_services.create.assert_not_awaited()
-
-    async def test_update_to_out_for_delivery_sends_message(self):
+    async def test_update_to_READY_FOR_DELIVERY_sends_message(self):
         now = UTCDateTime.now()
         delivery = Delivery(
             delivery_type=DeliveryType.DELIVERY,
@@ -1062,7 +1047,9 @@ class TestOrderServices(unittest.IsolatedAsyncioTestCase):
             updated_at=now,
         )
 
-        updated_order = base_order.model_copy(update={"status": OrderStatus.OUT_FOR_DELIVERY})
+        updated_order = base_order.model_copy(
+            update={"status": OrderStatus.READY_FOR_DELIVERY}
+        )
 
         order_repo = AsyncMock()
         order_repo.organization_id = "org1"
@@ -1108,14 +1095,14 @@ class TestOrderServices(unittest.IsolatedAsyncioTestCase):
 
         result = await service.update(
             id="ord1",
-            updated_order=UpdateOrder(status=OrderStatus.OUT_FOR_DELIVERY),
+            updated_order=UpdateOrder(status=OrderStatus.READY_FOR_DELIVERY),
         )
 
         message_services.create.assert_awaited_once()
         sent_message = message_services.create.await_args.kwargs["message"]
         self.assertIn("saiu para entrega", sent_message.message)
         self.assertEqual(sent_message.phone_number, "999999999")
-        self.assertEqual(result.status, OrderStatus.OUT_FOR_DELIVERY)
+        self.assertEqual(result.status, OrderStatus.READY_FOR_DELIVERY)
 
     async def test_update_to_done_sends_message(self):
         now = UTCDateTime.now()

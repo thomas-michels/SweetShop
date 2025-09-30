@@ -10,14 +10,6 @@ from .schemas import (
 )
 from app.crud.users import CompleteUserInDB, UserInDB, UserServices
 
-
-async def _run_current_user_side_effects(
-    user_services: UserServices,
-    user: CompleteUserInDB,
-) -> None:
-    await user_services.notify_plan_expiration(user=user)
-    await user_services.update_last_access(user=user)
-
 router = APIRouter(tags=["Users"])
 
 
@@ -31,7 +23,7 @@ async def current_user(
     user_services: UserServices = Depends(user_composer),
 ):
     background_tasks.add_task(
-        _run_current_user_side_effects, user_services, current_user
+        user_services.update_last_access, current_user
     )
 
     return build_response(

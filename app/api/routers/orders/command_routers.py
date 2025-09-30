@@ -4,16 +4,13 @@ from app.api.composers import order_composer
 from app.api.composers.pre_order_composite import pre_order_composer
 from app.api.dependencies import build_response, decode_jwt
 from app.api.shared_schemas.responses import MessageResponse
+from app.crud.orders import OrderServices, RequestOrder, UpdateOrder
 from app.crud.orders.schemas import OrderStatus
 from app.crud.pre_orders.schemas import PreOrderStatus
 from app.crud.pre_orders.services import PreOrderServices
-from .schemas import (
-    CreateOrderResponse,
-    UpdateOrderResponse,
-    DeleteOrderResponse,
-)
 from app.crud.users import UserInDB
-from app.crud.orders import RequestOrder, UpdateOrder, OrderServices
+
+from .schemas import CreateOrderResponse, DeleteOrderResponse, UpdateOrderResponse
 
 router = APIRouter(tags=["Orders"])
 
@@ -30,9 +27,7 @@ async def create_orders(
     current_user: UserInDB = Security(decode_jwt, scopes=["order:create"]),
     order_services: OrderServices = Depends(order_composer),
 ):
-    order_in_db = await order_services.create(
-        order=order
-    )
+    order_in_db = await order_services.create(order=order)
 
     if order_in_db:
         return build_response(
@@ -62,14 +57,19 @@ async def update_order(
     order_in_db = await order_services.update(id=order_id, updated_order=order)
 
     if order_in_db:
-        if order.status is not None and order.status in [OrderStatus.OUT_FOR_DELIVERY, OrderStatus.DONE]:
-            pre_order_in_db = await pre_order_services.search_by_order_id(order_id=order_in_db.id)
+        if order.status is not None and order.status in [
+            OrderStatus.READY_FOR_DELIVERY,
+            OrderStatus.DONE,
+        ]:
+            pre_order_in_db = await pre_order_services.search_by_order_id(
+                order_id=order_in_db.id
+            )
 
             if pre_order_in_db:
                 await pre_order_services.update_status(
                     pre_order_id=pre_order_in_db.id,
                     order_id=order_in_db.id,
-                    new_status=PreOrderStatus(order_in_db.status.value)
+                    new_status=PreOrderStatus(order_in_db.status.value),
                 )
 
         return build_response(

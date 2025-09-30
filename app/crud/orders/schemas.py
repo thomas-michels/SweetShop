@@ -8,7 +8,6 @@ from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
 from app.core.utils.utc_datetime import UTCDateTime, UTCDateTimeType
 from app.crud.customers.schemas import CustomerInDB
-from app.crud.files.schemas import FileInDB
 from app.crud.shared_schemas.address import Address
 from app.crud.shared_schemas.payment import PaymentMethod, PaymentStatus
 from app.crud.tags.schemas import TagInDB
@@ -18,7 +17,7 @@ class OrderStatus(str, Enum):
     PENDING = "PENDING"
     SCHEDULED = "SCHEDULED"
     IN_PREPARATION = "IN_PREPARATION"
-    OUT_FOR_DELIVERY = "OUT_FOR_DELIVERY"
+    READY_FOR_DELIVERY = "READY_FOR_DELIVERY"
     DONE = "DONE"
     CANCELED = "CANCELED"
 
@@ -119,14 +118,6 @@ class RequestOrder(GenericModel):
         if len(self.tags) != len(set(self.tags)):
             raise ValueError("Tags must contain unique items.")
 
-        if (
-            self.status == OrderStatus.OUT_FOR_DELIVERY
-            and self.delivery.delivery_type != DeliveryType.DELIVERY
-        ):
-            raise ValueError(
-                "Status OUT_FOR_DELIVERY só pode ser utilizado em pedidos com entrega"
-            )
-
         return self
 
     def validate_updated_fields(self, update_order: Type["UpdateOrder"]) -> bool:
@@ -177,14 +168,6 @@ class RequestOrder(GenericModel):
 
         if update_order.products is not None:
             is_updated = True
-
-        if (
-            self.status == OrderStatus.OUT_FOR_DELIVERY
-            and self.delivery.delivery_type != DeliveryType.DELIVERY
-        ):
-            raise BadRequestException(
-                detail="Status OUT_FOR_DELIVERY só pode ser utilizado em pedidos com entrega"
-            )
 
         return is_updated
 

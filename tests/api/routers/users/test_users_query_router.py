@@ -78,8 +78,6 @@ class TestUsersQueryRouter(unittest.TestCase):
         self.assertEqual(payload["message"], "User found with success")
         self.assertIsNotNone(self.mock_service.called_with)
         self.assertEqual(self.mock_service.called_with.user_id, self.current_user.user_id)
-        self.assertIsNotNone(self.mock_service.notified_with)
-        self.assertEqual(self.mock_service.notified_with.user_id, self.current_user.user_id)
 
         metadata = payload["data"]["userMetadata"]
         self.assertEqual(payload["data"]["userId"], self.current_user.user_id)

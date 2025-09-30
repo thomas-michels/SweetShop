@@ -1,6 +1,8 @@
 from enum import Enum
 from typing import List, Literal, Union
+
 from pydantic import Field, model_validator
+
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
 from app.core.utils.utc_datetime import UTCDateTime, UTCDateTimeType
@@ -12,7 +14,7 @@ class PreOrderStatus(str, Enum):
     PENDING = "PENDING"
     ACCEPTED = "ACCEPTED"
     REJECTED = "REJECTED"
-    OUT_FOR_DELIVERY = "OUT_FOR_DELIVERY"
+    READY_FOR_DELIVERY = "READY_FOR_DELIVERY"
     DONE = "DONE"
 
 
@@ -44,7 +46,9 @@ class Delivery(GenericModel):
     delivery_type: DeliveryType = Field(
         default=DeliveryType.WITHDRAWAL, example=DeliveryType.WITHDRAWAL
     )
-    delivery_at: UTCDateTimeType | None = Field(default=None, example=str(UTCDateTime.now()))
+    delivery_at: UTCDateTimeType | None = Field(
+        default=None, example=str(UTCDateTime.now())
+    )
     delivery_value: float | None = Field(default=None)
     address: Address | None = Field(default=None)
 

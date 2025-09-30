@@ -35,7 +35,7 @@ class OrderMessageManager:
             return
 
         if order.status not in (
-            OrderStatus.OUT_FOR_DELIVERY,
+            OrderStatus.READY_FOR_DELIVERY,
             OrderStatus.DONE,
         ):
             return
@@ -59,11 +59,7 @@ class OrderMessageManager:
         if not customer:
             return
 
-        if not (
-            customer.international_code
-            and customer.ddd
-            and customer.phone_number
-        ):
+        if not (customer.international_code and customer.ddd and customer.phone_number):
             return
 
         organization = await self.__organization_repository.select_by_id(
@@ -73,12 +69,14 @@ class OrderMessageManager:
         if not getattr(organization, "enable_order_notifications", False):
             return
 
-        if order.status == OrderStatus.OUT_FOR_DELIVERY:
+        if order.status == OrderStatus.READY_FOR_DELIVERY:
             title = "*Seu pedido saiu para entrega!*"
             body = "Informamos que seu pedido saiu para entrega e chegará em breve!"
         else:
             title = "*Pedido finalizado!*"
-            body = "Informamos que seu pedido foi finalizado. Esperamos que tenha gostado!"
+            body = (
+                "Informamos que seu pedido foi finalizado. Esperamos que tenha gostado!"
+            )
 
         text_message = (
             f"{title}\n\n"
