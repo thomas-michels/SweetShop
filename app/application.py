@@ -36,7 +36,8 @@ from app.api.routers import (
     pre_order_router,
     message_router,
     additional_router,
-    business_day_router
+    business_day_router,
+    notification_router
 )
 from app.api.routers.exception_handlers import (
     unprocessable_entity_error_422,
@@ -110,6 +111,7 @@ app.include_router(coupon_router, prefix="/api")
 app.include_router(file_router, prefix="/api")
 app.include_router(marketing_email_router, prefix="/api")
 app.include_router(message_router, prefix="/api")
+app.include_router(notification_router, prefix="/api")
 app.include_router(mercado_pago_router, prefix="/api")
 app.include_router(business_day_router, prefix="/api")
 
