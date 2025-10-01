@@ -20,18 +20,18 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         client_ip = "unkown"
 
-        if request.client is not None and request.client.host:
-            client_ip = request.client.host
+        # if request.client is not None and request.client.host:
+        #     client_ip = request.client.host
 
-        with self.lock:
-            count = self.cache.get(client_ip, 0) + 1
-            self.cache[client_ip] = count
+        # with self.lock:
+        #     count = self.cache.get(client_ip, 0) + 1
+        #     self.cache[client_ip] = count
 
-        if count > self.limit:
-            return build_response(
-                status_code=429,
-                message="Too many requests"
-            )
+        # if count > self.limit:
+        #     return build_response(
+        #         status_code=429,
+        #         message="Too many requests"
+        #     )
 
         response = await call_next(request)
         return response
