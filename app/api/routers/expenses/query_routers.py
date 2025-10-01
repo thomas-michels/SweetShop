@@ -8,13 +8,21 @@ from app.api.dependencies import build_response, decode_jwt
 from app.api.dependencies.pagination_parameters import pagination_parameters
 from app.api.dependencies.paginator import Paginator
 from app.api.dependencies.response import build_list_response
+from app.api.shared_schemas.responses import MessageResponse
 from app.crud.users import UserInDB
-from app.crud.expenses import ExpenseInDB, ExpenseServices
+from app.crud.expenses import ExpenseServices
+from .schemas import GetExpenseResponse, GetExpensesResponse
 
 router = APIRouter(tags=["Expenses"])
 
 
-@router.get("/expenses/{expense_id}", responses={200: {"model": ExpenseInDB}})
+@router.get(
+    "/expenses/{expense_id}",
+    responses={
+        200: {"model": GetExpenseResponse},
+        404: {"model": MessageResponse},
+    },
+)
 async def get_expense_by_id(
     expense_id: str,
     current_user: UserInDB = Security(decode_jwt, scopes=["expense:get"]),
@@ -33,7 +41,13 @@ async def get_expense_by_id(
         )
 
 
-@router.get("/expenses", responses={200: {"model": List[ExpenseInDB]}})
+@router.get(
+    "/expenses",
+    responses={
+        200: {"model": GetExpensesResponse},
+        204: {"description": "No Content"},
+    },
+)
 async def get_expenses(
     request: Request,
     query: str = Query(default=None),

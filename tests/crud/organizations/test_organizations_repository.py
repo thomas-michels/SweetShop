@@ -4,7 +4,8 @@ import mongomock
 
 from app.crud.organizations.models import OrganizationModel
 from app.crud.organizations.repositories import OrganizationRepository
-from app.crud.organizations.schemas import Organization
+from app.crud.organizations.schemas import Organization, SocialLinks
+from app.crud.shared_schemas.styling import Styling
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 
 
@@ -46,6 +47,20 @@ class TestOrganizationRepository(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(result.name, "Trim")
 
+    async def test_create_with_links_and_styling(self):
+        org = Organization(
+            name="Org C",
+            website="https://org.com",
+            social_links=SocialLinks(instagram="https://instagram.com/org"),
+            styling=Styling(primary_color="#111111", secondary_color="#222222"),
+        )
+
+        result = await self.repo.create(org)
+
+        self.assertEqual(result.website, "https://org.com")
+        self.assertEqual(result.social_links.instagram, "https://instagram.com/org")
+        self.assertEqual(result.styling.primary_color, "#111111")
+
 
     async def test_update_organization_name(self):
         org = await self._build_org(name="Old")
@@ -54,6 +69,22 @@ class TestOrganizationRepository(unittest.IsolatedAsyncioTestCase):
         updated = await self.repo.update(created.id, {"name": "New"})
 
         self.assertEqual(updated.name, "New")
+
+    async def test_update_new_fields(self):
+        org = await self.repo.create(await self._build_org(name="Org"))
+
+        updated = await self.repo.update(
+            org.id,
+            {
+                "website": "https://new.com",
+                "social_links": {"tiktok": "https://tiktok.com/@new"},
+                "styling": {"primary_color": "#123123", "secondary_color": "#321321"},
+            },
+        )
+
+        self.assertEqual(updated.website, "https://new.com")
+        self.assertEqual(updated.social_links.tiktok, "https://tiktok.com/@new")
+        self.assertEqual(updated.styling.secondary_color, "#321321")
 
     async def test_select_by_id_success(self):
         org = await self.repo.create(await self._build_org())

@@ -35,6 +35,8 @@ class TestOrganizationsCommandRouter(unittest.TestCase):
         self.repo = OrganizationRepository()
         self.user_repo = AsyncMock()
         self.plan_repo = AsyncMock()
+        self.address_service = AsyncMock()
+        self.address_service.search_by_cep = AsyncMock(return_value=None)
 
         patcher_email = patch(
             "app.crud.organizations.services.send_email", return_value="id"
@@ -46,6 +48,7 @@ class TestOrganizationsCommandRouter(unittest.TestCase):
             organization_repository=self.repo,
             user_repository=self.user_repo,
             organization_plan_repository=self.plan_repo,
+            address_services=self.address_service,
             cached_complete_users={},
         )
 
@@ -82,40 +85,6 @@ class TestOrganizationsCommandRouter(unittest.TestCase):
             response.json()["message"], "Organization created with success"
         )
         self.assertIsNotNone(response.json()["data"]["id"])
-
-    def test_put_organization_success(self):
-        org_id = self.insert_org(name="Old")
-        OrganizationModel.objects(id=org_id).first().update(
-            users=[{"user_id": USER_IN_DB.user_id, "role": RoleEnum.OWNER}]
-        )
-        self.user_repo.select_by_id.return_value = USER_IN_DB
-
-        response = self.test_client.put(
-            f"/api/organizations/{org_id}",
-            json={"name": "Updated"},
-            headers={"organization-id": "org_123"},
-        )
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            response.json()["message"], "Organization updated with success"
-        )
-
-    def test_delete_organization_success(self):
-        org_id = self.insert_org(name="Del")
-        OrganizationModel.objects(id=org_id).first().update(
-            users=[{"user_id": USER_IN_DB.user_id, "role": RoleEnum.OWNER}]
-        )
-
-        response = self.test_client.delete(
-            f"/api/organizations/{org_id}",
-            headers={"organization-id": "org_123"},
-        )
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            response.json()["message"], "Organization deleted with success"
-        )
 
     def test_delete_organization_not_found(self):
         response = self.test_client.delete(

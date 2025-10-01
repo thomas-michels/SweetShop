@@ -15,6 +15,7 @@ def get_role_permissions(role: RoleEnum) -> Set[str]:
         [
             "tag:get",
             "product:get",
+            "product_additional:get",
             "user:me",
             "payment:get",
             "order:create",
@@ -29,6 +30,7 @@ def get_role_permissions(role: RoleEnum) -> Set[str]:
             "calendar:get",
             "section:get",
             "pre-order:get",
+            "business_day:get",
         ]
     )
 
@@ -43,6 +45,8 @@ def get_role_permissions(role: RoleEnum) -> Set[str]:
                 "tag:delete",
                 "product:create",
                 "product:delete",
+                "product_additional:create",
+                "product_additional:delete",
                 "file:create",
                 "file:delete",
                 "payment:create",
@@ -59,8 +63,8 @@ def get_role_permissions(role: RoleEnum) -> Set[str]:
         )
     )
 
-    if role == RoleEnum.MANAGER:
-        return permissions
+    # if role == RoleEnum.MANAGER:
+    #     return permissions
 
     # Admin
     permissions = permissions.union(
@@ -79,11 +83,12 @@ def get_role_permissions(role: RoleEnum) -> Set[str]:
                 "offer:delete",
                 "pre-order:create",
                 "pre-order:delete",
+                "business_day:update",
             ]
         )
     )
 
-    if role == RoleEnum.ADMIN:
+    if role in [RoleEnum.ADMIN, RoleEnum.MANAGER]:
         return permissions
 
     # Owner

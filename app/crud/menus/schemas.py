@@ -22,6 +22,7 @@ class Menu(GenericModel):
     km_tax: float | None = Field(default=None, example=123)
     unit_tax: float | None = Field(default=None, example=123)
     accept_delivery: bool | None = Field(default=None, example=True)
+    accepts_outside_business_hours: bool = Field(default=False, example=False)
 
     def validate_updated_fields(self, update_menu: "UpdateMenu") -> bool:
         is_updated = False
@@ -82,6 +83,10 @@ class Menu(GenericModel):
             self.accept_delivery = update_menu.accept_delivery
             is_updated = True
 
+        if update_menu.accepts_outside_business_hours is not None:
+            self.accepts_outside_business_hours = update_menu.accepts_outside_business_hours
+            is_updated = True
+
         return is_updated
 
 
@@ -100,7 +105,9 @@ class UpdateMenu(GenericModel):
     km_tax: Optional[float] = Field(default=None, example=123)
     unit_tax: Optional[float] = Field(default=None, example=123)
     accept_delivery: Optional[bool] = Field(default=None, example=False)
+    accepts_outside_business_hours: Optional[bool] = Field(default=None, example=False)
 
 
 class MenuInDB(Menu, DatabaseModel):
     organization_id: str = Field(example="org_123")
+    slug: str = Field(example="doces")

@@ -1,4 +1,4 @@
-from mongoengine import DictField, ListField, StringField, FloatField
+from mongoengine import BooleanField, DictField, ListField, StringField, FloatField
 
 from app.core.models.base_document import BaseDocument
 from app.core.utils.utc_datetime import UTCDateTime
@@ -6,6 +6,7 @@ from app.core.utils.utc_datetime import UTCDateTime
 
 class OrganizationModel(BaseDocument):
     name = StringField(required=True, unique=True)
+    slug = StringField(required=False)
     international_code = StringField(required=False)
     ddd = StringField(max_length=3, required=False)
     phone_number = StringField(max_length=9, required=False)
@@ -18,6 +19,10 @@ class OrganizationModel(BaseDocument):
     file_id = StringField(required=False, default=None)
     unit_distance = StringField(required=False, default=None)
     tax = FloatField(required=False, default=0)
+    website = StringField(required=False, default=None)
+    social_links = DictField(required=False, default=None)
+    styling = DictField(required=False, default=None)
+    enable_order_notifications = BooleanField(required=False, default=False)
 
     meta = {"collection": "organizations"}
 

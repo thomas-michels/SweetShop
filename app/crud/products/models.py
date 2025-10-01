@@ -9,6 +9,7 @@ class ProductModel(BaseDocument):
     description = StringField(required=True)
     unit_price = FloatField(min_value=0, required=True)
     unit_cost = FloatField(min_value=0, required=True)
+    kind = StringField(default="REGULAR")
     tags = ListField(StringField(), required=False)
     file_id = StringField(required=False)
 

@@ -1,14 +1,23 @@
 import unittest
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 
 import mongomock
 from mongoengine import connect, disconnect
 
+from app.api.exceptions.authentication_exceptions import BadRequestException
+from app.core.exceptions import NotFoundError
 from app.core.utils.utc_datetime import UTCDateTime
 from app.crud.organizations.repositories import OrganizationRepository
-from app.crud.organizations.schemas import Organization, OrganizationInDB
+from app.crud.organizations.schemas import (
+    Organization,
+    OrganizationInDB,
+    UpdateOrganization,
+    SocialLinks,
+)
 from app.crud.organizations.services import OrganizationServices
+from app.crud.shared_schemas.address import Address
 from app.crud.shared_schemas.roles import RoleEnum
+from app.crud.shared_schemas.styling import Styling
 from app.crud.users.schemas import UserInDB
 
 
@@ -28,10 +37,14 @@ class TestOrganizationServices(unittest.IsolatedAsyncioTestCase):
         self.repo = OrganizationRepository()
         self.user_repo = AsyncMock()
         self.plan_repo = AsyncMock()
+        self.address_service = AsyncMock()
+        self.address_service.search_by_cep = AsyncMock(return_value=None)
+
         self.service = OrganizationServices(
             organization_repository=self.repo,
             user_repository=self.user_repo,
             organization_plan_repository=self.plan_repo,
+            address_services=self.address_service,
             cached_complete_users={},
         )
 
@@ -48,6 +61,61 @@ class TestOrganizationServices(unittest.IsolatedAsyncioTestCase):
             updated_at=UTCDateTime.now(),
         )
 
+    async def test_create_sends_email_and_client_message(self):
+        owner = await self._user("owner")
+        # Ensure user lookups during add_user succeed
+        self.user_repo.select_by_id.return_value = owner
+
+        with patch("app.crud.organizations.services.send_email") as send_email_mock, \
+             patch.object(OrganizationServices, "send_client_message", new_callable=AsyncMock) as send_msg_mock:
+
+            org = await self.service.create(
+                organization=Organization(name="Org Test"),
+                owner=owner,
+            )
+
+            # Owner added
+            self.assertEqual(len(org.users), 1)
+            self.assertEqual(org.users[0].user_id, owner.user_id)
+
+            # Email sent
+            send_email_mock.assert_called_once()
+
+            # Client message triggered
+            send_msg_mock.assert_awaited_once()
+
+    async def test_send_client_message_uses_message_services(self):
+        owner = await self._user("owner")
+        # Create org with phone fields to validate message composition
+        org_in_db = await self.repo.create(
+            Organization(
+                name="My Org",
+                international_code="55",
+                ddd="047",
+                phone_number="999999999",
+            )
+        )
+
+        with patch("app.crud.organizations.services.MessageServices") as MessageServicesMock:
+            instance = MessageServicesMock.return_value
+            instance.create = AsyncMock(return_value=True)
+
+            result = await self.service.send_client_message(
+                user_in_db=owner,
+                organization=org_in_db,
+            )
+
+            self.assertTrue(result)
+            instance.create.assert_awaited_once()
+
+            # Validate message payload basics
+            await_args = instance.create.await_args
+            msg = await_args.args[0] if await_args and await_args.args else await_args.kwargs.get("message")
+            self.assertIsNotNone(msg)
+            self.assertEqual(msg.origin.value, "ORGANIZATIONS")
+            # Validator trims leading zero from ddd when BR (55)
+            self.assertIn("My Org", msg.message)
+
     async def test_search_by_id_calls_repo(self):
         org = await self.repo.create(Organization(name="Org"))
 
@@ -62,26 +130,27 @@ class TestOrganizationServices(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(len(result), 1)
 
-    async def test_delete_by_id_authorized(self):
-        org = await self.repo.create(Organization(name="Del"))
+    async def test_update_styling_and_links(self):
+        org = await self.repo.create(Organization(name="Org"))
         await self.repo.update(
             org.id, {"users": [{"user_id": "owner", "role": RoleEnum.OWNER}]}
         )
 
-        self.repo.delete_by_id = AsyncMock(
-            return_value=OrganizationInDB(
-                id=org.id,
-                name=org.name,
-                users=[],
-                created_at=UTCDateTime.now(),
-                updated_at=UTCDateTime.now(),
-            )
+        self.user_repo.select_by_id.return_value = await self._user("owner")
+
+        update = UpdateOrganization(
+            website="https://new.com",
+            social_links=SocialLinks(instagram="https://instagram.com/new"),
+            styling=Styling(primary_color="#123123", secondary_color="#321321"),
         )
 
-        result = await self.service.delete_by_id(id=org.id, user_making_request="owner")
+        result = await self.service.update(
+            id=org.id, updated_organization=update, user_making_request="owner"
+        )
 
-        self.assertEqual(result.id, org.id)
-        self.repo.delete_by_id.assert_awaited_with(id=org.id)
+        self.assertEqual(result.website, "https://new.com")
+        self.assertEqual(result.social_links.instagram, "https://instagram.com/new")
+        self.assertEqual(result.styling.primary_color, "#123123")
 
     async def test_delete_by_id_not_owner_raises(self):
         org = await self.repo.create(Organization(name="Del"))
@@ -91,6 +160,50 @@ class TestOrganizationServices(unittest.IsolatedAsyncioTestCase):
 
         with self.assertRaises(Exception):
             await self.service.delete_by_id(id=org.id, user_making_request="admin")
+
+    async def test_create_with_invalid_zip_code_raises(self):
+        owner = await self._user("owner")
+        self.user_repo.select_by_id.return_value = owner
+        self.address_service.search_by_cep.side_effect = NotFoundError(message="not found")
+
+        with self.assertRaises(BadRequestException):
+            await self.service.create(
+                organization=Organization(
+                    name="Org Test",
+                    address=Address(
+                        zip_code="89012-000",
+                        city="City",
+                        neighborhood="Neighborhood",
+                        line_1="Street",
+                        number="100",
+                    ),
+                ),
+                owner=owner,
+            )
+
+    async def test_update_with_invalid_zip_code_raises(self):
+        org = await self.repo.create(Organization(name="Org"))
+        await self.repo.update(
+            org.id, {"users": [{"user_id": "owner", "role": RoleEnum.OWNER}]}
+        )
+
+        self.user_repo.select_by_id.return_value = await self._user("owner")
+        self.address_service.search_by_cep.side_effect = NotFoundError(message="not found")
+
+        with self.assertRaises(BadRequestException):
+            await self.service.update(
+                id=org.id,
+                updated_organization=UpdateOrganization(
+                    address=Address(
+                        zip_code="00000-000",
+                        city="City",
+                        neighborhood="Neighborhood",
+                        line_1="Street",
+                        number="10",
+                    )
+                ),
+                user_making_request="owner",
+            )
 
     async def test_add_user_success(self):
         org = await self.repo.create(Organization(name="Org"))

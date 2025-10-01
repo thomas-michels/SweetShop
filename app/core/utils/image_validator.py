@@ -1,40 +1,41 @@
-from io import BytesIO
 from fastapi import UploadFile, HTTPException
-from PIL import Image, UnidentifiedImageError
+from PIL import Image, UnidentifiedImageError, ImageFile
 
 MAX_FILE_SIZE_MB = 25
-ALLOWED_IMAGE_FORMATS = {"jpeg", "png", "jpg"}
+ALLOWED_IMAGE_FORMATS = {"jpeg", "png", "jpg", "webp", "svg"}
+MAX_MEGA_PIXELS = 60
 
 
 async def validate_image_file(image: UploadFile) -> str:
-    """
-    Valida se o arquivo é uma imagem válida, tem tamanho <= 25 MB
-    e está em um dos formatos permitidos. Retorna o formato em lowercase.
-    """
-    # 1) Lê tudo do upload apenas uma vez
-    contents = await image.read()
+    image.file.seek(0, 2)  # vai pro fim
+    size_bytes = image.file.tell()
+    image.file.seek(0)     # volta pro início
 
-    # 2) Valida tamanho
-    size_mb = len(contents) / (1024 * 1024)
+    size_mb = size_bytes / (1024 * 1024)
     if size_mb > MAX_FILE_SIZE_MB:
-        raise HTTPException(
-            status_code=400,
-            detail=f"File exceeds {MAX_FILE_SIZE_MB} MB limit"
-        )
+        raise HTTPException(status_code=400, detail=f"File exceeds {MAX_FILE_SIZE_MB} MB limit")
 
-    # 3) Verifica e extrai o formato via Pillow
+    # 2) Abre direto do stream (sem copiar pra bytes)
     try:
-        with Image.open(BytesIO(contents)) as img:
-            img.verify()              # detecta corrupções
-            fmt = img.format.lower()  # ex: "jpeg", "png"
-    except (UnidentifiedImageError, Exception):
+        with Image.open(image.file) as img:
+            fmt = (img.format or "").lower()
+
+            # valida formato
+            if fmt not in ALLOWED_IMAGE_FORMATS:
+                raise HTTPException(status_code=400, detail="Invalid image format")
+
+            # valida megapixels para evitar explosão de memória na decodificação
+            w, h = img.size
+            mega_pixels = (w * h) / 1_000_000
+            if mega_pixels > MAX_MEGA_PIXELS:
+                raise HTTPException(status_code=400, detail="Image too large (pixels)")
+
+            # força leitura mínima pra validar integridade (sem img.verify(), que descarta o objeto)
+            ImageFile.LOAD_TRUNCATED_IMAGES = False
+            img.load()  # carrega os tiles necessários
+    except UnidentifiedImageError:
         raise HTTPException(status_code=400, detail="Invalid image format")
 
-    # 4) Valida o formato
-    if fmt not in ALLOWED_IMAGE_FORMATS:
-        raise HTTPException(status_code=400, detail="Invalid image format")
-
-    # 5) Reseta o ponteiro para usos futuros (save, process etc.)
+    # 3) reposiciona para quem for ler depois
     image.file.seek(0)
-
     return fmt

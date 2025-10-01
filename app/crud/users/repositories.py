@@ -55,7 +55,10 @@ class UserRepository:
 
             if status_code == 200:
                 _logger.debug("User updated successfully")
-                return self.__mount_user(response)
+                updated_user = self.__mount_user(response)
+                self.__cache_users[user_id] = updated_user
+
+                return updated_user
 
             else:
                 _logger.warning(f"User {user_id} not updated")
@@ -68,16 +71,16 @@ class UserRepository:
     async def select_by_id(self, id: str, raise_404: bool = True) -> UserInDB:
         try:
             if self.__cache_users.get(id):
-                _logger.info("Getting cached user by ID")
+                _logger.debug("Getting cached user by ID")
                 return self.__cache_users.get(id)
 
-            _logger.info("Getting user by ID on Management API")
+            _logger.debug("Getting user by ID on Management API")
             status_code, response = self.http_client.get(
                 url=f"{_env.AUTH0_DOMAIN}/api/v2/users/{id}"
             )
 
             if status_code == 200 and response:
-                _logger.info("User retrieved successfully")
+                _logger.debug("User retrieved successfully")
                 cached_user = self.__mount_user(response)
                 self.__cache_users[id] = cached_user
 

@@ -1,5 +1,7 @@
-from typing import Dict, List
+from __future__ import annotations
 
+from typing import Dict, List
+from app.core.utils.utc_datetime import UTCDateTime
 from .repositories import UserRepository
 from .schemas import UpdateUser, User, UserInDB
 
@@ -42,3 +44,20 @@ class UserServices:
 
         user_in_db = await self.__repository.delete_by_id(id=id)
         return user_in_db
+
+    async def update_last_access(self, user: UserInDB) -> UserInDB:
+        metadata = dict(user.user_metadata or {})
+        metadata["last_access_at"] = str(UTCDateTime.now())
+
+        updated_user = await self.__repository.update(
+            user_id=user.user_id,
+            user=UpdateUser(user_metadata=metadata)
+        )
+
+        self.__cached_complete_users.pop(user.user_id, None)
+
+        if updated_user:
+            return updated_user
+
+        user.user_metadata = metadata
+        return user

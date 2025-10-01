@@ -2,18 +2,25 @@ from fastapi import APIRouter, Depends, Security
 
 from app.api.composers import customer_composer
 from app.api.dependencies import build_response, decode_jwt
-from app.crud.customers import (
-    Customer,
-    CustomerInDB,
-    UpdateCustomer,
-    CustomerServices
+from app.api.shared_schemas.responses import MessageResponse
+from .schemas import (
+    CreateCustomerResponse,
+    UpdateCustomerResponse,
+    DeleteCustomerResponse,
 )
+from app.crud.customers import Customer, UpdateCustomer, CustomerServices
 from app.crud.users import UserInDB
 
 router = APIRouter(tags=["Customers"])
 
 
-@router.post("/customers", responses={201: {"model": CustomerInDB}})
+@router.post(
+    "/customers",
+    responses={
+        201: {"model": CreateCustomerResponse},
+        400: {"model": MessageResponse},
+    },
+)
 async def create_customer(
     customer: Customer,
     customer_services: CustomerServices = Depends(customer_composer),
@@ -32,7 +39,13 @@ async def create_customer(
         )
 
 
-@router.put("/customers/{customer_id}", responses={200: {"model": CustomerInDB}})
+@router.put(
+    "/customers/{customer_id}",
+    responses={
+        200: {"model": UpdateCustomerResponse},
+        400: {"model": MessageResponse},
+    },
+)
 async def update_customer(
     customer_id: str,
     customer: UpdateCustomer,
@@ -52,7 +65,13 @@ async def update_customer(
         )
 
 
-@router.delete("/customers/{customer_id}", responses={200: {"model": CustomerInDB}})
+@router.delete(
+    "/customers/{customer_id}",
+    responses={
+        200: {"model": DeleteCustomerResponse},
+        404: {"model": MessageResponse},
+    },
+)
 async def delete_customer(
     customer_id: str,
     current_user: UserInDB = Security(decode_jwt, scopes=["customer:delete"]),

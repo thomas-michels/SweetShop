@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, patch
 from mongoengine import connect, disconnect
 import mongomock
 
+from app.core.utils import slugify
 from app.crud.menus.repositories import MenuRepository
 from app.crud.menus.schemas import Menu, MenuInDB, UpdateMenu
 from app.crud.menus.services import MenuServices
@@ -40,6 +41,8 @@ class TestMenuServices(unittest.IsolatedAsyncioTestCase):
         mock_plan.return_value = SimpleNamespace(value="true")
         result = await self.service.create(await self._menu(name="New"))
         self.assertEqual(result.name, "New")
+        self.assertEqual(result.slug, slugify("New"))
+        self.assertFalse(result.accepts_outside_business_hours)
 
     async def _create_menu_in_db(self, name="Menu"):
         repo = self.service._MenuServices__menu_repository
@@ -47,8 +50,16 @@ class TestMenuServices(unittest.IsolatedAsyncioTestCase):
 
     async def test_update_menu(self):
         created = await self._create_menu_in_db(name="Old")
-        updated = await self.service.update(id=created.id, updated_menu=UpdateMenu(name="New"))
+        updated = await self.service.update(
+            id=created.id,
+            updated_menu=UpdateMenu(
+                name="New",
+                accepts_outside_business_hours=True,
+            ),
+        )
         self.assertEqual(updated.name, "New")
+        self.assertEqual(updated.slug, slugify("New"))
+        self.assertTrue(updated.accepts_outside_business_hours)
 
     async def test_search_all(self):
         mock_repo = AsyncMock()

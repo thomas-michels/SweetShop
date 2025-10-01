@@ -1,0 +1,26 @@
+services:
+  pedidoz-api:
+    container_name: pedidoz-api
+    image: docker.io/pedidoz/pedidoz-api:latest
+    restart: unless-stopped
+    env_file:
+      - pedidoz-api.env
+    ports:
+      - 8080:8080
+    networks:
+      - network
+
+  pedidoz-public-api:
+    container_name: pedidoz-public-api
+    image: docker.io/pedidoz/pedidoz-public-api:latest
+    restart: unless-stopped
+    env_file:
+      - pedidoz-public-api.env
+    ports:
+      - 8081:8080
+    networks:
+      - network
+
+networks:
+  network:
+    external: false

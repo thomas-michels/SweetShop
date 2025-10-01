@@ -5,16 +5,19 @@ from app.core.utils.utc_datetime import UTCDateTime
 
 class PreOrderModel(BaseDocument):
     organization_id = StringField(required=True)
+    user_id = StringField(required=True)
     code = StringField(required=True)
     menu_id = StringField(required=True)
     payment_method = StringField(required=True)
     customer = DictField(required=True)
     delivery = DictField(required=True)
     observation = StringField(required=False)
-    offers = ListField(DictField(), min_lenght=1)
-    status = StringField(default=None, required=False)
-    tax = FloatField(required=False)
     total_amount = FloatField(required=False)
+    total_cost = FloatField(required=False)
+    status = StringField(default=None, required=False)
+    items = ListField(DictField(), default=[])
+    tax = FloatField(default=0, required=False)
+    order_id = StringField(required=False)
 
     meta = {
         "collection": "pre_orders"

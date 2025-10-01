@@ -2,9 +2,13 @@ from typing import List
 from app.api.dependencies.get_plan_feature import get_plan_feature
 from app.api.exceptions.authentication_exceptions import UnauthorizedException, BadRequestException
 from app.core.utils.features import Feature
-from app.crud.files.schemas import FilePurpose
+from app.crud.files.schemas import FilePurpose, FileInDB
 from app.crud.tags.repositories import TagRepository
 from app.crud.files.repositories import FileRepository
+from app.crud.product_additionals.services import ProductAdditionalServices
+from app.crud.section_items.repositories import SectionItemRepository
+from app.crud.section_items.schemas import ItemType
+from app.crud.offers.repositories import OfferRepository
 from .schemas import (
     CompleteProduct,
     Product,
@@ -21,10 +25,14 @@ class ProductServices:
             product_repository: ProductRepository,
             tag_repository: TagRepository,
             file_repository: FileRepository,
+            additional_services: ProductAdditionalServices,
+            section_item_repository: SectionItemRepository,
         ) -> None:
         self.__product_repository = product_repository
         self.__tag_repository = tag_repository
         self.__file_repository = file_repository
+        self.__additional_services = additional_services
+        self.__section_item_repository = section_item_repository
 
     async def create(self, product: Product) -> ProductInDB:
         plan_feature = await get_plan_feature(
@@ -64,7 +72,6 @@ class ProductServices:
             if updated_product.tags is not None:
                 for tag in updated_product.tags:
                     await self.__tag_repository.select_by_id(id=tag)
-
             product_in_db = await self.__product_repository.update(product=product_in_db)
 
         return product_in_db
@@ -103,20 +110,48 @@ class ProductServices:
 
     async def delete_by_id(self, id: str) -> ProductInDB:
         product_in_db = await self.__product_repository.delete_by_id(id=id)
+        await self.__additional_services.delete_by_product_id(product_id=id)
+        await self.__section_item_repository.delete_by_item_id(
+            item_id=id, item_type=ItemType.PRODUCT
+        )
+        offer_repo = OfferRepository(
+            organization_id=self.__product_repository.organization_id
+        )
+        offers = await offer_repo.select_all_by_product_id(product_id=id)
+        for offer in offers:
+            offer.products = [
+                p for p in offer.products if p.product_id != id
+            ]
+            if not offer.products:
+                await offer_repo.delete_by_id(id=offer.id)
+                await self.__section_item_repository.delete_by_item_id(
+                    item_id=offer.id, item_type=ItemType.OFFER
+                )
+                continue
+            offer.unit_cost = sum(
+                p.unit_cost * p.quantity for p in offer.products
+            )
+            offer.unit_price = sum(
+                p.unit_price * p.quantity for p in offer.products
+            )
+            await offer_repo.update(offer=offer)
         return product_in_db
 
     async def __build_complete_product(self, products: List[ProductInDB], expand: List[str]) -> List[CompleteProduct]:
         complete_products = []
         tags = {}
 
+        files_map: dict[str, FileInDB] = {}
+
+        if "file" in expand:
+            file_ids = [p.file_id for p in products if p.file_id]
+            files_map = await self.__file_repository.select_by_ids(file_ids)
+
         for product in products:
             complete_product = CompleteProduct(**product.model_dump())
 
             if "file" in expand:
-                complete_product.file = await self.__file_repository.select_by_id(
-                    id=complete_product.file_id,
-                    raise_404=False
-                )
+                complete_product.file = files_map.get(complete_product.file_id)
 
             if "tags" in expand:
                 complete_product.tags = []
@@ -134,6 +169,11 @@ class ProductServices:
                             tags[tag_in_db.id] = tag_in_db
 
                     complete_product.tags.append(tag_in_db)
+
+            if "additionals" in expand:
+                complete_product.additionals = await self.__additional_services.search_by_product_id(
+                    product_id=product.id,
+                )
 
             complete_products.append(complete_product)
 

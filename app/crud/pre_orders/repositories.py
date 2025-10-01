@@ -16,7 +16,7 @@ class PreOrderRepository(Repository):
         super().__init__()
         self.organization_id = organization_id
 
-    async def update_status(self, pre_order_id: str, new_status: PreOrderStatus) -> PreOrderInDB:
+    async def update_status(self, pre_order_id: str, new_status: PreOrderStatus, order_id: str | None = None) -> PreOrderInDB:
         try:
             pre_order_model: PreOrderModel = PreOrderModel.objects(
                 id=pre_order_id,
@@ -26,6 +26,11 @@ class PreOrderRepository(Repository):
 
             if new_status:
                 pre_order_model.status = new_status
+
+            if order_id is not None:
+                pre_order_model.order_id = order_id
+
+            if new_status or order_id is not None:
                 pre_order_model.save()
 
             return await self.select_by_id(id=pre_order_id)
@@ -55,6 +60,25 @@ class PreOrderRepository(Repository):
             _logger.error(f"Error on select_by_id: {error}")
             if raise_404:
                 raise NotFoundError(message=f"PreOrder #{id} not found")
+
+    async def select_by_order_id(self, order_id: str, raise_404: bool = True) -> PreOrderInDB:
+        try:
+            pre_order_model: PreOrderModel = PreOrderModel.objects(
+                order_id=order_id,
+                is_active=True,
+                organization_id=self.organization_id
+            ).first()
+
+            return PreOrderInDB.model_validate(pre_order_model)
+
+        except ValidationError:
+            if raise_404:
+                raise NotFoundError(message=f"PreOrder for Order #{order_id} not found")
+
+        except Exception as error:
+            _logger.error(f"Error on select_by_id: {error}")
+            if raise_404:
+                raise NotFoundError(message=f"PreOrder for Order #{order_id} not found")
 
     async def select_count(self, status: PreOrderStatus = None, code: str = None) -> int:
         try:

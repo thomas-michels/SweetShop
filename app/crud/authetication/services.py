@@ -29,7 +29,7 @@ class AuthenticationServices:
         cached_user = self.__cached_complete_users.get(token.id)
 
         if cached_user and cached_user.termsOfUseAccepted:
-            logger.info(f"Getting cached user {token.id}")
+            logger.debug(f"Getting cached user {token.id}")
             return cached_user
 
         user_in_db = await self.__user_repository.select_by_id(id=token.id)
@@ -38,7 +38,7 @@ class AuthenticationServices:
 
         if complete_user_in_db and complete_user_in_db.termsOfUseAccepted:
             self.__cached_complete_users[complete_user_in_db.user_id] = complete_user_in_db
-            logger.info(f"Caching user {token.id}")
+            logger.debug(f"Caching user {token.id}")
 
         return complete_user_in_db
 

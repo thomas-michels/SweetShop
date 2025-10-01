@@ -1,8 +1,10 @@
 from asgi_correlation_id import CorrelationIdMiddleware
 import sentry_sdk
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from app.api.dependencies.get_access_token import get_access_token
 from app.api.dependencies.response import build_response
+from app.api.dependencies.whats_app_adapter import WhatsAppMessageSender
 from app.api.middleware.rate_limiting import RateLimitMiddleware
 from app.api.routers import (
     user_router,
@@ -27,11 +29,15 @@ from app.api.routers import (
     term_of_use_router,
     file_router,
     section_router,
+    section_item_router,
     menu_router,
     offer_router,
     home_router,
     pre_order_router,
-    message_router
+    message_router,
+    additional_router,
+    business_day_router,
+    notification_router
 )
 from app.api.routers.exception_handlers import (
     unprocessable_entity_error_422,
@@ -53,6 +59,7 @@ sentry_sdk.init(
     server_name=_env.APPLICATION_NAME,
     release=_env.RELEASE,
     environment=_env.ENVIRONMENT,
+    enable_logs=True,
     _experiments={
         "continuous_profiling_auto_start": True,
     },
@@ -74,7 +81,7 @@ app.add_middleware(
 )
 
 app.add_middleware(CorrelationIdMiddleware)
-app.add_middleware(RateLimitMiddleware, limit=100, window=60)
+app.add_middleware(RateLimitMiddleware, limit=250, window=60)
 
 app.include_router(organization_router, prefix="/api")
 app.include_router(organization_plan_router, prefix="/api")
@@ -85,12 +92,14 @@ app.include_router(plan_feature_router, prefix="/api")
 app.include_router(user_router, prefix="/api")
 app.include_router(term_of_use_router, prefix="/api")
 app.include_router(product_router, prefix="/api")
+app.include_router(additional_router, prefix="/api")
 app.include_router(order_router, prefix="/api")
 app.include_router(pre_order_router, prefix="/api")
 app.include_router(payment_router, prefix="/api")
 app.include_router(fast_order_router, prefix="/api")
 app.include_router(menu_router, prefix="/api")
 app.include_router(section_router, prefix="/api")
+app.include_router(section_item_router, prefix="/api")
 app.include_router(offer_router, prefix="/api")
 app.include_router(billing_router, prefix="/api")
 app.include_router(home_router, prefix="/api")
@@ -102,7 +111,9 @@ app.include_router(coupon_router, prefix="/api")
 app.include_router(file_router, prefix="/api")
 app.include_router(marketing_email_router, prefix="/api")
 app.include_router(message_router, prefix="/api")
+app.include_router(notification_router, prefix="/api")
 app.include_router(mercado_pago_router, prefix="/api")
+app.include_router(business_day_router, prefix="/api")
 
 app.add_exception_handler(HTTPException, http_exception_handler)
 app.add_exception_handler(UnprocessableEntity, unprocessable_entity_error_422)
@@ -116,12 +127,25 @@ async def root_path(request: Request):
     return build_response(status_code=200, message="I'm alive!", data=None)
 
 
-# @app.get("/health", tags=["Health Check"])
-# async def health_check():
-#     return build_response(status_code=200, message="I'm alive!", data=None)
+@app.get("/health", tags=["Health Check"])
+async def health_check(
+    access_token=Depends(get_access_token),
+):
+    wa = WhatsAppMessageSender()
+
+    if access_token and wa.check_whatsapp_numbers(number="5547996240277"):
+        return build_response(status_code=200, message="I'm alive!", data=None)
+
+    return build_response(status_code=400, message="Health check failed", data=None)
 
 
 @app.head("/health", tags=["Health Check"])
 async def monitor_health_check(
+    access_token=Depends(get_access_token),
 ):
-    return build_response(status_code=200, message="I'm alive!", data=None)
+    wa = WhatsAppMessageSender()
+
+    if access_token and wa.check_whatsapp_numbers(number="5547996240277"):
+        return build_response(status_code=200, message="I'm alive!", data=None)
+
+    return build_response(status_code=400, message="Health check failed", data=None)

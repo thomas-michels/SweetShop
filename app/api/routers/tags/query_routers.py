@@ -7,13 +7,21 @@ from app.api.dependencies import build_response, decode_jwt
 from app.api.dependencies.pagination_parameters import pagination_parameters
 from app.api.dependencies.paginator import Paginator
 from app.api.dependencies.response import build_list_response
+from app.api.shared_schemas.responses import MessageResponse
 from app.crud.users import UserInDB
-from app.crud.tags import TagServices, TagInDB
+from app.crud.tags import TagServices
+from .schemas import GetTagResponse, GetTagsResponse
 
 router = APIRouter(tags=["Tags"])
 
 
-@router.get("/tags/{tags_id}", responses={200: {"model": TagInDB}})
+@router.get(
+    "/tags/{tags_id}",
+    responses={
+        200: {"model": GetTagResponse},
+        404: {"model": MessageResponse},
+    },
+)
 async def get_tags_by_id(
     tags_id: str,
     current_user: UserInDB = Security(decode_jwt, scopes=["tag:get"]),
@@ -32,7 +40,13 @@ async def get_tags_by_id(
         )
 
 
-@router.get("/tags", responses={200: {"model": List[TagInDB]}})
+@router.get(
+    "/tags",
+    responses={
+        200: {"model": GetTagsResponse},
+        204: {"description": "No Content"},
+    },
+)
 async def get_tags(
     request: Request,
     query: str = Query(default=None),

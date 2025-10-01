@@ -2,13 +2,26 @@ from fastapi import APIRouter, Depends, Security
 
 from app.api.composers import offer_composer
 from app.api.dependencies import build_response, decode_jwt
+from app.api.shared_schemas.responses import MessageResponse
 from app.crud.users import UserInDB
-from app.crud.offers import RequestOffer, OfferInDB, UpdateOffer, OfferServices
+from app.crud.offers import RequestOffer, UpdateOffer
+from app.crud.offers.services import OfferServices
+from .schemas import (
+    CreateOfferResponse,
+    UpdateOfferResponse,
+    DeleteOfferResponse,
+)
 
 router = APIRouter(tags=["Offers"])
 
 
-@router.post("/offers", responses={201: {"model": OfferInDB}})
+@router.post(
+    "/offers",
+    responses={
+        201: {"model": CreateOfferResponse},
+        400: {"model": MessageResponse},
+    },
+)
 async def create_offers(
     offer: RequestOffer,
     current_user: UserInDB = Security(decode_jwt, scopes=["offer:create"]),
@@ -29,7 +42,13 @@ async def create_offers(
         )
 
 
-@router.put("/offers/{offer_id}", responses={200: {"model": OfferInDB}})
+@router.put(
+    "/offers/{offer_id}",
+    responses={
+        200: {"model": UpdateOfferResponse},
+        400: {"model": MessageResponse},
+    },
+)
 async def update_offer(
     offer_id: str,
     offer: UpdateOffer,
@@ -49,7 +68,13 @@ async def update_offer(
         )
 
 
-@router.delete("/offers/{offer_id}", responses={200: {"model": OfferInDB}})
+@router.delete(
+    "/offers/{offer_id}",
+    responses={
+        200: {"model": DeleteOfferResponse},
+        404: {"model": MessageResponse},
+    },
+)
 async def delete_offer(
     offer_id: str,
     current_user: UserInDB = Security(decode_jwt, scopes=["offer:delete"]),

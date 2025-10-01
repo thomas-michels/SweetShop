@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import List, Optional
 
 from pydantic import Field, model_validator
@@ -6,6 +7,12 @@ from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
 from app.crud.files.schemas import FileInDB
 from app.crud.tags.schemas import TagInDB
+from app.crud.product_additionals.schemas import ProductAdditionalInDB
+
+
+class ProductKind(str, Enum):
+    REGULAR = "REGULAR"
+    ADDON = "ADDON"
 
 
 class Product(GenericModel):
@@ -13,6 +20,7 @@ class Product(GenericModel):
     description: str = Field(example="Brigadeiro de Leite Ninho")
     unit_price: float = Field(example=1.5)
     unit_cost: float = Field(example=0.75)
+    kind: ProductKind = Field(default=ProductKind.REGULAR)
     tags: List[str] = Field(default=[])
     file_id: str | None = Field(default=None, example="fil_123")
 
@@ -23,6 +31,9 @@ class Product(GenericModel):
 
         if len(self.tags) != len(set(self.tags)):
             raise ValueError("Tags must contain unique items.")
+
+        if self.file_id == "":
+            self.file_id = None
 
         return self
 
@@ -45,11 +56,15 @@ class Product(GenericModel):
             self.unit_price = update_product.unit_price
             is_updated = True
 
+        if update_product.kind is not None:
+            self.kind = update_product.kind
+            is_updated = True
+
         if update_product.tags is not None:
             self.tags = update_product.tags
             is_updated = True
 
-        if update_product.file_id is not None:
+        if update_product.file_id is not None or update_product.file_id != "":
             self.file_id = update_product.file_id
             is_updated = True
 
@@ -61,6 +76,7 @@ class UpdateProduct(GenericModel):
     description: Optional[str] = Field(default=None, example="Brigadeiro de Leite Ninho")
     unit_price: Optional[float] = Field(default=None, example=1.5)
     unit_cost: Optional[float] = Field(default=None, example=0.75)
+    kind: Optional[ProductKind] = Field(default=None)
     tags: Optional[List[str]] = Field(default=None)
     file_id: Optional[str] = Field(default=None, example="fil_123")
 
@@ -82,5 +98,6 @@ class ProductInDB(Product, DatabaseModel):
 
 
 class CompleteProduct(ProductInDB):
+    additionals: List[ProductAdditionalInDB] = Field(default=[])
     tags: List[str | TagInDB] = Field(default=[])
     file: str | FileInDB | None = Field(default=None)

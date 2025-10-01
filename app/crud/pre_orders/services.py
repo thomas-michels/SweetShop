@@ -1,58 +1,178 @@
 from typing import List
 
-from app.crud.customers.repositories import CustomerRepository
-from app.crud.messages.services import MessageServices
+from typing import TYPE_CHECKING
 from app.crud.messages.schemas import Message, MessageType, Origin
-from app.crud.offers.repositories import OfferRepository
-from app.crud.organizations.repositories import OrganizationRepository
+from app.core.utils.utc_datetime import UTCDateTime
+from app.crud.customers.schemas import Customer
+from app.crud.orders.schemas import (
+    RequestOrder,
+    RequestedProduct,
+    RequestedAdditionalItem,
+    Delivery,
+    OrderInDB,
+)
+from app.crud.orders.services import OrderServices
 
-from .repositories import PreOrderRepository
-from .schemas import CompletePreOrder, PreOrderInDB, PreOrderStatus
+if TYPE_CHECKING:  # pragma: no cover
+    from app.crud.messages.services import MessageServices
+    from app.crud.customers.repositories import CustomerRepository
+    from app.crud.offers.repositories import OfferRepository
+    from app.crud.organizations.repositories import OrganizationRepository
+    from app.crud.additional_items.repositories import AdditionalItemRepository
+    from app.crud.product_additionals.repositories import ProductAdditionalRepository
+    from .repositories import PreOrderRepository
+
+from .schemas import (
+    PreOrderInDB,
+    PreOrderStatus,
+)
 
 
 class PreOrderServices:
 
     def __init__(
         self,
-        pre_order_repository: PreOrderRepository,
-        customer_repository: CustomerRepository,
-        offer_repository: OfferRepository,
-        organization_repository: OrganizationRepository,
-        message_services: MessageServices
+        pre_order_repository: 'PreOrderRepository',
+        customer_repository: 'CustomerRepository',
+        organization_repository: 'OrganizationRepository',
+        message_services: 'MessageServices',
     ) -> None:
         self.__pre_order_repository = pre_order_repository
         self.__customer_repository = customer_repository
-        self.__offer_repository = offer_repository
         self.__organization_repository = organization_repository
 
         self.__message_services = message_services
 
-        self.__cache_customers = {}
-        self.__cache_offers = {}
-
-    async def update_status(self, pre_order_id: str, new_status: PreOrderStatus, expand: List[str] = []) -> PreOrderInDB:
+    async def update_status(self, pre_order_id: str, new_status: PreOrderStatus, order_id: str | None = None) -> PreOrderInDB:
         pre_order_in_db = await self.__pre_order_repository.update_status(
             pre_order_id=pre_order_id,
-            new_status=new_status
+            new_status=new_status,
+            order_id=order_id,
         )
 
-        await self.send_client_message(
-            pre_order=pre_order_in_db
+        if new_status in [PreOrderStatus.ACCEPTED, PreOrderStatus.REJECTED]:
+            await self.send_client_message(
+                pre_order=pre_order_in_db
+            )
+
+        return pre_order_in_db
+
+    async def reject_pre_order(self, pre_order_id: str) -> PreOrderInDB:
+        return await self.update_status(
+            pre_order_id=pre_order_id,
+            new_status=PreOrderStatus.REJECTED,
         )
 
-        return await self.__build_pre_order(
-            pre_order_in_db=pre_order_in_db,
-            expand=expand
+    async def accept_pre_order(
+        self,
+        pre_order_id: str,
+        order_services: OrderServices,
+    ) -> OrderInDB:
+        pre_order = await self.search_by_id(id=pre_order_id)
+
+        customer_in_db = await self.__customer_repository.select_by_phone(
+            international_code=pre_order.customer.international_code,
+            ddd=pre_order.customer.ddd,
+            phone_number=pre_order.customer.phone_number,
+            raise_404=False,
         )
+
+        address = pre_order.delivery.address
+
+        if customer_in_db is None:
+            addresses = [address] if address else []
+            customer = Customer(
+                name=pre_order.customer.name,
+                international_code=pre_order.customer.international_code,
+                ddd=pre_order.customer.ddd,
+                phone_number=pre_order.customer.phone_number,
+                addresses=addresses,
+                tags=[],
+            )
+            customer_in_db = await self.__customer_repository.create(customer=customer)
+
+        else:
+            if address and not any(
+                addr.zip_code == address.zip_code for addr in customer_in_db.addresses
+            ):
+                customer_in_db.addresses.append(address)
+                await self.__customer_repository.update(customer=customer_in_db)
+
+        pre_order.customer.customer_id = customer_in_db.id
+
+        requested_products: List[RequestedProduct] = []
+        discount = 0.0
+
+        for product in pre_order.products:
+            requested_products.append(
+                RequestedProduct(
+                    product_id=product.product_id,
+                    quantity=product.quantity,
+                    observation=product.observation,
+                    additionals=[
+                        RequestedAdditionalItem(
+                            item_id=add.item_id,
+                            quantity=add.quantity,
+                        )
+                        for add in product.additionals
+                    ],
+                )
+            )
+
+        for offer in pre_order.offers:
+            offer_items_total = 0.0
+            for item in offer.items:
+                requested_products.append(
+                    RequestedProduct(
+                        product_id=item.item_id,
+                        quantity=item.quantity * offer.quantity,
+                        observation=offer.observation,
+                        additionals=[
+                            RequestedAdditionalItem(
+                                item_id=add.item_id,
+                                quantity=add.quantity,
+                            )
+                            for add in item.additionals
+                        ],
+                    )
+                )
+
+                item_total = item.unit_price * item.quantity
+                offer_items_total += item_total
+
+            offer_items_total *= offer.quantity
+            offer_price_total = offer.unit_price * offer.quantity
+            if offer_items_total > offer_price_total:
+                discount += offer_items_total - offer_price_total
+
+        delivery = Delivery(**pre_order.delivery.model_dump())
+        now = UTCDateTime.now()
+        request_order = RequestOrder(
+            customer_id=pre_order.customer.customer_id,
+            products=requested_products,
+            delivery=delivery,
+            preparation_date=now,
+            order_date=now,
+            description=pre_order.observation,
+            discount=discount if discount > 0 else 0,
+        )
+
+        order_in_db = await order_services.create(order=request_order)
+        await self.update_status(
+            pre_order_id=pre_order_id,
+            new_status=PreOrderStatus.ACCEPTED,
+            order_id=order_in_db.id,
+        )
+
+        return order_in_db
 
     async def search_by_id(self, id: str, expand: List[str] = []) -> PreOrderInDB:
         pre_order_in_db = await self.__pre_order_repository.select_by_id(id=id)
 
-        if pre_order_in_db:
-            return await self.__build_pre_order(
-                pre_order_in_db=pre_order_in_db,
-                expand=expand
-            )
+        return pre_order_in_db
+
+    async def search_by_order_id(self, order_id: str, expand: List[str] = []) -> PreOrderInDB:
+        pre_order_in_db = await self.__pre_order_repository.select_by_order_id(order_id=order_id, raise_404=False)
 
         return pre_order_in_db
 
@@ -74,62 +194,11 @@ class PreOrderServices:
             page_size=page_size
         )
 
-        complete_pre_orders = []
-
-        for pre_order_in_db in pre_orders:
-            if pre_order_in_db:
-                complete_pre_orders.append(
-                    await self.__build_pre_order(
-                        pre_order_in_db=pre_order_in_db,
-                        expand=expand
-                    )
-                )
-
-        return complete_pre_orders
+        return pre_orders
 
     async def delete_by_id(self, id: str) -> PreOrderInDB:
         pre_order_in_db = await self.__pre_order_repository.delete_by_id(id=id)
         return pre_order_in_db
-
-    async def __build_pre_order(self, pre_order_in_db: PreOrderInDB, expand: List[str] = []) -> CompletePreOrder:
-        complete_pre_order = CompletePreOrder.model_validate(pre_order_in_db)
-
-        full_phone = f"{pre_order_in_db.customer.international_code}{pre_order_in_db.customer.ddd}{pre_order_in_db.customer.phone_number}"
-
-        if full_phone not in self.__cache_customers:
-            customer_in_db = await self.__customer_repository.select_by_phone(
-                international_code=pre_order_in_db.customer.international_code,
-                ddd=pre_order_in_db.customer.ddd,
-                phone_number=pre_order_in_db.customer.phone_number,
-                raise_404=False
-            )
-            self.__cache_customers[full_phone] = customer_in_db
-
-        else:
-            customer_in_db = self.__cache_customers.get(full_phone)
-
-        if customer_in_db:
-            pre_order_in_db.customer.customer_id = customer_in_db.id
-
-        if "offers" in expand:
-            complete_offers = []
-
-            for offer in complete_pre_order.offers:
-                if offer.offer_id not in self.__cache_offers:
-                    offer_in_db = await self.__offer_repository.select_by_id(id=offer.offer_id, raise_404=False)
-                    self.__cache_offers[offer.offer_id] = offer_in_db
-
-                else:
-                    offer_in_db = self.__cache_offers.get(offer.offer_id)
-
-                if offer_in_db:
-                    offer_copy = offer_in_db.model_copy(deep=True)
-                    offer_copy.quantity = offer.quantity
-                    complete_offers.append(offer_copy)
-
-            complete_pre_order.offers = complete_offers
-
-        return complete_pre_order
 
     async def send_client_message(self, pre_order: PreOrderInDB) -> bool:
         if not (pre_order.customer.international_code and pre_order.customer.ddd and pre_order.customer.phone_number):
@@ -138,6 +207,9 @@ class PreOrderServices:
         organization = await self.__organization_repository.select_by_id(
             id=self.__pre_order_repository.organization_id
         )
+
+        if not getattr(organization, "enable_order_notifications", False):
+            return False
 
         status = "ACEITO" if pre_order.status.startswith("A") else "RECUSADO"
 
@@ -150,7 +222,7 @@ Aguarde o contato estabelecimento para maiores informações!
 
 Em caso de dúvidas o número de contato do estabelecimento para contato é +{organization.international_code} {organization.ddd} {organization.phone_number}
 
-_pedidoZ_"""
+_Está é uma mensagem automática gerada pela PedidoZ, por favor não responda!_"""
 
         message = Message(
             international_code=pre_order.customer.international_code,

@@ -14,6 +14,7 @@ from app.crud.shared_schemas.distance import UnitDistance
 from app.crud.shared_schemas.language import Language
 from app.crud.shared_schemas.roles import RoleEnum
 from app.crud.shared_schemas.user_organization import UserOrganization
+from app.crud.shared_schemas.styling import Styling
 from app.crud.users.schemas import UserInDB
 
 EMAIL_REGEX = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
@@ -23,6 +24,14 @@ class CompleteUserOrganization(GenericModel):
     user: UserInDB | None = Field(default=None)
     user_id: str = Field(example="user_123", exclude=True)
     role: RoleEnum = Field(example=RoleEnum.ADMIN.value)
+
+
+class SocialLinks(GenericModel):
+    tiktok: str | None = Field(default=None, example="https://tiktok.com/@your_company")
+    instagram: str | None = Field(default=None, example="https://instagram.com/your_company")
+    x: str | None = Field(default=None, example="https://x.com/your_company")
+    facebook: str | None = Field(default=None, example="https://facebook.com/your_company")
+    google_profile: str | None = Field(default=None, example="https://g.page/your_company")
 
 
 class Organization(GenericModel):
@@ -38,6 +47,10 @@ class Organization(GenericModel):
     file_id: str | None = Field(default=None, example="file_123")
     unit_distance: UnitDistance | None = Field(default=None, example=UnitDistance.KM)
     tax: float | None = Field(default=0, example=10)
+    website: str | None = Field(default=None, example="https://your_company.com")
+    social_links: SocialLinks | None = Field(default=None)
+    styling: Styling | None = Field(default=None)
+    enable_order_notifications: bool = Field(default=False)
 
     @model_validator(mode="after")
     def validate_model(self) -> "Organization":
@@ -127,6 +140,24 @@ class Organization(GenericModel):
             self.tax = update_organization.tax
             is_updated = True
 
+        if update_organization.website is not None:
+            self.website = update_organization.website
+            is_updated = True
+
+        if update_organization.social_links is not None:
+            self.social_links = update_organization.social_links
+            is_updated = True
+
+        if update_organization.styling is not None:
+            self.styling = update_organization.styling
+            is_updated = True
+
+        if update_organization.enable_order_notifications is not None:
+            self.enable_order_notifications = (
+                update_organization.enable_order_notifications
+            )
+            is_updated = True
+
         return is_updated
 
 
@@ -143,6 +174,10 @@ class UpdateOrganization(GenericModel):
     currency: Optional[Currency] = Field(default=None)
     unit_distance: Optional[UnitDistance] = Field(default=None)
     tax: Optional[float] = Field(default=None)
+    website: Optional[str] = Field(default=None)
+    social_links: Optional[SocialLinks] = Field(default=None)
+    styling: Optional[Styling] = Field(default=None)
+    enable_order_notifications: Optional[bool] = Field(default=None)
 
     @model_validator(mode="after")
     def validate_model(self) -> "UpdateOrganization":
@@ -184,6 +219,7 @@ class UpdateOrganization(GenericModel):
 class OrganizationInDB(Organization, DatabaseModel):
     users: List[UserOrganization] | None = Field(default=[])
     plan: OrganizationPlanInDB | None = Field(default=None)
+    slug: str = Field(example="doces")
 
     @model_validator(mode="after")
     def validate_model(self) -> "OrganizationInDB":
@@ -192,6 +228,12 @@ class OrganizationInDB(Organization, DatabaseModel):
 
         if self.users is None:
             self.users = []
+
+        if isinstance(self.social_links, dict):
+            self.social_links = SocialLinks(**self.social_links)
+
+        if isinstance(self.styling, dict):
+            self.styling = Styling(**self.styling)
 
         return self
 

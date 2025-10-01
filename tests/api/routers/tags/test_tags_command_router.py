@@ -59,7 +59,6 @@ class TestTagsCommandRouter(unittest.TestCase):
             organization_id="org_123",
             is_active=True,
             styling={
-                "font_color": "#000000",
                 "primary_color": "#111111",
                 "secondary_color": "#222222",
             },

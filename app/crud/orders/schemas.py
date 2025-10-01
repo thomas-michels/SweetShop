@@ -3,11 +3,11 @@ from typing import List, Optional, Type
 
 from pydantic import Field, model_validator
 
+from app.api.exceptions.authentication_exceptions import BadRequestException
 from app.core.models import DatabaseModel
 from app.core.models.base_schema import GenericModel
 from app.core.utils.utc_datetime import UTCDateTime, UTCDateTimeType
 from app.crud.customers.schemas import CustomerInDB
-from app.crud.files.schemas import FileInDB
 from app.crud.shared_schemas.address import Address
 from app.crud.shared_schemas.payment import PaymentMethod, PaymentStatus
 from app.crud.tags.schemas import TagInDB
@@ -17,6 +17,7 @@ class OrderStatus(str, Enum):
     PENDING = "PENDING"
     SCHEDULED = "SCHEDULED"
     IN_PREPARATION = "IN_PREPARATION"
+    READY_FOR_DELIVERY = "READY_FOR_DELIVERY"
     DONE = "DONE"
     CANCELED = "CANCELED"
 
@@ -67,6 +68,10 @@ class Delivery(GenericModel):
 class RequestedProduct(GenericModel):
     product_id: str = Field()
     quantity: int = Field(gt=0, example=1)
+    observation: str | None = Field(
+        default=None, example="Sem cebola / aniversário 20h"
+    )
+    additionals: List["RequestedAdditionalItem"] = Field(default=[])
 
 
 class StoredProduct(RequestedProduct):
@@ -75,6 +80,22 @@ class StoredProduct(RequestedProduct):
     unit_price: float = Field(example=1.5)
     unit_cost: float = Field(example=0.75)
     quantity: int = Field(gt=0, example=1)
+    observation: str | None = Field(
+        default=None, example="Sem cebola / aniversário 20h"
+    )
+    additionals: List["StoredAdditionalItem"] = Field(default=[])
+
+
+class RequestedAdditionalItem(GenericModel):
+    item_id: str = Field(example="add_123")
+    quantity: int = Field(default=1, gt=0, example=1)
+
+
+class StoredAdditionalItem(RequestedAdditionalItem):
+    label: str = Field(example="Extra")
+    unit_price: float = Field(example=1.0)
+    unit_cost: float = Field(example=0.5)
+    consumption_factor: float = Field(default=1.0, ge=0, le=1, example=1.0)
 
 
 class RequestOrder(GenericModel):

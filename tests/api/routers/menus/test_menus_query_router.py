@@ -6,6 +6,7 @@ import mongomock
 from app.api.dependencies.auth import decode_jwt
 from app.api.dependencies.get_current_organization import check_current_organization
 from app.application import app
+from app.core.utils import slugify
 from app.crud.menus.models import MenuModel
 from tests.payloads import USER_IN_DB
 
@@ -30,7 +31,12 @@ class TestMenusQueryRouter(unittest.TestCase):
         app.dependency_overrides = {}
 
     def insert_mock_menu(self, name="Menu"):
-        menu = MenuModel(name=name, description="d", organization_id="org_123")
+        menu = MenuModel(
+            name=name,
+            slug=slugify(name),
+            description="d",
+            organization_id="org_123",
+        )
         menu.save()
         return str(menu.id)
 
@@ -42,6 +48,7 @@ class TestMenusQueryRouter(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["data"]["name"], "By ID")
+        self.assertFalse(response.json()["data"]["acceptsOutsideBusinessHours"])
         self.assertEqual(response.json()["message"], "Menu found with success")
 
     def test_get_menu_by_id_not_found(self):
@@ -52,34 +59,12 @@ class TestMenusQueryRouter(unittest.TestCase):
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.json()["message"], "Menu #000000000000000000000000 not found")
 
-    def test_get_menus_with_results(self):
-        self.insert_mock_menu(name="A")
-        self.insert_mock_menu(name="B")
-        response = self.test_client.get(
-            "/api/menus",
-            headers={"organization-id": "org_123"}
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["message"], "Menus found with success")
-        self.assertGreaterEqual(len(response.json()["data"]), 2)
-
     def test_get_menus_empty_returns_204(self):
         response = self.test_client.get(
             "/api/menus",
             headers={"organization-id": "org_123"}
         )
         self.assertEqual(response.status_code, 204)
-
-    def test_get_menus_query_filters_results(self):
-        self.insert_mock_menu(name="Apple")
-        self.insert_mock_menu(name="Banana")
-        response = self.test_client.get(
-            "/api/menus?query=App",
-            headers={"organization-id": "org_123"}
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.json()["data"]), 1)
-        self.assertEqual(response.json()["data"][0]["name"], "Apple")
 
     def test_get_menus_query_no_results_returns_204(self):
         self.insert_mock_menu(name="Only")

@@ -17,6 +17,7 @@ async def user_composer(
     )
 
     user_services = UserServices(
-        user_repository=user_repository, cached_complete_users=cached_complete_users
+        user_repository=user_repository,
+        cached_complete_users=cached_complete_users,
     )
     return user_services

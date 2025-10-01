@@ -1,7 +1,8 @@
-from typing import List
+from typing import List, Optional
 from app.core.configs import get_logger
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.core.repositories.base_repository import Repository
+from app.core.utils import slugify
 from app.core.utils.utc_datetime import UTCDateTime
 
 from .models import MenuModel
@@ -20,17 +21,25 @@ class MenuRepository(Repository):
             raise UnprocessableEntity("Um catálogo com esse nome já existe")
 
         try:
+            menu_data = menu.model_dump()
+            formatted_name = menu_data.get("name", "")
+            formatted_name = formatted_name.title()
+            menu_data["name"] = formatted_name
+            menu_data["slug"] = slugify(formatted_name)
+
+            if not menu_data["slug"]:
+                raise UnprocessableEntity("Nome de catálogo inválido")
+
             menu_model = MenuModel(
                 created_at=UTCDateTime.now(),
                 updated_at=UTCDateTime.now(),
                 organization_id=self.organization_id,
-                **menu.model_dump(),
+                **menu_data,
             )
-            menu_model.name = menu_model.name.title()
 
             menu_model.save()
             _logger.info(
-                f"Menu {menu.name} saved for organization {self.organization_id}"
+                f"Menu {formatted_name} saved for organization {self.organization_id}"
             )
 
             return MenuInDB.model_validate(menu_model)
@@ -49,6 +58,10 @@ class MenuRepository(Repository):
                 id=menu.id, is_active=True, organization_id=self.organization_id
             ).first()
             menu.name = menu.name.title()
+            menu.slug = slugify(menu.name)
+
+            if not menu.slug:
+                raise UnprocessableEntity("Nome de catálogo inválido")
 
             menu_model.update(**menu.model_dump())
 
@@ -66,7 +79,10 @@ class MenuRepository(Repository):
             )
 
             if query:
-                objects = objects.filter(name__iregex=query)
+                slug_query = slugify(query)
+
+                if slug_query:
+                    objects = objects.filter(slug__icontains=slug_query)
 
             if is_visible is not None:
                 objects = objects.filter(is_visible=is_visible)
@@ -92,14 +108,25 @@ class MenuRepository(Repository):
 
     async def select_by_name(self, name: str, raise_404: bool = True) -> MenuInDB:
         try:
-            menu_model: MenuModel = MenuModel.objects(
-                name=name.title(), is_active=True, organization_id=self.organization_id
-            ).first()
+            slug = slugify(name)
+            menu_model: Optional[MenuModel] = None
+
+            if slug:
+                menu_model = MenuModel.objects(
+                    slug=slug, is_active=True, organization_id=self.organization_id
+                ).first()
+
+            if not menu_model:
+                menu_model = MenuModel.objects(
+                    name__iexact=name,
+                    is_active=True,
+                    organization_id=self.organization_id,
+                ).first()
 
             if menu_model:
                 return MenuInDB.model_validate(menu_model)
 
-            elif raise_404:
+            if raise_404:
                 raise NotFoundError(message=f"Menu with name {name} not found")
 
         except Exception as error:
@@ -122,7 +149,9 @@ class MenuRepository(Repository):
             )
 
             if query:
-                objects = objects.filter(name__iregex=query)
+                slug_query = slugify(query)
+                if slug_query:
+                    objects = objects.filter(slug__icontains=slug_query)
 
             if is_visible is not None:
                 objects = objects.filter(is_visible=is_visible)

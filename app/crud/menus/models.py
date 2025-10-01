@@ -7,6 +7,7 @@ from app.core.utils.utc_datetime import UTCDateTime
 class MenuModel(BaseDocument):
     organization_id = StringField(required=True)
     name = StringField(required=True)
+    slug = StringField(required=False)
     description = StringField(required=True)
     is_visible = BooleanField(default=True, required=False)
     operating_days = ListField(DictField(), required=False)
@@ -20,6 +21,7 @@ class MenuModel(BaseDocument):
     km_tax = FloatField(required=False) # TODO remove that soon
     unit_tax = FloatField(required=False)
     accept_delivery: bool = BooleanField(default=True, required=False)
+    accepts_outside_business_hours: bool = BooleanField(default=False, required=False)
 
     meta = {
         "collection": "menus"

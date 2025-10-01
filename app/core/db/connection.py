@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from mongoengine import connect
 
 from app.api.dependencies.verify_token import ValidateToken
+from app.api.dependencies.bucket import S3BucketManager
 from app.core.configs import get_environment, get_logger
 
 _env = get_environment()
@@ -38,6 +39,8 @@ async def lifespan(app: FastAPI) -> None: # type: ignore
     app.state.cached_complete_users = {}
     app.state.cached_users = {}
     app.state.cached_plans = {}
+    app.state.cached_file_urls = {}
+    S3BucketManager.set_cache(app.state.cached_file_urls)
 
     _logger.info("Connection established")
 

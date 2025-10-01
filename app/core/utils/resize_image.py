@@ -1,45 +1,28 @@
-from PIL import Image, ImageOps
-import io
-
+# resize_image.py
 from fastapi import UploadFile
+from PIL import Image, ImageOps
+from tempfile import NamedTemporaryFile
+from pathlib import Path
 
-
-async def resize_image(upload_image: UploadFile, size=(400, 400)):
-    # Lê a imagem
+async def resize_image(upload_image: UploadFile, size=(400, 400)) -> UploadFile:
     upload_image.file.seek(0)
-    img = Image.open(upload_image.file)
+    with Image.open(upload_image.file) as img:
+        img = ImageOps.exif_transpose(img)
 
-    # Corrige a orientação (se necessário)
-    img = ImageOps.exif_transpose(img)
+        # Converte para RGB se necessário (evita canal alfa virar fundo preto)
+        if img.mode not in ("RGB", "L"):
+            img = img.convert("RGB")
 
-    # Converte para RGB (se necessário)
-    if img.mode in ("RGBA", "P"):
-        img = img.convert("RGB")
+        # Redimensiona mantendo proporção e depois pad para tamanho exato
+        img = ImageOps.contain(img, size)               # reduz mantendo proporção
+        img = ImageOps.pad(img, size, color="white")    # bordas para bater o size exato
 
-    # Calcula o novo tamanho mantendo a proporção
-    original_width, original_height = img.size
-    target_width, target_height = size
-    ratio = min(target_width / original_width, target_height / original_height)
-    new_width = int(original_width * ratio)
-    new_height = int(original_height * ratio)
+        # Salva em arquivo temporário (evita guardar tudo em BytesIO na RAM)
+        with NamedTemporaryFile(delete=False, suffix=".jpeg") as tmp:
+            img.save(tmp, format="JPEG", quality=85, optimize=True)
+            tmp_path = Path(tmp.name)
 
-    # Redimensiona a imagem
-    img = img.resize((new_width, new_height), resample=Image.Resampling.LANCZOS)
-
-    # Adiciona bordas para atingir o tamanho exato
-    img = ImageOps.pad(
-        img,
-        size=size,  # Tamanho final desejado (ex.: 400x400)
-        method=Image.Resampling.LANCZOS,
-        color="white",  # Cor das bordas
-        centering=(0.5, 0.5)  # Centraliza a imagem
-    )
-
-    # Salva em um buffer de memória
-    img_bytes = io.BytesIO()
-    img.save(img_bytes, format="JPEG")
-    img_bytes.seek(0)
-
-    # Retorna como UploadFile
-    new_name = f"{upload_image.filename.split('.')[0]}.jpeg"
-    return UploadFile(filename=new_name, file=img_bytes, headers={"content_type": "image/jpeg"})
+    # Reabre o arquivo temporário como stream para o UploadFile
+    f = tmp_path.open("rb")
+    new_name = f"{Path(upload_image.filename).stem}.jpeg"
+    return UploadFile(filename=new_name, file=f, headers={"content_type": "image/jpeg"})

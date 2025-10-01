@@ -7,6 +7,7 @@ import mongomock
 from app.api.dependencies.auth import decode_jwt
 from app.api.dependencies.get_current_organization import check_current_organization
 from app.application import app
+from app.core.utils import slugify
 from app.core.utils.features import Feature
 from app.core.utils.utc_datetime import UTCDateTime
 from app.crud.plan_features.schemas import PlanFeatureInDB
@@ -48,7 +49,12 @@ class TestMenusCommandRouter(unittest.TestCase):
         app.dependency_overrides = {}
 
     def insert_mock_menu(self, name="Menu"):
-        menu = MenuModel(name=name, description="d", organization_id="org_123")
+        menu = MenuModel(
+            name=name,
+            slug=slugify(name),
+            description="d",
+            organization_id="org_123",
+        )
         menu.save()
         return str(menu.id)
 
@@ -64,6 +70,7 @@ class TestMenusCommandRouter(unittest.TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(json["message"], "Menu created with success")
         self.assertIsNotNone(json["data"]["id"])
+        self.assertFalse(json["data"]["acceptsOutsideBusinessHours"])
 
     @unittest.mock.patch("app.crud.menus.services.get_plan_feature")
     def test_post_menu_unauthorized(self, mock_get_plan_feature):
@@ -79,11 +86,12 @@ class TestMenusCommandRouter(unittest.TestCase):
         menu_id = self.insert_mock_menu(name="Old")
         response = self.test_client.put(
             f"/api/menus/{menu_id}",
-            json={"name": "Updated"},
+            json={"name": "Updated", "accepts_outside_business_hours": True},
             headers={"organization-id": "org_123"},
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["message"], "Menu updated with success")
+        self.assertTrue(response.json()["data"]["acceptsOutsideBusinessHours"])
 
     def test_put_menu_failure(self):
         response = self.test_client.put(

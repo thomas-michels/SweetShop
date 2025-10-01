@@ -9,13 +9,15 @@ from app.api.shared_schemas.responses import ListResponseSchema, MessageResponse
 
 
 def build_response(
-    status_code: status, message: str, data: BaseModel | List[BaseModel]
+    status_code: status,
+    message: str,
+    data: BaseModel | List[BaseModel] | int | None = None,
 ) -> JSONResponse:
     if isinstance(data, int):
         raw_response = Response(message=message, data=None)
         raw_response.data = data
 
-    elif data:
+    elif data is not None:
         raw_response = Response(message=message, data=data)
 
     else:
@@ -28,7 +30,7 @@ def build_response(
 
 
 def build_list_response(
-    status_code: status, message: str, data: BaseModel | List[BaseModel], pagination: dict
+    status_code: status, message: str, pagination: dict, data: BaseModel | List[BaseModel] = None
 ) -> JSONResponse:
     if data:
         raw_response = ListResponseSchema(

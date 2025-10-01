@@ -4,10 +4,16 @@ from app.api.dependencies.email_sender import send_email
 from app.api.dependencies.get_plan_feature import get_plan_feature
 from app.api.exceptions.authentication_exceptions import UnauthorizedException, BadRequestException
 from app.core.utils.features import Feature
+from app.core.exceptions import NotFoundError
+from app.crud.addresses import AddressServices
 from app.crud.files.repositories import FileRepository
 from app.crud.files.schemas import FilePurpose
+from app.crud.messages.repositories import MessageRepository
+from app.crud.messages.schemas import Message, MessageType, Origin
+from app.crud.messages.services import MessageServices
 from app.crud.users.repositories import UserRepository
 from app.crud.users.schemas import CompleteUserInDB, UserInDB
+from app.crud.shared_schemas.address import Address
 
 from .schemas import CompleteOrganization, Organization, OrganizationInDB, RoleEnum, UpdateOrganization, UserOrganization
 from .repositories import OrganizationRepository
@@ -24,15 +30,19 @@ class OrganizationServices:
         organization_repository: OrganizationRepository,
         user_repository: UserRepository,
         organization_plan_repository: OrganizationPlanRepository,
-        cached_complete_users: Dict[str, CompleteUserInDB]
+        address_services: AddressServices,
+        cached_complete_users: Dict[str, CompleteUserInDB],
     ) -> None:
         self.__organization_repository = organization_repository
         self.__organization_plan_repository = organization_plan_repository
         self.__user_repository = user_repository
+        self.__address_services = address_services
 
         self.__cached_complete_users = cached_complete_users
 
     async def create(self, organization: Organization, owner: UserInDB) -> OrganizationInDB:
+        await self.__validate_address_zip_code(address=organization.address)
+
         organization_in_db = await self.__organization_repository.create(organization=organization)
 
         await self.add_user(
@@ -49,6 +59,11 @@ class OrganizationServices:
             message = message.replace("$USER_NAME$", owner.name.title())
 
         send_email(email_to=[owner.email], title=f"Bem-vindo à Pedidoz!", message=message)
+
+        await self.send_client_message(
+            user_in_db=owner,
+            organization=organization_in_db
+        )
 
         return organization_in_db
 
@@ -84,6 +99,8 @@ class OrganizationServices:
             if file_in_db.purpose != FilePurpose.ORGANIZATION:
                 raise BadRequestException(detail="Invalid image for the organization")
 
+        await self.__validate_address_zip_code(address=updated_organization.address)
+
         is_updated = organization_in_db.validate_updated_fields(update_organization=updated_organization)
 
         if is_updated:
@@ -93,6 +110,15 @@ class OrganizationServices:
             )
 
         return organization_in_db
+
+    async def __validate_address_zip_code(self, address: Address | None) -> None:
+        if not address or not address.zip_code:
+            return
+
+        try:
+            await self.__address_services.search_by_cep(zip_code=address.zip_code)
+        except NotFoundError:
+            raise BadRequestException(detail=f"Invalid zip code: {address.zip_code}")
 
     async def search_by_id(self, id: str, expand: List[str] = []) -> CompleteOrganization:
         organization_in_db = await self.__organization_repository.select_by_id(id=id)
@@ -248,7 +274,9 @@ class OrganizationServices:
 
         await self.__organization_repository.update(
             organization_id=organization_id,
-            organization=organization_in_db.model_dump()
+            organization=organization_in_db.model_dump(
+                include=["users"]
+            )
         )
 
         self.clear_user_cache(user_id=user_id)
@@ -285,7 +313,9 @@ class OrganizationServices:
 
         await self.__organization_repository.update(
             organization_id=organization_id,
-            organization=organization_in_db.model_dump()
+            organization=organization_in_db.model_dump(
+                include=["users"]
+            )
         )
 
         self.clear_user_cache(user_id=user_making_request)
@@ -324,7 +354,9 @@ class OrganizationServices:
 
         await self.__organization_repository.update(
             organization_id=organization_id,
-            organization=organization_in_db.model_dump()
+            organization=organization_in_db.model_dump(
+                include=["users"]
+            )
         )
 
         self.clear_user_cache(user_id=user_making_request)
@@ -356,7 +388,9 @@ class OrganizationServices:
 
             await self.__organization_repository.update(
                 organization_id=organization_id,
-                organization=organization_in_db.model_dump()
+                organization=organization_in_db.model_dump(
+                    include=["users"]
+                )
             )
 
         self.clear_user_cache(user_id=user_id)
@@ -369,3 +403,24 @@ class OrganizationServices:
             return True
 
         return False
+
+    async def send_client_message(self, user_in_db: UserInDB, organization: OrganizationInDB) -> bool:
+        message_services = MessageServices(message_repository=MessageRepository(organization_id=organization.id))
+
+        text_message = f"""*Nova Organização criada - {organization.name}!*
+
+O usuário {user_in_db.name} acabou de criar uma nova organização.
+Telefone: +{organization.international_code} {organization.ddd} {organization.phone_number}
+
+_pedidoZ_"""
+
+        message = Message(
+            international_code="55",
+            ddd="047",
+            phone_number="996240277",
+            message_type=MessageType.INFORMATION,
+            origin=Origin.ORGANIZATIONS,
+            message=text_message
+        )
+
+        return await message_services.create(message=message)

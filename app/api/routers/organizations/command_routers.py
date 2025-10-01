@@ -3,13 +3,30 @@ from fastapi import APIRouter, Depends, Security
 from app.api.composers import organization_composer
 from app.api.dependencies import build_response, decode_jwt
 from app.api.shared_schemas.role import RequestRole
+from app.api.shared_schemas.responses import MessageResponse
 from app.crud.users import UserInDB
-from app.crud.organizations import Organization, OrganizationInDB, UpdateOrganization, OrganizationServices
+from app.crud.organizations import (
+    Organization,
+    UpdateOrganization,
+    OrganizationServices,
+)
+from .schemas import (
+    CreateOrganizationResponse,
+    UpdateOrganizationResponse,
+    DeleteOrganizationResponse,
+    UpdateUserRoleResponse,
+    RemoveUserFromOrganizationResponse,
+    TransferOrganizationOwnershipResponse,
+    LeaveOrganizationResponse,
+)
 
 router = APIRouter(tags=["Organizations"])
 
 
-@router.post("/organizations", responses={201: {"model": OrganizationInDB}})
+@router.post(
+    "/organizations",
+    responses={201: {"model": CreateOrganizationResponse}, 400: {"model": MessageResponse}},
+)
 async def create_organizations(
     organization: Organization,
     current_user: UserInDB = Security(decode_jwt, scopes=["organization:create"]),
@@ -31,7 +48,10 @@ async def create_organizations(
         )
 
 
-@router.put("/organizations/{organization_id}", responses={200: {"model": OrganizationInDB}})
+@router.put(
+    "/organizations/{organization_id}",
+    responses={200: {"model": UpdateOrganizationResponse}, 400: {"model": MessageResponse}},
+)
 async def update_organization(
     organization_id: str,
     organization: UpdateOrganization,
@@ -55,7 +75,10 @@ async def update_organization(
         )
 
 
-@router.delete("/organizations/{organization_id}", responses={200: {"model": OrganizationInDB}})
+@router.delete(
+    "/organizations/{organization_id}",
+    responses={200: {"model": DeleteOrganizationResponse}, 404: {"model": MessageResponse}},
+)
 async def delete_organization(
     organization_id: str,
     current_user: UserInDB = Security(decode_jwt, scopes=["organization:delete"]),
@@ -77,7 +100,10 @@ async def delete_organization(
         )
 
 
-@router.patch("/organizations/{organization_id}/members/{user_id}", responses={200: {"model": OrganizationInDB}})
+@router.patch(
+    "/organizations/{organization_id}/members/{user_id}",
+    responses={200: {"model": UpdateUserRoleResponse}, 400: {"model": MessageResponse}},
+)
 async def update_user_in_organization(
     organization_id: str,
     user_id: str,
@@ -103,7 +129,10 @@ async def update_user_in_organization(
         )
 
 
-@router.delete("/organizations/{organization_id}/members/{user_id}", responses={200: {"model": OrganizationInDB}})
+@router.delete(
+    "/organizations/{organization_id}/members/{user_id}",
+    responses={200: {"model": RemoveUserFromOrganizationResponse}, 400: {"model": MessageResponse}},
+)
 async def remove_user_from_organization(
     organization_id: str,
     user_id: str,
@@ -127,7 +156,10 @@ async def remove_user_from_organization(
         )
 
 
-@router.post("/organizations/{organization_id}/members/{user_id}/transfer_ownership", responses={200: {"model": OrganizationInDB}})
+@router.post(
+    "/organizations/{organization_id}/members/{user_id}/transfer_ownership",
+    responses={200: {"model": TransferOrganizationOwnershipResponse}, 400: {"model": MessageResponse}},
+)
 async def transfer_organization_ownership(
     organization_id: str,
     user_id: str,
@@ -151,7 +183,10 @@ async def transfer_organization_ownership(
         )
 
 
-@router.post("/organizations/{organization_id}/leave", responses={200: {"model": OrganizationInDB}})
+@router.post(
+    "/organizations/{organization_id}/leave",
+    responses={200: {"model": LeaveOrganizationResponse}, 400: {"model": MessageResponse}},
+)
 async def leave_the_organization(
     organization_id: str,
     current_user: UserInDB = Security(decode_jwt, scopes=[]),
