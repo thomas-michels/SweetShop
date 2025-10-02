@@ -3,6 +3,7 @@ from fastapi import Depends
 from app.api.dependencies.cache_plans import get_cached_plans
 from app.api.dependencies.cache_users import get_cached_complete_users, get_cached_users
 from app.api.dependencies.get_access_token import get_access_token
+from app.api.composers.marketing_email_composite import marketing_email_composer
 from app.crud.addresses.repositories import AddressRepository
 from app.crud.addresses.services import AddressServices
 from app.crud.organization_plans.repositories import OrganizationPlanRepository
@@ -31,11 +32,14 @@ async def organization_composer(
         address_repository=AddressRepository()
     )
 
+    marketing_email_services = await marketing_email_composer()
+
     organization_services = OrganizationServices(
         organization_repository=organization_repository,
         organization_plan_repository=organization_plan_repository,
         address_services=address_services,
         user_repository=user_repository,
         cached_complete_users=cached_complete_users,
+        marketing_email_services=marketing_email_services,
     )
     return organization_services

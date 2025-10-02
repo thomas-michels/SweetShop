@@ -1,16 +1,18 @@
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from app.api.dependencies.email_sender import send_email
 from app.api.dependencies.get_plan_feature import get_plan_feature
 from app.api.exceptions.authentication_exceptions import UnauthorizedException, BadRequestException
 from app.core.utils.features import Feature
-from app.core.exceptions import NotFoundError
+from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.crud.addresses import AddressServices
 from app.crud.files.repositories import FileRepository
 from app.crud.files.schemas import FilePurpose
 from app.crud.messages.repositories import MessageRepository
 from app.crud.messages.schemas import Message, MessageType, Origin
 from app.crud.messages.services import MessageServices
+from app.crud.marketing_emails.schemas import MarketingEmail, ReasonEnum
+from app.crud.marketing_emails.services import MarketingEmailServices
 from app.crud.users.repositories import UserRepository
 from app.crud.users.schemas import CompleteUserInDB, UserInDB
 from app.crud.shared_schemas.address import Address
@@ -32,6 +34,7 @@ class OrganizationServices:
         organization_plan_repository: OrganizationPlanRepository,
         address_services: AddressServices,
         cached_complete_users: Dict[str, CompleteUserInDB],
+        marketing_email_services: Optional[MarketingEmailServices] = None,
     ) -> None:
         self.__organization_repository = organization_repository
         self.__organization_plan_repository = organization_plan_repository
@@ -39,6 +42,7 @@ class OrganizationServices:
         self.__address_services = address_services
 
         self.__cached_complete_users = cached_complete_users
+        self.__marketing_email_services = marketing_email_services
 
     async def create(self, organization: Organization, owner: UserInDB) -> OrganizationInDB:
         await self.__validate_address_zip_code(address=organization.address)
@@ -230,6 +234,11 @@ class OrganizationServices:
             organization=organization_in_db.model_dump(exclude={"plan"})
         )
 
+        await self.__subscribe_user_to_marketing(
+            user=user_in_db,
+            description="organization_owner" if role == RoleEnum.OWNER else "organization_member",
+        )
+
         self.clear_user_cache(user_id=user_making_request)
         self.clear_user_cache(user_id=user_id)
 
@@ -401,6 +410,34 @@ class OrganizationServices:
         if self.__cached_complete_users.get(user_id):
             self.__cached_complete_users.pop(user_id)
             return True
+
+        return False
+
+    async def __subscribe_user_to_marketing(self, user: UserInDB, description: str) -> bool:
+        if not self.__marketing_email_services:
+            return False
+
+        try:
+            marketing_email = MarketingEmail(
+                name=user.name,
+                email=user.email,
+                reason=ReasonEnum.OTHER,
+                description=description,
+            )
+            await self.__marketing_email_services.create(
+                marketing_email=marketing_email
+            )
+            return True
+        except UnprocessableEntity:
+            logger.warning(
+                "Marketing email already exists for user %s", user.email
+            )
+        except Exception as error:
+            logger.error(
+                "Error subscribing user %s to marketing emails: %s",
+                user.email,
+                str(error)
+            )
 
         return False
 

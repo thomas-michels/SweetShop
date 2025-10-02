@@ -1,11 +1,11 @@
 import unittest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import mongomock
 from mongoengine import connect, disconnect
 
 from app.api.exceptions.authentication_exceptions import BadRequestException
-from app.core.exceptions import NotFoundError
+from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.core.utils.utc_datetime import UTCDateTime
 from app.crud.organizations.repositories import OrganizationRepository
 from app.crud.organizations.schemas import (
@@ -40,12 +40,16 @@ class TestOrganizationServices(unittest.IsolatedAsyncioTestCase):
         self.address_service = AsyncMock()
         self.address_service.search_by_cep = AsyncMock(return_value=None)
 
+        self.marketing_email_services = MagicMock()
+        self.marketing_email_services.create = AsyncMock(return_value=None)
+
         self.service = OrganizationServices(
             organization_repository=self.repo,
             user_repository=self.user_repo,
             organization_plan_repository=self.plan_repo,
             address_services=self.address_service,
             cached_complete_users={},
+            marketing_email_services=self.marketing_email_services,
         )
 
     def tearDown(self):
@@ -83,6 +87,70 @@ class TestOrganizationServices(unittest.IsolatedAsyncioTestCase):
 
             # Client message triggered
             send_msg_mock.assert_awaited_once()
+
+            # Marketing email registration executed
+            self.marketing_email_services.create.assert_awaited_once()
+
+    async def test_create_subscribes_owner_to_marketing_emails(self):
+        owner = await self._user("owner")
+        self.user_repo.select_by_id.return_value = owner
+
+        with patch("app.crud.organizations.services.send_email"), \
+             patch.object(OrganizationServices, "send_client_message", new_callable=AsyncMock):
+
+            await self.service.create(
+                organization=Organization(name="Org Test"),
+                owner=owner,
+            )
+
+        await_args = self.marketing_email_services.create.await_args
+        marketing_email = await_args.args[0] if await_args.args else await_args.kwargs["marketing_email"]
+        self.assertEqual(marketing_email.email, owner.email)
+        self.assertEqual(marketing_email.name, owner.name)
+        self.assertEqual(marketing_email.reason.value, "OTHER")
+        self.assertEqual(marketing_email.description, "organization_owner")
+
+    async def test_create_ignores_marketing_subscription_conflict(self):
+        owner = await self._user("owner")
+        self.user_repo.select_by_id.return_value = owner
+        self.marketing_email_services.create.reset_mock()
+        self.marketing_email_services.create.side_effect = UnprocessableEntity("exists")
+
+        with patch("app.crud.organizations.services.send_email"), \
+             patch.object(OrganizationServices, "send_client_message", new_callable=AsyncMock):
+            org = await self.service.create(
+                organization=Organization(name="Org Test"),
+                owner=owner,
+            )
+
+        self.assertIsNotNone(org)
+        self.marketing_email_services.create.assert_awaited_once()
+
+    async def test_add_user_subscribes_new_member_to_marketing_emails(self):
+        owner = await self._user("owner")
+        new_member = await self._user("member")
+
+        org = await self.repo.create(Organization(name="Org"))
+        await self.repo.update(
+            org.id, {"users": [{"user_id": owner.user_id, "role": RoleEnum.OWNER}]}
+        )
+
+        self.user_repo.select_by_id.side_effect = [owner, new_member]
+
+        result = await self.service.add_user(
+            organization_id=org.id,
+            user_making_request=owner.user_id,
+            user_id=new_member.user_id,
+            role=RoleEnum.MANAGER,
+        )
+
+        self.assertTrue(result)
+        self.marketing_email_services.create.assert_awaited()
+
+        await_args = self.marketing_email_services.create.await_args
+        marketing_email = await_args.args[0] if await_args.args else await_args.kwargs["marketing_email"]
+        self.assertEqual(marketing_email.email, new_member.email)
+        self.assertEqual(marketing_email.description, "organization_member")
 
     async def test_send_client_message_uses_message_services(self):
         owner = await self._user("owner")
