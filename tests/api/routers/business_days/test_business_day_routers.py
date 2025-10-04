@@ -89,6 +89,7 @@ class TestBusinessDayRouters(unittest.TestCase):
         response = self.test_client.get(
             url="/api/business_day",
             headers={"organization-id": "org_123"},
+            params={"menuId": business_day.menu_id}
         )
 
         self.assertEqual(response.status_code, 200)
@@ -106,6 +107,7 @@ class TestBusinessDayRouters(unittest.TestCase):
         response = self.test_client.get(
             url="/api/business_day",
             headers={"organization-id": "org_123"},
+            params={"menuId": business_day.menu_id}
         )
 
         self.assertEqual(response.status_code, 200)
@@ -125,6 +127,7 @@ class TestBusinessDayRouters(unittest.TestCase):
         response = self.test_client.get(
             url="/api/business_day",
             headers={"organization-id": "org_123"},
+            params={"menuId": business_day.menu_id}
         )
 
         self.assertEqual(response.status_code, 200)
@@ -136,6 +139,7 @@ class TestBusinessDayRouters(unittest.TestCase):
         response = self.test_client.get(
             url="/api/business_day",
             headers={"organization-id": "org_123"},
+            params={"menuId": "men_123"}
         )
 
         self.assertEqual(response.status_code, 204)

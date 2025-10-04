@@ -14,5 +14,5 @@ class BusinessDayServices:
             closes_at=business_day.closes_at,
         )
 
-    async def get_today(self) -> Optional[BusinessDayInDB]:
-        return await self._business_day_repository.select_today()
+    async def get_today(self, menu_id: str) -> Optional[BusinessDayInDB]:
+        return await self._business_day_repository.select_today(menu_id=menu_id)

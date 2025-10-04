@@ -16,7 +16,7 @@ class BusinessDayRepository(Repository):
         super().__init__()
         self.organization_id = organization_id
 
-    def _recent_active_query(self, *, now: UTCDateTime | None = None):
+    def _recent_active_query(self, menu_id: str, now: UTCDateTime | None = None):
         reference = now or UTCDateTime.now()
         window_start = reference - timedelta(hours=24)
         window_end = reference + timedelta(hours=24)
@@ -24,6 +24,7 @@ class BusinessDayRepository(Repository):
         return (
             BusinessDayModel.objects(
                 organization_id=self.organization_id,
+                menu_id=menu_id,
                 is_active=True,
                 closes_at__gte=window_start,
                 closes_at__lte=window_end,
@@ -38,8 +39,10 @@ class BusinessDayRepository(Repository):
 
             if closes_at_utc - now > timedelta(days=1):
                 return None
+
             business_day: BusinessDayModel | None = self._recent_active_query(
-                now=now
+                now=now,
+                menu_id=menu_id
             ).first()
 
             day_value = now.strftime("%Y-%m-%d")
@@ -64,9 +67,9 @@ class BusinessDayRepository(Repository):
         except Exception as error:
             _logger.error(f"Error on upsert business day: {str(error)}")
 
-    async def select_today(self) -> Optional[BusinessDayInDB]:
+    async def select_today(self, menu_id: str) -> Optional[BusinessDayInDB]:
         try:
-            business_day: BusinessDayModel | None = self._recent_active_query().first()
+            business_day: BusinessDayModel | None = self._recent_active_query(menu_id=menu_id).first()
 
             if not business_day:
                 return None

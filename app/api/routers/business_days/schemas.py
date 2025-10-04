@@ -5,12 +5,12 @@ from app.crud.business_days.schemas import BusinessDayInDB
 
 EXAMPLE_BUSINESS_DAY = {
     "id": "bsd_123",
-    "menu_id": "men_123",
-    "organization_id": "org_123",
+    "menuId": "men_123",
+    "organizationId": "org_123",
     "day": "2025-09-23",
-    "closes_at": "2025-09-23T14:30:00Z",
-    "created_at": "2025-09-23T04:17:34.339000+00:00",
-    "updated_at": "2025-09-23T04:17:34.339000+00:00",
+    "closesAt": "2025-09-23T14:30:00Z",
+    "createdAt": "2025-09-23T04:17:34.339000+00:00",
+    "updatedAt": "2025-09-23T04:17:34.339000+00:00",
 }
 
 
