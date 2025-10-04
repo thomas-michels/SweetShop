@@ -1,3 +1,4 @@
+from datetime import timedelta
 from typing import Optional
 
 from app.core.configs import get_logger
@@ -15,30 +16,46 @@ class BusinessDayRepository(Repository):
         super().__init__()
         self.organization_id = organization_id
 
-    def _today_key(self) -> dict:
-        return {
-            "organization_id": self.organization_id,
-            "day": UTCDateTime.now().strftime("%Y-%m-%d"),
-            "is_active": True,
-        }
+    def _recent_active_query(self, *, now: UTCDateTime | None = None):
+        reference = now or UTCDateTime.now()
+        window_start = reference - timedelta(hours=24)
+        window_end = reference + timedelta(hours=24)
+
+        return (
+            BusinessDayModel.objects(
+                organization_id=self.organization_id,
+                is_active=True,
+                closes_at__gte=window_start,
+                closes_at__lte=window_end,
+            )
+            .order_by("-closes_at")
+        )
 
     async def upsert_today(self, menu_id: str, closes_at: UTCDateTime) -> Optional[BusinessDayInDB]:
         try:
             closes_at_utc = UTCDateTime.validate_datetime(closes_at)
-            today_filter = self._today_key()
+            now = UTCDateTime.now()
 
-            business_day: BusinessDayModel | None = BusinessDayModel.objects(
-                **today_filter
+            if closes_at_utc - now > timedelta(days=1):
+                return None
+            business_day: BusinessDayModel | None = self._recent_active_query(
+                now=now
             ).first()
 
+            day_value = now.strftime("%Y-%m-%d")
+
             if business_day:
-                business_day.update(menu_id=menu_id, closes_at=closes_at_utc)
+                business_day.update(
+                    menu_id=menu_id,
+                    closes_at=closes_at_utc,
+                    day=day_value,
+                )
                 business_day.reload()
             else:
                 business_day = BusinessDayModel(
                     menu_id=menu_id,
                     organization_id=self.organization_id,
-                    day=today_filter["day"],
+                    day=day_value,
                     closes_at=closes_at_utc,
                 )
                 business_day.save()
@@ -49,9 +66,7 @@ class BusinessDayRepository(Repository):
 
     async def select_today(self) -> Optional[BusinessDayInDB]:
         try:
-            business_day: BusinessDayModel | None = BusinessDayModel.objects(
-                **self._today_key()
-            ).first()
+            business_day: BusinessDayModel | None = self._recent_active_query().first()
 
             if not business_day:
                 return None
