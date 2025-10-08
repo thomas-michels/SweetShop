@@ -16,10 +16,7 @@ from app.crud.orders.services import OrderServices
 if TYPE_CHECKING:  # pragma: no cover
     from app.crud.messages.services import MessageServices
     from app.crud.customers.repositories import CustomerRepository
-    from app.crud.offers.repositories import OfferRepository
     from app.crud.organizations.repositories import OrganizationRepository
-    from app.crud.additional_items.repositories import AdditionalItemRepository
-    from app.crud.product_additionals.repositories import ProductAdditionalRepository
     from .repositories import PreOrderRepository
 
 from .schemas import (
@@ -121,6 +118,7 @@ class PreOrderServices:
 
         for offer in pre_order.offers:
             offer_items_total = 0.0
+
             for item in offer.items:
                 requested_products.append(
                     RequestedProduct(
@@ -142,6 +140,7 @@ class PreOrderServices:
 
             offer_items_total *= offer.quantity
             offer_price_total = offer.unit_price * offer.quantity
+
             if offer_items_total > offer_price_total:
                 discount += offer_items_total - offer_price_total
 
