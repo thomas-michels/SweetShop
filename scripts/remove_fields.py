@@ -16,13 +16,13 @@ db = client[db_name]
 # Definir a operação para remover o campo 'sections'
 update_operation = {
     "$unset": {
-        "sections": ""
+        "unit_tax": ""
     }
 }
 
 # Iterar sobre a coleção 'products'
 total_modified = 0
-collection_name = "products"
+collection_name = "menus"
 collection = db[collection_name]
 result = collection.update_many({}, update_operation)
 print(f"{result.modified_count} documentos atualizados na coleção '{collection_name}'")

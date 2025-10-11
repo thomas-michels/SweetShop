@@ -76,6 +76,7 @@ class OfferServices:
                     product_items=updated_offer.products
                 )
                 offer_in_db.products = products
+
             else:
                 product_cost = sum(p.unit_cost * p.quantity for p in offer_in_db.products)
                 product_price = sum(p.unit_price * p.quantity for p in offer_in_db.products)
@@ -84,13 +85,16 @@ class OfferServices:
 
             if updated_offer.unit_price is not None:
                 offer_in_db.unit_price = updated_offer.unit_price
+
             else:
                 offer_in_db.unit_price = product_price
 
             if updated_offer.file_id is not None:
                 file_in_db = await self.__file_repository.select_by_id(id=updated_offer.file_id)
+
                 if file_in_db.purpose != FilePurpose.OFFER:
                     raise BadRequestException(detail="Invalid image for the offer")
+
                 offer_in_db.file_id = updated_offer.file_id
 
             offer_in_db = await self.__offer_repository.update(offer=offer_in_db)
@@ -150,6 +154,7 @@ class OfferServices:
             for offer in offers:
                 if offer.file_id:
                     file_ids.add(offer.file_id)
+
                 for product in offer.products:
                     if product.file_id:
                         file_ids.add(product.file_id)
