@@ -19,12 +19,17 @@ __all__ = [
     "OrderInDB",
     "UpdateOrder",
     "CompleteOrder",
+    "OrderFacade",
     "OrderServices",
 ]
 
 
 def __getattr__(name: str):  # pragma: no cover - thin wrapper
     """Lazily import services to avoid circular dependencies."""
+    if name == "OrderFacade":
+        from .services import OrderFacade
+
+        return OrderFacade
     if name == "OrderServices":
         from .services import OrderServices
 
