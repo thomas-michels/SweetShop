@@ -12,14 +12,12 @@ from app.crud.orders.schemas import (
     OrderInDB,
 )
 from app.crud.orders.services import OrderServices
+from app.crud.shared_schemas.payment import PARSE_PAYMENT_METHOD
 
 if TYPE_CHECKING:  # pragma: no cover
     from app.crud.messages.services import MessageServices
     from app.crud.customers.repositories import CustomerRepository
-    from app.crud.offers.repositories import OfferRepository
     from app.crud.organizations.repositories import OrganizationRepository
-    from app.crud.additional_items.repositories import AdditionalItemRepository
-    from app.crud.product_additionals.repositories import ProductAdditionalRepository
     from .repositories import PreOrderRepository
 
 from .schemas import (
@@ -121,6 +119,7 @@ class PreOrderServices:
 
         for offer in pre_order.offers:
             offer_items_total = 0.0
+
             for item in offer.items:
                 requested_products.append(
                     RequestedProduct(
@@ -142,18 +141,23 @@ class PreOrderServices:
 
             offer_items_total *= offer.quantity
             offer_price_total = offer.unit_price * offer.quantity
+
             if offer_items_total > offer_price_total:
                 discount += offer_items_total - offer_price_total
 
         delivery = Delivery(**pre_order.delivery.model_dump())
         now = UTCDateTime.now()
+
+        description = pre_order.observation if pre_order.observation else ""
+        description += f"\n Método de pagamento escolhido pelo cliente: {PARSE_PAYMENT_METHOD.get(pre_order.payment_method)}"
+
         request_order = RequestOrder(
             customer_id=pre_order.customer.customer_id,
             products=requested_products,
             delivery=delivery,
             preparation_date=now,
             order_date=now,
-            description=pre_order.observation,
+            description=description,
             discount=discount if discount > 0 else 0,
         )
 

@@ -18,8 +18,7 @@ class MenuModel(BaseDocument):
     min_order_price = FloatField(required=False)
     min_delivery_price = FloatField(required=False)
     max_delivery_price = FloatField(required=False)
-    km_tax = FloatField(required=False) # TODO remove that soon
-    unit_tax = FloatField(required=False)
+    km_tax = FloatField(required=False)
     accept_delivery: bool = BooleanField(default=True, required=False)
     accepts_outside_business_hours: bool = BooleanField(default=False, required=False)
 

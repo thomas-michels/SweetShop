@@ -455,6 +455,7 @@ class OrderServices:
             additionals_group = await self.__product_additional_repository.select_by_product_id(
                 product_id=product.product_id
             )
+
             group_map = {grp.id: grp for grp in additionals_group}
             group_counts = {grp.id: 0 for grp in additionals_group}
 
