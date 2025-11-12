@@ -22,3 +22,12 @@ class Payment(GenericModel):
     method: PaymentMethod = Field(example=PaymentMethod.CASH)
     payment_date: UTCDateTimeType = Field(example=str(UTCDateTime.now()))
     amount: float = Field(example=10, gt=0)
+
+
+PARSE_PAYMENT_METHOD = {
+    PaymentMethod.PIX: "Pix",
+    PaymentMethod.CASH: "Dinheiro",
+    PaymentMethod.CREDIT_CARD: "Cartão de crédito",
+    PaymentMethod.DEBIT_CARD: "Cartão de débito",
+    PaymentMethod.ZELLE: "Zelle",
+}

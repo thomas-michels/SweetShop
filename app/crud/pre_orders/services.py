@@ -12,6 +12,7 @@ from app.crud.orders.schemas import (
     OrderInDB,
 )
 from app.crud.orders.services import OrderServices
+from app.crud.shared_schemas.payment import PARSE_PAYMENT_METHOD
 
 if TYPE_CHECKING:  # pragma: no cover
     from app.crud.messages.services import MessageServices
@@ -146,13 +147,17 @@ class PreOrderServices:
 
         delivery = Delivery(**pre_order.delivery.model_dump())
         now = UTCDateTime.now()
+
+        description = pre_order.observation if pre_order.observation else ""
+        description += f"\n Método de pagamento escolhido pelo cliente: {PARSE_PAYMENT_METHOD.get(pre_order.payment_method)}"
+
         request_order = RequestOrder(
             customer_id=pre_order.customer.customer_id,
             products=requested_products,
             delivery=delivery,
             preparation_date=now,
             order_date=now,
-            description=pre_order.observation,
+            description=description,
             discount=discount if discount > 0 else 0,
         )
 
