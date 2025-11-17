@@ -39,33 +39,49 @@ class WhatsAppMessageSender:
             return False
 
     def send_message(self, number: str, message: str) -> dict:
-        try:
-            delay = random.randint(1, 3)
-            time.sleep(delay)
+        url = f"{_env.EVOLUTION_BASE_URL}/message/sendText/{_env.EVOLUTION_INSTANCE}"
+        headers = {
+            "Content-Type": "application/json",
+            "apikey": _env.EVOLUTION_API_KEY
+        }
+        body = {
+            "number": number,
+            "text": message
+        }
 
-            url = f"{_env.EVOLUTION_BASE_URL}/message/sendText/{_env.EVOLUTION_INSTANCE}"
-            headers = {
-                "Content-Type": "application/json",
-                "apikey": _env.EVOLUTION_API_KEY
-            }
-            body = {
-                "number": number,
-                "text": message
-            }
+        max_retries = 3
 
-            response = requests.post(
-                url=url,
-                headers=headers,
-                json=body,
-                timeout=10
-            )
+        for attempt in range(1, max_retries + 1):
+            try:
+                delay = random.randint(1, 3)
+                time.sleep(delay)
 
-            if response.status_code != 201:
-                raise Exception(f"Falha ao enviar mensagem para {number}: {response.text}")
+                response = requests.post(
+                    url=url,
+                    headers=headers,
+                    json=body,
+                    timeout=10
+                )
 
-            _logger.info(f"Message sent to {number}")
-            return response.json()
+                if response.status_code == 201:
+                    _logger.info(f"Message sent to {number} (attempt {attempt})")
+                    return response.json()
 
-        except Exception as error:
-            _logger.error(f"Error on send message: {str(error)} - number: {number} - message: {message}")
-            return
+                _logger.warning(
+                    f"Attempt {attempt}/{max_retries} failed for {number}: "
+                    f"status={response.status_code} - {response.text}"
+                )
+
+            except Exception as error:
+                _logger.error(
+                    f"Error on attempt {attempt}/{max_retries} while sending message to {number}: {str(error)}"
+                )
+
+            if attempt < max_retries:
+                sleep_time = attempt * 2  # 2s, 4s, 6s
+                time.sleep(sleep_time)
+
+        _logger.error(
+            f"Failed to send message after {max_retries} attempts - number: {number} - message: {message}"
+        )
+        return None
