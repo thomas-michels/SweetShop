@@ -1,3 +1,4 @@
+from datetime import timedelta
 from typing import List
 
 from typing import TYPE_CHECKING
@@ -146,7 +147,12 @@ class PreOrderServices:
                 discount += offer_items_total - offer_price_total
 
         delivery = Delivery(**pre_order.delivery.model_dump())
-        now = UTCDateTime.now()
+
+        if delivery.delivery_at:
+            now = delivery.delivery_at - timedelta(days=1)
+
+        else:
+            now = UTCDateTime.now()
 
         description = pre_order.observation if pre_order.observation else ""
         description += f"\n Método de pagamento escolhido pelo cliente: {PARSE_PAYMENT_METHOD.get(pre_order.payment_method)}"
