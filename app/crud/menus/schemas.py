@@ -20,6 +20,7 @@ class Menu(GenericModel):
     min_delivery_price: float | None = Field(default=None, example=123)
     max_delivery_price: float | None = Field(default=None, example=123)
     km_tax: float | None = Field(default=None, example=123)
+    unit_tax: float | None = Field(default=None, example=123)
     accept_delivery: bool | None = Field(default=None, example=True)
     accepts_outside_business_hours: bool = Field(default=False, example=False)
 
