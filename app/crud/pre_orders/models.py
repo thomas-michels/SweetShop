@@ -5,7 +5,8 @@ from app.core.utils.utc_datetime import UTCDateTime
 
 class PreOrderModel(BaseDocument):
     organization_id = StringField(required=True)
-    user_id = StringField(required=True)
+    user_id = StringField(required=False)
+    user_info_id = StringField(required=False)
     code = StringField(required=True)
     menu_id = StringField(required=True)
     payment_method = StringField(required=True)

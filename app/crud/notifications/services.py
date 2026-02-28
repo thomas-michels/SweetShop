@@ -1,10 +1,13 @@
 from datetime import timedelta
 from pathlib import Path
-from typing import List
+from typing import List, TYPE_CHECKING
 
 from app.api.dependencies.email_sender import send_email
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.core.utils.utc_datetime import UTCDateTime
+
+if TYPE_CHECKING:
+    from app.crud.users.repositories import UserRepository
 
 from .repositories import NotificationRepository
 from .schemas import NotificationChannel, NotificationCreate, NotificationInDB
@@ -14,10 +17,12 @@ class NotificationServices:
     def __init__(
         self,
         notification_repository: NotificationRepository,
-        deduplication_interval: timedelta = timedelta(minutes=10),
+        user_repository: "UserRepository",
+        deduplication_interval: timedelta = timedelta(minutes=1),
         email_template_path: str = "./templates/notification-default.html",
     ) -> None:
         self.__notification_repository = notification_repository
+        self.__user_repository = user_repository
         self.__deduplication_interval = deduplication_interval
         self.__email_template_path = Path(email_template_path)
 
@@ -38,13 +43,16 @@ class NotificationServices:
         )
 
         if NotificationChannel.EMAIL in notification.channels:
+            user_in_db = await self.__user_repository.select_by_id(
+                id=notification.user_id
+            )
             email_body = self.__build_email_body(
                 title=notification.title,
                 content=notification.content,
                 created_at=notification_in_db.created_at,
             )
             send_email(
-                email_to=[notification.user_id],
+                email_to=[user_in_db.email],
                 title=notification.title,
                 message=email_body,
             )

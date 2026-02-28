@@ -132,7 +132,8 @@ PreOrderItem = Union[SelectedProduct, SelectedOffer]
 
 
 class PreOrder(GenericModel):
-    user_id: str = Field(example="usr_123")
+    user_id: str | None = Field(default=None, example="usr_123")
+    user_info_id: str | None = Field(default=None, example="usr_123")
     status: PreOrderStatus = Field(example=PreOrderStatus.PENDING)
     menu_id: str = Field(example="men_123")
     payment_method: PaymentMethod = Field(example=PaymentMethod.CASH)
