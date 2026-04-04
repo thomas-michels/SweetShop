@@ -105,6 +105,7 @@ class TestOrderServices(unittest.IsolatedAsyncioTestCase):
             tags=None,
             min_total_amount=None,
             max_total_amount=None,
+            ignore_default_filters=False,
         )
         self.assertEqual(count, 4)
         mock_repo.select_count.assert_awaited()
@@ -133,6 +134,7 @@ class TestOrderServices(unittest.IsolatedAsyncioTestCase):
             min_total_amount=None,
             max_total_amount=None,
             expand=[],
+            ignore_default_filters=False,
         )
         self.assertEqual(len(results), 1)
         mock_repo.select_all.assert_awaited()

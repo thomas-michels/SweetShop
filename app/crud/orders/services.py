@@ -236,6 +236,7 @@ class OrderServices:
         tags: List[str],
         min_total_amount: float,
         max_total_amount: float,
+        ignore_default_filters: bool = False,
     ) -> int:
         quantity = await self.__order_repository.select_count(
             customer_id=customer_id,
@@ -247,6 +248,7 @@ class OrderServices:
             min_total_amount=min_total_amount,
             max_total_amount=max_total_amount,
             tags=tags,
+            ignore_default_filters=ignore_default_filters,
         )
         return quantity
 

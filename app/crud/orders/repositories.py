@@ -96,6 +96,7 @@ class OrderRepository(Repository):
         end_date: UTCDateTime,
         min_total_amount: float,
         max_total_amount: float,
+        ignore_default_filters: bool = False,
     ) -> int:
         try:
             objects = OrderModel.objects(
@@ -104,17 +105,18 @@ class OrderRepository(Repository):
                 organization_id=self.organization_id,
             )
 
+            if not ignore_default_filters:
+                objects = objects.filter(
+                    Q(status__ne=OrderStatus.DONE.value)
+                    | Q(payment_status__ne=PaymentStatus.PAID.value)
+                )
+
             if customer_id:
                 objects = objects.filter(customer_id=customer_id)
 
             if status:
                 objects = objects.filter(status=status.value)
 
-            else:
-                objects = objects.filter(
-                    Q(status__ne=OrderStatus.DONE.value)
-                    | Q(payment_status__ne=PaymentStatus.PAID.value)
-                )
 
             if payment_status:
                 objects = objects.filter(payment_status__in=payment_status)
@@ -193,18 +195,17 @@ class OrderRepository(Repository):
                 organization_id=self.organization_id,
             )
 
+            if not ignore_default_filters:
+                objects = objects.filter(
+                    Q(status__ne=OrderStatus.DONE.value) |
+                    Q(payment_status__ne=PaymentStatus.PAID.value)
+                )
+
             if customer_id:
                 objects = objects.filter(customer_id=customer_id)
 
             if status:
                 objects = objects.filter(status=status.value)
-
-            else:
-                if not ignore_default_filters:
-                    objects = objects.filter(
-                        Q(status__ne=OrderStatus.DONE.value) |
-                        Q(payment_status__ne=PaymentStatus.PAID.value)
-                    )
 
             if payment_status:
                 objects = objects.filter(payment_status__in=payment_status)

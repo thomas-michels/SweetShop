@@ -9,7 +9,7 @@ from app.api.dependencies.paginator import Paginator
 from app.api.dependencies.response import build_list_response
 from app.api.shared_schemas.responses import MessageResponse
 from .schemas import GetOrderByIdResponse, GetOrdersResponse
-from app.core.utils.utc_datetime import UTCDateTimeType, UTCDateTime
+from app.core.utils.utc_datetime import UTCDateTimeType
 from app.crud.orders import OrderServices
 from app.crud.orders.schemas import DeliveryType, OrderStatus
 from app.crud.shared_schemas.payment import PaymentStatus
@@ -68,17 +68,19 @@ async def get_orders(
     current_user: UserInDB = Security(decode_jwt, scopes=["order:get"]),
     order_services: OrderServices = Depends(order_composer),
 ):
-    if not start_order_date and not end_order_date and not status:
-        today = UTCDateTime.today()
-
-        start_order_date = UTCDateTime(
-            year=today.year,
-            month=today.month,
-            day=1,
-            hour=0,
-            minute=0,
-            second=0
+    has_user_filters = any(
+        (
+            customer_id is not None,
+            status is not None,
+            bool(payment_status),
+            delivery_type is not None,
+            bool(tags),
+            start_order_date is not None,
+            end_order_date is not None,
+            min_total_amount is not None,
+            max_total_amount is not None,
         )
+    )
 
     paginator = Paginator(
         request=request, pagination=pagination
@@ -94,6 +96,7 @@ async def get_orders(
         tags=tags,
         min_total_amount=min_total_amount,
         max_total_amount=max_total_amount,
+        ignore_default_filters=has_user_filters,
     )
 
     orders = await order_services.search_all(
@@ -108,6 +111,7 @@ async def get_orders(
         max_total_amount=max_total_amount,
         expand=expand,
         order_by=order_by,
+        ignore_default_filters=has_user_filters,
         page=pagination["page"],
         page_size=pagination["page_size"]
     )
