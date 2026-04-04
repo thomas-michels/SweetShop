@@ -16,6 +16,7 @@ from app.crud.orders.schemas import (
     StoredAdditionalItem,
 )
 from app.crud.orders.models import OrderModel
+from app.crud.shared_schemas.payment import PaymentStatus
 
 
 class TestOrderRepository(unittest.IsolatedAsyncioTestCase):
@@ -57,6 +58,14 @@ class TestOrderRepository(unittest.IsolatedAsyncioTestCase):
             additional=0,
             discount=0,
         )
+
+    async def _create_order_with_statuses(self, *, status, payment_status, order_date):
+        created = await self.repo.create(self._order(order_date=order_date), total_amount=2.0)
+        model = OrderModel.objects(id=created.id).first()
+        model.status = status.value
+        model.payment_status = payment_status.value
+        model.save()
+        return await self.repo.select_by_id(created.id)
 
     async def test_create_order(self):
         order = self._order()
@@ -147,3 +156,119 @@ class TestOrderRepository(unittest.IsolatedAsyncioTestCase):
         )
         created = await self.repo.create(order=order, total_amount=3.0)
         self.assertEqual(created.products[0].additionals[0].label, "Extra")
+
+    async def test_select_all_default_filters_exclude_only_done_and_paid(self):
+        now = UTCDateTime.now()
+        pending_unpaid = await self._create_order_with_statuses(
+            status=OrderStatus.PENDING,
+            payment_status=PaymentStatus.PENDING,
+            order_date=now,
+        )
+        pending_paid = await self._create_order_with_statuses(
+            status=OrderStatus.PENDING,
+            payment_status=PaymentStatus.PAID,
+            order_date=now,
+        )
+        done_unpaid = await self._create_order_with_statuses(
+            status=OrderStatus.DONE,
+            payment_status=PaymentStatus.PENDING,
+            order_date=now,
+        )
+        await self._create_order_with_statuses(
+            status=OrderStatus.DONE,
+            payment_status=PaymentStatus.PAID,
+            order_date=now,
+        )
+
+        results = await self.repo.select_all(
+            customer_id=None,
+            status=None,
+            payment_status=[],
+            delivery_type=None,
+            tags=None,
+            start_date=None,
+            end_date=None,
+            min_total_amount=None,
+            max_total_amount=None,
+            order_by=None,
+            page=None,
+            page_size=None,
+        )
+
+        returned_ids = {order.id for order in results}
+        self.assertEqual(len(results), 3)
+        self.assertIn(pending_unpaid.id, returned_ids)
+        self.assertIn(pending_paid.id, returned_ids)
+        self.assertIn(done_unpaid.id, returned_ids)
+
+    async def test_select_all_default_filters_include_old_and_future_orders(self):
+        now = UTCDateTime.now()
+        old_order = await self._create_order_with_statuses(
+            status=OrderStatus.PENDING,
+            payment_status=PaymentStatus.PENDING,
+            order_date=now - timedelta(days=90),
+        )
+        future_order = await self._create_order_with_statuses(
+            status=OrderStatus.PENDING,
+            payment_status=PaymentStatus.PENDING,
+            order_date=now + timedelta(days=90),
+        )
+
+        results = await self.repo.select_all(
+            customer_id=None,
+            status=None,
+            payment_status=[],
+            delivery_type=None,
+            tags=None,
+            start_date=None,
+            end_date=None,
+            min_total_amount=None,
+            max_total_amount=None,
+            order_by=None,
+            page=None,
+            page_size=None,
+        )
+
+        returned_ids = {order.id for order in results}
+        self.assertIn(old_order.id, returned_ids)
+        self.assertIn(future_order.id, returned_ids)
+
+    async def test_user_filters_disable_default_filter_for_select_all_and_count(self):
+        now = UTCDateTime.now()
+        paid_order = await self._create_order_with_statuses(
+            status=OrderStatus.PENDING,
+            payment_status=PaymentStatus.PAID,
+            order_date=now,
+        )
+
+        results = await self.repo.select_all(
+            customer_id=None,
+            status=None,
+            payment_status=[PaymentStatus.PAID],
+            delivery_type=None,
+            tags=None,
+            start_date=None,
+            end_date=None,
+            min_total_amount=None,
+            max_total_amount=None,
+            order_by=None,
+            ignore_default_filters=True,
+            page=None,
+            page_size=None,
+        )
+        count = await self.repo.select_count(
+            customer_id=None,
+            status=None,
+            payment_status=[PaymentStatus.PAID],
+            delivery_type=None,
+            tags=None,
+            start_date=None,
+            end_date=None,
+            min_total_amount=None,
+            max_total_amount=None,
+            ignore_default_filters=True,
+        )
+
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].id, paid_order.id)
+        self.assertEqual(count, 1)
