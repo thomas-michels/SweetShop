@@ -273,7 +273,14 @@ class OrganizationServices:
 
         return complete_organization
 
-    async def add_user(self, organization_id: str, user_making_request: str, user_id: str, role: RoleEnum) -> bool:
+    async def add_user(
+        self,
+        organization_id: str,
+        user_making_request: str,
+        user_id: str,
+        role: RoleEnum,
+        allow_external_self_add: bool = False,
+    ) -> bool:
         organization_in_db = await self.search_by_id(id=organization_id)
 
         user_in_db_making_request = await self.__user_repository.select_by_id(id=user_making_request)
@@ -291,14 +298,20 @@ class OrganizationServices:
             and role == RoleEnum.OWNER
         )
 
-        if not user_making_request_role and not is_bootstrap_owner_creation:
-            raise UnauthorizedException(detail="You cannot change roles!")
-
         if user_making_request_role and user_making_request_role not in {RoleEnum.OWNER, RoleEnum.MANAGER, RoleEnum.ADMIN}:
             raise UnauthorizedException(detail="You cannot change roles!")
 
         user_organization = organization_in_db.get_user_in_organization(user_in_db.user_id)
         current_role = user_organization.role if user_organization else None
+
+        is_invited_self_join = (
+            allow_external_self_add
+            and user_making_request == user_id
+            and current_role is None
+        )
+
+        if not user_making_request_role and not is_bootstrap_owner_creation and not is_invited_self_join:
+            raise UnauthorizedException(detail="You cannot change roles!")
 
         if current_role:
             if current_role not in {RoleEnum.OWNER, RoleEnum.MANAGER, RoleEnum.ADMIN}:

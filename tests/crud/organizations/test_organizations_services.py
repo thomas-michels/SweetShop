@@ -713,6 +713,31 @@ class TestOrganizationServices(unittest.IsolatedAsyncioTestCase):
                 role=RoleEnum.MANAGER,
             )
 
+    async def test_add_user_allows_external_self_add_when_invited(self):
+        org = await self.repo.create(Organization(name="Org"))
+        await self.repo.update(
+            org.id, {"users": [{"user_id": "owner", "role": RoleEnum.OWNER}]}
+        )
+
+        async def _select(*args, **kwargs):
+            user_id = args[0] if args else kwargs.get("id")
+            return await self._user(user_id)
+
+        self.user_repo.select_by_id.side_effect = _select
+
+        result = await self.service.add_user(
+            organization_id=org.id,
+            user_making_request="invited-user",
+            user_id="invited-user",
+            role=RoleEnum.MEMBER,
+            allow_external_self_add=True,
+        )
+
+        self.assertTrue(result)
+        updated = await self.service.search_by_id(id=org.id)
+        self.assertEqual(len(updated.users), 2)
+        self.assertEqual(updated.get_user_in_organization("invited-user").role, RoleEnum.MEMBER)
+
     async def test_add_user_denies_promoting_manager_to_owner(self):
         org = await self.repo.create(Organization(name="Org"))
         await self.repo.update(
