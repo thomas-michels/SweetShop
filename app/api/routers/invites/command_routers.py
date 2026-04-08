@@ -63,7 +63,8 @@ async def accept_invite(
             user_id=current_user.user_id,
             organization_id=invite_in_db.organization_id,
             role=invite_in_db.role,
-            user_making_request=current_user.user_id
+            user_making_request=current_user.user_id,
+            allow_external_self_add=True,
         )
 
         return build_response(
