@@ -1,20 +1,27 @@
+from datetime import timedelta
 from typing import Dict, List, Optional
+from uuid import uuid4
 
 from app.api.dependencies.email_sender import send_email
 from app.api.dependencies.get_plan_feature import get_plan_feature
 from app.api.exceptions.authentication_exceptions import UnauthorizedException, BadRequestException
 from app.core.utils.features import Feature
+from app.core.utils.utc_datetime import UTCDateTime
 from app.core.exceptions import NotFoundError, UnprocessableEntity
 from app.crud.addresses import AddressServices
 from app.crud.files.repositories import FileRepository
 from app.crud.files.schemas import FilePurpose
+from app.crud.invoices import InvoiceServices
+from app.crud.invoices.schemas import Invoice, InvoiceStatus
 from app.crud.messages.repositories import MessageRepository
 from app.crud.messages.schemas import Message, MessageType, Origin
 from app.crud.messages.services import MessageServices
 from app.crud.marketing_emails.schemas import MarketingEmail, ReasonEnum
 from app.crud.marketing_emails.services import MarketingEmailServices
+from app.crud.organization_plans import OrganizationPlan, OrganizationPlanServices
 from app.crud.users.repositories import UserRepository
 from app.crud.users.schemas import CompleteUserInDB, UserInDB
+from app.crud.plans import PlanServices
 from app.crud.shared_schemas.address import Address
 
 from .schemas import CompleteOrganization, Organization, OrganizationInDB, RoleEnum, UpdateOrganization, UserOrganization
@@ -34,12 +41,18 @@ class OrganizationServices:
         organization_plan_repository: OrganizationPlanRepository,
         address_services: AddressServices,
         cached_complete_users: Dict[str, CompleteUserInDB],
+        plan_services: Optional[PlanServices] = None,
+        organization_plan_services: Optional[OrganizationPlanServices] = None,
+        invoice_services: Optional[InvoiceServices] = None,
         marketing_email_services: Optional[MarketingEmailServices] = None,
     ) -> None:
         self.__organization_repository = organization_repository
         self.__organization_plan_repository = organization_plan_repository
         self.__user_repository = user_repository
         self.__address_services = address_services
+        self.__plan_services = plan_services
+        self.__organization_plan_services = organization_plan_services
+        self.__invoice_services = invoice_services
 
         self.__cached_complete_users = cached_complete_users
         self.__marketing_email_services = marketing_email_services
@@ -49,12 +62,20 @@ class OrganizationServices:
 
         organization_in_db = await self.__organization_repository.create(organization=organization)
 
-        await self.add_user(
+        owner_added = await self.add_user(
             organization_id=organization_in_db.id,
             user_id=owner.user_id,
             user_making_request=owner.user_id,
             role=RoleEnum.OWNER,
         )
+
+        if not owner_added:
+            await self.__organization_repository.delete_by_id(id=organization_in_db.id)
+            raise UnprocessableEntity(message="Error adding owner to organization")
+
+        organization_in_db = await self.search_by_id(id=organization_in_db.id)
+
+        await self.__provision_premium_trial(organization_id=organization_in_db.id)
 
         organization_in_db = await self.search_by_id(id=organization_in_db.id)
 
@@ -71,6 +92,62 @@ class OrganizationServices:
 
         return organization_in_db
 
+    async def __provision_premium_trial(self, organization_id: str) -> bool:
+        if not (
+            self.__plan_services
+            and self.__organization_plan_services
+            and self.__invoice_services
+        ):
+            logger.warning(f"Premium trial skipped for organization {organization_id}: required services not configured")
+            return False
+
+        try:
+            premium_plan = await self.__plan_services.search_by_name(name="Premium")
+
+            trial_start = UTCDateTime.combine(
+                UTCDateTime.now().date(),
+                UTCDateTime.min.time(),
+            )
+            trial_end = trial_start + timedelta(days=60)
+
+            organization_plan_in_db = await self.__organization_plan_services.create(
+                organization_plan=OrganizationPlan(
+                    plan_id=premium_plan.id,
+                    start_date=trial_start,
+                    end_date=trial_end,
+                    allow_additional=False,
+                ),
+                organization_id=organization_id,
+            )
+
+            await self.__invoice_services.create(
+                invoice=Invoice(
+                    organization_plan_id=organization_plan_in_db.id,
+                    integration_id=f"premium-trial-{uuid4()}",
+                    integration_type="trial",
+                    amount=0,
+                    amount_paid=0,
+                    paid_at=UTCDateTime.now(),
+                    status=InvoiceStatus.PAID,
+                    observation={
+                        "reason": "organization_creation_premium_trial",
+                        "months": 2,
+                    },
+                )
+            )
+
+            self.__organization_plan_repository.clear_cache(organization_id=organization_id)
+            return True
+
+        except NotFoundError:
+            logger.warning(f"Premium trial not provisioned for organization {organization_id}: plan Premium not found")
+
+        except Exception as error:
+            logger.error(f"Error provisioning Premium trial for organization {organization_id}: {str(error)}")
+
+        self.__organization_plan_repository.clear_cache(organization_id=organization_id)
+        return False
+
     async def check_if_can_add_more_users(self, organization_id: str) -> None:
         organization_in_db = await self.search_by_id(id=organization_id)
 
@@ -79,7 +156,10 @@ class OrganizationServices:
             feature_name=Feature.MAX_USERS
         )
 
-        if not plan_feature or (len(organization_in_db.users) + 1) >= int(plan_feature.value):
+        if not plan_feature:
+            raise UnauthorizedException(detail="Maximum number of users reached")
+
+        if (len(organization_in_db.users) + 1) >= int(plan_feature.value):
             raise UnauthorizedException(detail=f"Maximum number of users reached, Max value: {plan_feature.value}")
 
     async def update(
@@ -202,12 +282,23 @@ class OrganizationServices:
         if not (organization_in_db and user_in_db_making_request and user_in_db):
             return False
 
-        user_making_request_role = organization_in_db.get_user_in_organization(user_making_request).role if organization_in_db.get_user_in_organization(user_making_request) else None
+        requester_user_organization = organization_in_db.get_user_in_organization(user_making_request)
+        user_making_request_role = requester_user_organization.role if requester_user_organization else None
+
+        is_bootstrap_owner_creation = (
+            not organization_in_db.users
+            and user_making_request == user_id
+            and role == RoleEnum.OWNER
+        )
+
+        if not user_making_request_role and not is_bootstrap_owner_creation:
+            raise UnauthorizedException(detail="You cannot change roles!")
 
         if user_making_request_role and user_making_request_role not in {RoleEnum.OWNER, RoleEnum.MANAGER, RoleEnum.ADMIN}:
             raise UnauthorizedException(detail="You cannot change roles!")
 
-        current_role = organization_in_db.get_user_in_organization(user_in_db.user_id).role if organization_in_db.get_user_in_organization(user_in_db.user_id) else None
+        user_organization = organization_in_db.get_user_in_organization(user_in_db.user_id)
+        current_role = user_organization.role if user_organization else None
 
         if current_role:
             if current_role not in {RoleEnum.OWNER, RoleEnum.MANAGER, RoleEnum.ADMIN}:
@@ -222,12 +313,17 @@ class OrganizationServices:
             if current_role == RoleEnum.OWNER and role == RoleEnum.OWNER:
                 raise UnauthorizedException(detail="An organization can only have one owner!")
 
-        organization_in_db.users.append(
-            UserOrganization(
-                user_id=user_in_db.user_id,
-                role=role
+            organization_in_db.delete_user(user_id=user_in_db.user_id)
+            user_organization.role = role
+            organization_in_db.users.append(user_organization)
+
+        else:
+            organization_in_db.users.append(
+                UserOrganization(
+                    user_id=user_in_db.user_id,
+                    role=role
+                )
             )
-        )
 
         await self.__organization_repository.update(
             organization_id=organization_id,
@@ -301,7 +397,11 @@ class OrganizationServices:
         if not (organization_in_db and user_in_db_making_request and user_in_db):
             return False
 
-        user_making_request_role = organization_in_db.get_user_in_organization(user_making_request).role if organization_in_db.get_user_in_organization(user_making_request) else None
+        requester_user_organization = organization_in_db.get_user_in_organization(user_making_request)
+        user_making_request_role = requester_user_organization.role if requester_user_organization else None
+
+        if not user_making_request_role:
+            raise UnauthorizedException(detail="You cannot remove users!")
 
         if user_making_request_role and user_making_request_role not in {RoleEnum.OWNER, RoleEnum.ADMIN}:
             raise UnauthorizedException(detail="You cannot remove users!")
