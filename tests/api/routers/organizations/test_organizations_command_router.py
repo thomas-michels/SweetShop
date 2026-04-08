@@ -9,9 +9,17 @@ from app.api.composers import organization_composer
 from app.api.dependencies.auth import decode_jwt
 from app.api.dependencies.get_current_organization import check_current_organization
 from app.application import app
+from app.crud.invoices.repositories import InvoiceRepository
+from app.crud.invoices.services import InvoiceServices
+from app.crud.organization_plans.repositories import OrganizationPlanRepository
+from app.crud.organization_plans.services import OrganizationPlanServices
 from app.crud.organizations.models import OrganizationModel
 from app.crud.organizations.repositories import OrganizationRepository
 from app.crud.organizations.services import OrganizationServices
+from app.crud.plan_features.repositories import PlanFeatureRepository
+from app.crud.plans.repositories import PlanRepository
+from app.crud.plans.schemas import Plan
+from app.crud.plans.services import PlanServices
 from app.crud.shared_schemas.roles import RoleEnum
 from tests.payloads import USER_IN_DB
 
@@ -34,9 +42,23 @@ class TestOrganizationsCommandRouter(unittest.TestCase):
 
         self.repo = OrganizationRepository()
         self.user_repo = AsyncMock()
-        self.plan_repo = AsyncMock()
         self.address_service = AsyncMock()
         self.address_service.search_by_cep = AsyncMock(return_value=None)
+
+        self.organization_plan_repository = OrganizationPlanRepository(cache_plans={})
+        self.plan_repository = PlanRepository()
+        self.plan_services = PlanServices(
+            plan_repository=self.plan_repository,
+            plan_feature_repository=PlanFeatureRepository(),
+        )
+        self.organization_plan_services = OrganizationPlanServices(
+            organization_plan_repository=self.organization_plan_repository,
+            plan_repository=self.plan_repository,
+        )
+        self.invoice_services = InvoiceServices(
+            invoice_repository=InvoiceRepository(),
+            organization_plan_repository=self.organization_plan_repository,
+        )
 
         patcher_email = patch(
             "app.crud.organizations.services.send_email", return_value="id"
@@ -47,9 +69,12 @@ class TestOrganizationsCommandRouter(unittest.TestCase):
         self.service = OrganizationServices(
             organization_repository=self.repo,
             user_repository=self.user_repo,
-            organization_plan_repository=self.plan_repo,
+            organization_plan_repository=self.organization_plan_repository,
             address_services=self.address_service,
             cached_complete_users={},
+            plan_services=self.plan_services,
+            organization_plan_services=self.organization_plan_services,
+            invoice_services=self.invoice_services,
         )
 
         self.test_client = TestClient(app)
@@ -71,7 +96,17 @@ class TestOrganizationsCommandRouter(unittest.TestCase):
         org.save()
         return str(org.id)
 
+    def create_premium_plan(self):
+        import asyncio
+
+        return asyncio.run(
+            self.plan_services.create(
+                Plan(name="Premium", description="Premium trial", price=99.9)
+            )
+        )
+
     def test_post_organization_success(self):
+        self.create_premium_plan()
         self.user_repo.select_by_id.return_value = USER_IN_DB
 
         response = self.test_client.post(
@@ -85,6 +120,26 @@ class TestOrganizationsCommandRouter(unittest.TestCase):
             response.json()["message"], "Organization created with success"
         )
         self.assertIsNotNone(response.json()["data"]["id"])
+
+    def test_post_organization_success_when_trial_fails_silently(self):
+        self.create_premium_plan()
+        self.user_repo.select_by_id.return_value = USER_IN_DB
+
+        with patch.object(
+            self.invoice_services,
+            "create",
+            new=AsyncMock(side_effect=Exception("invoice failure")),
+        ):
+            response = self.test_client.post(
+                "/api/organizations",
+                json={"name": "My Org"},
+                headers={"organization-id": "org_123"},
+            )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(
+            response.json()["message"], "Organization created with success"
+        )
 
     def test_delete_organization_not_found(self):
         response = self.test_client.delete(
