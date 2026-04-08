@@ -10,7 +10,7 @@ _logger = get_logger(__name__)
 def send_email(email_to: List[str], title: str, message: str) -> str:
     try:
         params = {
-            "from": _env.DEFAULT_EMAIL,
+            "from": f'"PedidoZ" <{_env.DEFAULT_EMAIL}>',
             "to": email_to,
             "subject": title,
             "html": message,
