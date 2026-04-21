@@ -35,7 +35,7 @@ class OrderMessageManager:
             return
 
         if order.status not in (
-            OrderStatus.READY_FOR_DELIVERY,
+            OrderStatus.PREPARED,
             OrderStatus.DONE,
         ):
             return
@@ -69,9 +69,9 @@ class OrderMessageManager:
         if not getattr(organization, "enable_order_notifications", False):
             return
 
-        if order.status == OrderStatus.READY_FOR_DELIVERY:
-            title = "*Seu pedido saiu para entrega!*"
-            body = "Informamos que seu pedido saiu para entrega e chegará em breve!"
+        if order.status == OrderStatus.PREPARED:
+            title = "*Seu pedido esta pronto!*"
+            body = "Informamos que seu pedido esta pronto."
         else:
             title = "*Pedido finalizado!*"
             body = (

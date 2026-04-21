@@ -41,6 +41,12 @@ EXAMPLE_ORDER = {
     "updated_at": "2024-01-01T00:00:00Z",
 }
 
+EXAMPLE_PREPARED_ORDER = {
+    **EXAMPLE_ORDER,
+    "id": "ord_456",
+    "status": "PREPARED",
+}
+
 
 class GetOrderByIdResponse(Response):
     data: OrderInDB | None = Field()
@@ -65,7 +71,7 @@ class GetOrdersResponse(ListResponseSchema):
                 "pagination": {"page": 1, "page_size": 2, "total": 2},
                 "data": [
                     EXAMPLE_ORDER,
-                    {**EXAMPLE_ORDER, "id": "ord_456"},
+                    EXAMPLE_PREPARED_ORDER,
                 ],
             }
         }
