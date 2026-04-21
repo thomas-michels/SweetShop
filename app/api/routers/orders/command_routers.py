@@ -58,7 +58,7 @@ async def update_order(
 
     if order_in_db:
         if order.status is not None and order.status in [
-            OrderStatus.READY_FOR_DELIVERY,
+            OrderStatus.PREPARED,
             OrderStatus.DONE,
         ]:
             pre_order_in_db = await pre_order_services.search_by_order_id(

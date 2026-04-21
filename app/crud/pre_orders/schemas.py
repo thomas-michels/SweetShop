@@ -14,7 +14,7 @@ class PreOrderStatus(str, Enum):
     PENDING = "PENDING"
     ACCEPTED = "ACCEPTED"
     REJECTED = "REJECTED"
-    READY_FOR_DELIVERY = "READY_FOR_DELIVERY"
+    PREPARED = "PREPARED"
     DONE = "DONE"
 
 

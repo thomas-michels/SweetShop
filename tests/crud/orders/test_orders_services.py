@@ -1005,7 +1005,7 @@ class TestOrderServices(unittest.IsolatedAsyncioTestCase):
         created_order = order_repo.create.await_args.kwargs["order"]
         self.assertEqual(created_order.products[0].observation, "Sem cebola")
 
-    async def test_update_to_READY_FOR_DELIVERY_sends_message(self):
+    async def test_update_to_prepared_sends_message(self):
         now = UTCDateTime.now()
         delivery = Delivery(
             delivery_type=DeliveryType.DELIVERY,
@@ -1049,9 +1049,7 @@ class TestOrderServices(unittest.IsolatedAsyncioTestCase):
             updated_at=now,
         )
 
-        updated_order = base_order.model_copy(
-            update={"status": OrderStatus.READY_FOR_DELIVERY}
-        )
+        updated_order = base_order.model_copy(update={"status": OrderStatus.PREPARED})
 
         order_repo = AsyncMock()
         order_repo.organization_id = "org1"
@@ -1097,14 +1095,14 @@ class TestOrderServices(unittest.IsolatedAsyncioTestCase):
 
         result = await service.update(
             id="ord1",
-            updated_order=UpdateOrder(status=OrderStatus.READY_FOR_DELIVERY),
+            updated_order=UpdateOrder(status=OrderStatus.PREPARED),
         )
 
         message_services.create.assert_awaited_once()
         sent_message = message_services.create.await_args.kwargs["message"]
-        self.assertIn("saiu para entrega", sent_message.message)
+        self.assertIn("pedido esta pronto", sent_message.message)
         self.assertEqual(sent_message.phone_number, "999999999")
-        self.assertEqual(result.status, OrderStatus.READY_FOR_DELIVERY)
+        self.assertEqual(result.status, OrderStatus.PREPARED)
 
     async def test_update_to_done_sends_message(self):
         now = UTCDateTime.now()
